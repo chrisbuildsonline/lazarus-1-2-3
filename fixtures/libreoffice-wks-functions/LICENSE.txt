@@ -1,0 +1,9 @@
+Source: https://raw.githubusercontent.com/LibreOffice/core/master/sc/qa/unit/data/wks/pass/gnome647171-1.wks
+Author: unknown (LibreOffice Calc test data; the name refers to GNOME bug 647171)
+License: MPL-2.0
+Redistribution: allowed
+Notes: Real WKS file from LibreOffice's import tests (wks/pass, not a fuzzer file), committed unchanged.
+  Numbers and formulas only (@SUM, @COUNT, @IF/@MOD with string results), no personal data.
+  LibreOffice core is distributed under the Mozilla Public License 2.0:
+  "This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of
+  the MPL was not distributed with this file, You can obtain one at http://mozilla.org/MPL/2.0/."

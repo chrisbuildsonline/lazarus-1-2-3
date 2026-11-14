@@ -1,0 +1,105 @@
+import { createHash } from "node:crypto";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { dirname, extname, join } from "node:path";
+import { describe, expect, it } from "vitest";
+import { scanDbf } from "../helpers/dbf-scan.ts";
+import { scanWk1, type Counts } from "../helpers/wk1-scan.ts";
+
+// The manifest is the claim, the bytes are the evidence.
+type Entry = {
+  path: string;
+  format: "wk1" | "wks" | "dbf";
+  origin: "real" | "synthetic";
+  sourceUrl: string | null;
+  license: string;
+  sha256: string;
+  counts: Counts;
+  expectedValues: { cell: string; kind: string; cached: number | string }[];
+};
+
+const manifest = JSON.parse(readFileSync("fixtures/manifest.json", "utf8")) as { version: number; fixtures: Entry[] };
+const entries = manifest.fixtures;
+const CORPUS_EXT = new Set([".wk1", ".wks", ".dbf"]);
+
+function corpusFiles(dir = "fixtures"): string[] {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+    const path = `${dir}/${e.name}`;
+    if (e.isDirectory()) return corpusFiles(path);
+    return e.isFile() && CORPUS_EXT.has(extname(e.name).toLowerCase()) ? [path] : [];
+  });
+}
+
+function scan(entry: Entry, bytes: Uint8Array) {
+  return entry.format === "dbf" ? scanDbf(bytes) : scanWk1(bytes);
+}
+
+describe("fixtures/manifest.json", () => {
+  it("is version 1", () => {
+    expect(manifest.version).toBe(1);
+  });
+
+  it("lists at least 5 fixtures", () => {
+    expect(entries.length).toBeGreaterThanOrEqual(5);
+  });
+
+  it("has at least one real and one synthetic entry", () => {
+    expect(entries.some((e) => e.origin === "real")).toBe(true);
+    expect(entries.some((e) => e.origin === "synthetic")).toBe(true);
+  });
+
+  it("has well-formed entries, sorted by path", () => {
+    for (const e of entries) {
+      expect(e.path).toMatch(/^fixtures\/[^/]+\/[^/]+$/);
+      expect(extname(e.path).toLowerCase()).toBe(`.${e.format}`);
+      expect(["real", "synthetic"]).toContain(e.origin);
+      if (e.origin === "synthetic") expect(e.sourceUrl).toBeNull();
+      else expect(e.sourceUrl).toMatch(/^https?:\/\//);
+      expect(e.license.length).toBeGreaterThan(0);
+      expect(e.sha256).toMatch(/^[0-9a-f]{64}$/);
+    }
+    const paths = entries.map((e) => e.path);
+    expect(paths).toEqual([...new Set(paths)].sort());
+  });
+
+  it("matches every listed file's sha256", () => {
+    for (const e of entries) {
+      expect(existsSync(e.path), e.path).toBe(true);
+      const sha = createHash("sha256").update(readFileSync(e.path)).digest("hex");
+      expect(sha, e.path).toBe(e.sha256);
+    }
+  });
+
+  it("has a LICENSE.txt with source, author, license and redistribution next to every fixture", () => {
+    for (const e of entries) {
+      const licensePath = join(dirname(e.path), "LICENSE.txt");
+      expect(existsSync(licensePath), licensePath).toBe(true);
+      const text = readFileSync(licensePath, "utf8");
+      expect(text, licensePath).toMatch(/^Source: \S.*$/m);
+      expect(text, licensePath).toMatch(/^Author: \S.*$/m);
+      expect(text, licensePath).toMatch(/^License: \S.*$/m);
+      expect(text, licensePath).toMatch(/^Redistribution: allowed$/m);
+    }
+  });
+
+  it("lists every .wk1, .wks and .dbf file under fixtures/", () => {
+    expect(corpusFiles().sort()).toEqual(entries.map((e) => e.path).sort());
+  });
+
+  it("has record counts that match the bytes", () => {
+    for (const e of entries) {
+      expect(scan(e, readFileSync(e.path)).counts, e.path).toEqual(e.counts);
+    }
+  });
+
+  it("has expected values that match the cached values in the bytes", () => {
+    for (const e of entries) {
+      expect(e.expectedValues.length, e.path).toBeGreaterThanOrEqual(1);
+      const cells = scan(e, readFileSync(e.path)).cells;
+      for (const v of e.expectedValues) {
+        const found = cells.find((c) => c.cell === v.cell);
+        expect(found, `${e.path} ${v.cell}`).toBeDefined();
+        expect({ kind: found?.kind, value: found?.value }, `${e.path} ${v.cell}`).toEqual({ kind: v.kind, value: v.cached });
+      }
+    }
+  });
+});

@@ -1,0 +1,11 @@
+Source: https://raw.githubusercontent.com/openpreserve/format-corpus/master/office/spreadsheet/wks/testLotus123.wks
+Author: Johan van der Knijff (openpreserve/format-corpus)
+License: CC0-1.0
+Redistribution: allowed
+Notes: Real Lotus 1-2-3 version 1 (WKS) file, committed unchanged. Three columns X, Y, Z = X*Y, no personal data.
+  License wording from office/spreadsheet/wks/readme.md in openpreserve/format-corpus:
+  "Sample Lotus 1-2-3 version 1 file. File created in Quattro Pro 6.0."
+  "All files in this folder: Creative Commons CC0: Public Domain Dedication. See
+  http://creativecommons.org/publicdomain/zero/1.0/ - To the extent possible under law,
+  Johan van der Knijff has waived all copyright and related or neighboring rights to this work."
+  The identical bytes also ship as testLotus123.wks in Apache Tika's test documents.

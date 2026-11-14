@@ -10,19 +10,19 @@ Red first: write each test before the code that makes it pass. Run `bun run test
 ## WK1 writer and manifest guard
 
 - [x] 3. Red: `tests/unit/helpers/wk1-scan.ts` is a test helper, so first write `tests/unit/fixtures/wk1-scan.test.ts` with a hand-written byte array (BOF, one INTEGER, one NUMBER, one LABEL, one FORMULA, EOF) and expected counts. Then write the helper (record walker returning counts and cells, bounds-checked, no throw on truncation). (Req 17)
-- [ ] 4. Red: `tests/unit/fixtures/manifest.test.ts` against an empty manifest `{ "version": 1, "fixtures": [] }`. It fails on the minimum count, origin mix, license and unlisted-file checks. Then add the checks listed in design.md (exists, sha256, LICENSE.txt keys, unlisted files, counts, expected values). (Req 10, 15, 16, 17)
+- [x] 4. Red: `tests/unit/fixtures/manifest.test.ts` against an empty manifest `{ "version": 1, "fixtures": [] }`. It fails on the minimum count, origin mix, license and unlisted-file checks. Then add the checks listed in design.md (exists, sha256, LICENSE.txt keys, unlisted files, counts, expected values). (Req 10, 15, 16, 17)
 - [x] 5. Red: `tests/unit/fixtures/gen-fixtures.test.ts` for the writer: BOF/EOF framing, DIMENSIONS, INTEGER, NUMBER, LABEL with `'`, `"`, `^`, FORMULA with cached double, little-endian layout, and `buildAll()` deterministic across two calls. Green: `scripts/lib/wk1-writer.ts`. (Req 5, 6, 7, 18)
 
 ## Synthetic corpus
 
 - [x] 6. Write `scripts/lib/fixture-specs.ts` for `basic-values` and `labels`, plus `scripts/gen-fixtures.ts` that writes files, `LICENSE.txt` and the manifest entries (merge, sorted). Run `bun scripts/gen-fixtures.ts`. Manifest and PII tests now cover 2 synthetic files. (Req 5, 9, 12, 13)
 - [x] 7. Add `formulas` to the specs. Use only RPN opcodes confirmed by a source note in a code comment. Regenerate. (Req 6, 8, 11)
-- [ ] 8. Add `dates` (serials 1, 59, 60, 61, a leap day, plus a FORMULA with a date cached value) and `mixed`. Regenerate. Confirm a second run leaves `git status` unchanged. (Req 5, 8, 18)
+- [x] 8. Add `dates` (serials 1, 59, 60, 61, a leap day, plus a FORMULA with a date cached value) and `mixed`. Regenerate. Confirm a second run leaves `git status` unchanged. (Req 5, 8, 18)
 
 ## Real corpus (human review)
 
-- [ ] 9. Find candidate real WK1/WKS/DBF files in public archives. For each, record the URL and the exact license wording found. Drop any file without a clear redistribution grant. Check for personal data by eye as well as by scan. Stop and ask if fewer than 1 qualifies. (Req 2, 4)
-- [ ] 10. Commit each accepted file in `fixtures/<name>/` with `LICENSE.txt` (source URL, author, license, `Redistribution: allowed`). Compute sha256, counts and 1 to 3 cached values from the file bytes (helper run locally, not committed unless small) and add the manifest entries. Run the full suite: the PII test decides on the real bytes, and any hit is either removed or allowlisted with a reason. (Req 1, 2, 3, 10, 11, 14, 21)
+- [x] 9. Find candidate real WK1/WKS/DBF files in public archives. For each, record the URL and the exact license wording found. Drop any file without a clear redistribution grant. Check for personal data by eye as well as by scan. Stop and ask if fewer than 1 qualifies. (Req 2, 4)
+- [x] 10. Commit each accepted file in `fixtures/<name>/` with `LICENSE.txt` (source URL, author, license, `Redistribution: allowed`). Compute sha256, counts and 1 to 3 cached values from the file bytes (helper run locally, not committed unless small) and add the manifest entries. Run the full suite: the PII test decides on the real bytes, and any hit is either removed or allowlisted with a reason. (Req 1, 2, 3, 10, 11, 14, 21)
 - [ ] 11. Use the real WK1/WKS file to confirm the BOF version to format mapping. If lotus-format.md has it reversed, correct the note and record the evidence in the PR description or commit message. (Design: Synthetic WK1 files, notes)
 
 ## CLI

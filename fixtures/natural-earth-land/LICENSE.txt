@@ -1,0 +1,11 @@
+Source: https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/110m_physical/ne_110m_land.dbf
+Author: Natural Earth (Tom Patterson, Nathaniel Vaughn Kelso and contributors)
+License: Public domain
+Redistribution: allowed
+Notes: Real dBase III table, committed unchanged. Attributes of the 1:110m land polygons
+  (featurecla, scalerank, min_zoom), 127 records, no personal data.
+  License wording from LICENSE.md in nvkelso/natural-earth-vector:
+  "Everything here is public domain."
+  "All versions of Natural Earth raster + vector map data found on this website are in the public domain.
+  You may use the maps in any manner, including modifying the content and design, electronic
+  dissemination, and offset printing."

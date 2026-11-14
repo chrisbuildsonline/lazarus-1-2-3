@@ -33,6 +33,37 @@
       ]
     },
     {
+      "path": "fixtures/census-delaware-1992/92stlde.wk1",
+      "format": "wk1",
+      "origin": "real",
+      "sourceUrl": "https://www2.census.gov/govs/local/92stlde.wk1",
+      "license": "US-Government-Work (public domain, 17 U.S.C. 105)",
+      "sha256": "90cd1e1a9cc970250c129858aeed50f5bfef253c3aabd228f63b1037b7f5802b",
+      "counts": {
+        "cells": 357,
+        "formulas": 0,
+        "labels": 119,
+        "numbers": 238
+      },
+      "expectedValues": [
+        {
+          "cell": "A1",
+          "kind": "label",
+          "cached": "Government Finances"
+        },
+        {
+          "cell": "B15",
+          "kind": "number",
+          "cached": 3515350
+        },
+        {
+          "cell": "D20",
+          "kind": "integer",
+          "cached": 6290
+        }
+      ]
+    },
+    {
       "path": "fixtures/dates/dates.wk1",
       "format": "wk1",
       "origin": "synthetic",
@@ -110,6 +141,37 @@
       ]
     },
     {
+      "path": "fixtures/ksbase/KSBASE.WK1",
+      "format": "wk1",
+      "origin": "real",
+      "sourceUrl": "https://raw.githubusercontent.com/openpreserve/format-corpus/master/office/spreadsheet/wk1/KSBASE.WK1",
+      "license": "CC0-1.0",
+      "sha256": "08280f2d38c48f332a011b59f61c0775c747c6f4175de845c7bde0d3ccec5a6a",
+      "counts": {
+        "cells": 1250,
+        "formulas": 160,
+        "labels": 184,
+        "numbers": 906
+      },
+      "expectedValues": [
+        {
+          "cell": "A1",
+          "kind": "label",
+          "cached": "OBSERV"
+        },
+        {
+          "cell": "B3",
+          "kind": "number",
+          "cached": 35249
+        },
+        {
+          "cell": "O3",
+          "kind": "formula",
+          "cached": 0.25153768659966846
+        }
+      ]
+    },
+    {
       "path": "fixtures/labels/labels.wk1",
       "format": "wk1",
       "origin": "synthetic",
@@ -142,6 +204,68 @@
           "cell": "A2",
           "kind": "label",
           "cached": ""
+        }
+      ]
+    },
+    {
+      "path": "fixtures/libreoffice-wks-functions/gnome647171-1.wks",
+      "format": "wks",
+      "origin": "real",
+      "sourceUrl": "https://raw.githubusercontent.com/LibreOffice/core/master/sc/qa/unit/data/wks/pass/gnome647171-1.wks",
+      "license": "MPL-2.0",
+      "sha256": "d69c904b82746546fab024f13c5732ac0d1decaed604259bce3213a936989314",
+      "counts": {
+        "cells": 7,
+        "formulas": 4,
+        "labels": 0,
+        "numbers": 3
+      },
+      "expectedValues": [
+        {
+          "cell": "A2",
+          "kind": "formula",
+          "cached": 21.5
+        },
+        {
+          "cell": "B2",
+          "kind": "formula",
+          "cached": 2
+        },
+        {
+          "cell": "C2",
+          "kind": "formula",
+          "cached": 0.75
+        }
+      ]
+    },
+    {
+      "path": "fixtures/lotus123-wks/testLotus123.wks",
+      "format": "wks",
+      "origin": "real",
+      "sourceUrl": "https://raw.githubusercontent.com/openpreserve/format-corpus/master/office/spreadsheet/wks/testLotus123.wks",
+      "license": "CC0-1.0",
+      "sha256": "e84776961e4ef26fe8935f99917655a7d8c706c4d1a57796092b70422add5f3f",
+      "counts": {
+        "cells": 33,
+        "formulas": 10,
+        "labels": 3,
+        "numbers": 20
+      },
+      "expectedValues": [
+        {
+          "cell": "A1",
+          "kind": "label",
+          "cached": "X"
+        },
+        {
+          "cell": "C2",
+          "kind": "formula",
+          "cached": 10
+        },
+        {
+          "cell": "C6",
+          "kind": "formula",
+          "cached": 30
         }
       ]
     },
@@ -183,6 +307,37 @@
           "cell": "D4",
           "kind": "formula",
           "cached": 4.5
+        }
+      ]
+    },
+    {
+      "path": "fixtures/natural-earth-land/ne_110m_land.dbf",
+      "format": "dbf",
+      "origin": "real",
+      "sourceUrl": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/110m_physical/ne_110m_land.dbf",
+      "license": "Public domain (Natural Earth)",
+      "sha256": "db7cf6d2de2811df09bd7fcc6f243ab78a715b83571a0cb7b36b4e2af3297caa",
+      "counts": {
+        "cells": 381,
+        "formulas": 0,
+        "labels": 127,
+        "numbers": 254
+      },
+      "expectedValues": [
+        {
+          "cell": "1:featurecla",
+          "kind": "label",
+          "cached": "Land"
+        },
+        {
+          "cell": "8:scalerank",
+          "kind": "number",
+          "cached": 0
+        },
+        {
+          "cell": "10:min_zoom",
+          "kind": "number",
+          "cached": 0.5
         }
       ]
     }

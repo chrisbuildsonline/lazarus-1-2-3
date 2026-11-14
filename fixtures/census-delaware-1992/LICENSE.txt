@@ -1,0 +1,10 @@
+Source: https://www2.census.gov/govs/local/92stlde.wk1
+Author: U.S. Census Bureau
+License: US-Government-Work (public domain in the U.S., 17 U.S.C. 105)
+Redistribution: allowed
+Notes: Real WK1 file published by the Census Bureau, committed unchanged. Delaware state and local
+  government revenue and expenditure, 1991-92, in thousands of dollars. Aggregate statistics, no personal data.
+  No license file is published next to the file. The grant is statutory, 17 U.S.C. 105:
+  "Copyright protection under this title is not available for any work of the United States Government".
+  USA.gov (https://www.usa.gov/government-copyright) adds: "Government work is something created by a
+  U.S. government officer or employee as part of their official duties."
