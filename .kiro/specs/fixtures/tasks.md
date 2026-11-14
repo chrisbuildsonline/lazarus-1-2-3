@@ -28,7 +28,7 @@ Red first: write each test before the code that makes it pass. Run `bun run test
 ## CLI
 
 - [x] 12. Red: `tests/unit/cli/lazarus.test.ts` for `detectFormat` using bytes from the generator and a hand-built minimal DBF header: wk1, wks, dbf, unknown, empty file, and extension mismatch with `note`. Green: `src/cli/inventory.ts` (`detectFormat`). (Req 25, 26)
-- [ ] 13. Red: tests for `walk` and `inventoryFile` in a temp folder (nested dirs, sorted order, size, sha256 matches `node:crypto`), and `formatLine`. Green: implement them. (Req 22, 23)
+- [x] 13. Red: tests for `walk` and `inventoryFile` in a temp folder (nested dirs, sorted order, size, sha256 matches `node:crypto`), and `formatLine`. Green: implement them. (Req 22, 23)
 - [ ] 14. Red: tests that spawn `bun src/cli/lazarus.ts` on a temp folder: text output lines, `--json` stdout parses as the array with exactly the 4 keys, stderr carries the inventory-only notice, missing path exits 2, no argument exits 2 with usage, an `unknown` file still exits 0. Green: `src/cli/lazarus.ts` and the `lazarus` script in `package.json`. (Req 22 to 29)
 - [ ] 15. Run `bun run lazarus fixtures` and `--json` on the real corpus. Check every manifest sha256 appears with the matching format. Add a test for this cross-check (CLI output versus manifest). (Acceptance)
 - [ ] 16. Add the `src/cli` line to structure.md and a `lazarus` line to the README script list and tech.md command list. (Design: Layout)

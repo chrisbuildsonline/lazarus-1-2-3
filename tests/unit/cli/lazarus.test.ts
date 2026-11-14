@@ -1,11 +1,76 @@
-import { describe, expect, it } from "vitest";
+import { createHash } from "node:crypto";
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterAll, describe, expect, it } from "vitest";
 import { buildAll } from "../../../scripts/gen-fixtures.ts";
 import { writeWk1 } from "../../../scripts/lib/wk1-writer.ts";
-import { detectFormat } from "../../../src/cli/inventory.ts";
+import { detectFormat, formatLine, inventoryFile, walk } from "../../../src/cli/inventory.ts";
 import { SAMPLE_DBF } from "../helpers/dbf-sample.ts";
 
 const WK1 = buildAll().find((f) => f.path.endsWith("mixed.wk1"))!.bytes;
 const WKS = writeWk1(0x0404, [{ kind: "integer", col: 0, row: 0, value: 1 }]);
+const sha256 = (b: Uint8Array) => createHash("sha256").update(b).digest("hex");
+
+// Temp corpus: nested dirs, a mislabelled file, an unknown file and a symlink.
+const root = mkdtempSync(join(tmpdir(), "lazarus-cli-"));
+mkdirSync(join(root, "a", "y"), { recursive: true });
+writeFileSync(join(root, "b.wk1"), WK1);
+writeFileSync(join(root, "a", "z.dbf"), SAMPLE_DBF);
+writeFileSync(join(root, "a", "y", "x.wks"), WKS);
+writeFileSync(join(root, "c.txt"), "not a spreadsheet");
+writeFileSync(join(root, "d.dbf"), WK1);
+symlinkSync(join(root, "b.wk1"), join(root, "link.wk1"));
+afterAll(() => rmSync(root, { recursive: true, force: true }));
+
+async function collect(path: string): Promise<string[]> {
+  const out: string[] = [];
+  for await (const p of walk(path)) out.push(p);
+  return out;
+}
+
+describe("walk", () => {
+  it("lists files recursively in sorted order and skips symlinks", async () => {
+    expect(await collect(root)).toEqual(["a/y/x.wks", "a/z.dbf", "b.wk1", "c.txt", "d.dbf"].map((p) => join(root, p)));
+  });
+
+  it("yields a single file path as is", async () => {
+    expect(await collect(join(root, "b.wk1"))).toEqual([join(root, "b.wk1")]);
+  });
+});
+
+describe("inventoryFile", () => {
+  it("reports path, format, size and sha256", async () => {
+    expect(await inventoryFile(join(root, "a", "z.dbf"))).toEqual({
+      path: join(root, "a", "z.dbf"),
+      format: "dbf",
+      size: SAMPLE_DBF.length,
+      sha256: sha256(SAMPLE_DBF),
+    });
+  });
+
+  it("carries the note when the extension disagrees", async () => {
+    expect(await inventoryFile(join(root, "d.dbf"))).toEqual({
+      path: join(root, "d.dbf"),
+      format: "wk1",
+      size: WK1.length,
+      sha256: sha256(WK1),
+      note: "extension says dbf",
+    });
+  });
+});
+
+describe("formatLine", () => {
+  it("joins path, format, size and sha256 with tabs", () => {
+    expect(formatLine({ path: "f/x.wk1", format: "wk1", size: 12, sha256: "ab" })).toBe("f/x.wk1\twk1\t12\tab");
+  });
+
+  it("appends the extension note", () => {
+    expect(formatLine({ path: "d.dbf", format: "wk1", size: 1, sha256: "ab", note: "extension says dbf" })).toBe(
+      "d.dbf\twk1\t1\tab\t(extension says dbf)",
+    );
+  });
+});
 
 describe("detectFormat", () => {
   it("detects WK1 from a BOF with version 0x0406", () => {

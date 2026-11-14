@@ -1,7 +1,11 @@
 // Pure core of the lazarus CLI: format detection, folder walk, hashing, output lines.
 // Imports only node:* modules. Inventory only; nothing here parses cells.
+import { createHash } from "node:crypto";
+import { readFile, readdir, stat } from "node:fs/promises";
+import { extname, join } from "node:path";
 
 export type Format = "wk1" | "wks" | "dbf" | "unknown";
+export type Entry = { path: string; format: Format; size: number; sha256: string; note?: string };
 
 // BOF version word -> format. Confirmed from real fixtures: KSBASE.WK1 and 92stlde.wk1
 // carry 0x0406; testLotus123.wks and gnome647171-1.wks carry 0x0404. LibreOffice
@@ -33,4 +37,31 @@ export function detectFormat(bytes: Uint8Array, ext: string): { format: Format; 
     return { format, note: `extension says ${claimed}` };
   }
   return { format };
+}
+
+/** Files under `path` (or `path` itself if it is a file), depth-first in sorted name order. Symlinks inside folders are skipped. */
+export async function* walk(path: string): AsyncIterable<string> {
+  if (!(await stat(path)).isDirectory()) {
+    yield path;
+    return;
+  }
+  const entries = (await readdir(path, { withFileTypes: true })).sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+  for (const e of entries) {
+    if (e.isDirectory()) yield* walk(join(path, e.name));
+    else if (e.isFile()) yield join(path, e.name);
+  }
+}
+
+export async function inventoryFile(path: string): Promise<Entry> {
+  const bytes = new Uint8Array(await readFile(path));
+  return {
+    path,
+    ...detectFormat(bytes, extname(path)),
+    size: bytes.length,
+    sha256: createHash("sha256").update(bytes).digest("hex"),
+  };
+}
+
+export function formatLine(e: Entry): string {
+  return [e.path, e.format, e.size, e.sha256, ...(e.note ? [`(${e.note})`] : [])].join("\t");
 }
