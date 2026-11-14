@@ -1,5 +1,6 @@
+import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
@@ -57,6 +58,80 @@ describe("inventoryFile", () => {
       sha256: sha256(WK1),
       note: "extension says dbf",
     });
+  });
+});
+
+const NOTICE = "lazarus: inventory only. Parsing is not implemented yet.\n";
+const lazarus = (...args: string[]) => spawnSync("bun", ["src/cli/lazarus.ts", ...args], { encoding: "utf8" });
+const ROOT_FILES = ["a/y/x.wks", "a/z.dbf", "b.wk1", "c.txt", "d.dbf"].map((p) => join(root, p));
+
+describe("lazarus cli", () => {
+  it("prints one line per file in sorted order, the notice on stderr, and exits 0 with unknown files", async () => {
+    const run = lazarus(root);
+    const expected = await Promise.all(ROOT_FILES.map(async (p) => formatLine(await inventoryFile(p))));
+    expect(run.stdout).toBe(`${expected.join("\n")}\n`);
+    expect(run.stdout).toContain("\tunknown\t");
+    expect(run.stderr).toBe(NOTICE);
+    expect(run.status).toBe(0);
+  });
+
+  it("prints one line for a single file", () => {
+    const run = lazarus(join(root, "b.wk1"));
+    expect(run.stdout).toBe(`${join(root, "b.wk1")}\twk1\t${WK1.length}\t${sha256(WK1)}\n`);
+    expect(run.status).toBe(0);
+  });
+
+  it("prints only a JSON array with --json", () => {
+    const run = lazarus(root, "--json");
+    const parsed = JSON.parse(run.stdout) as Record<string, unknown>[];
+    expect(parsed.map((e) => e.path)).toEqual(ROOT_FILES);
+    for (const e of parsed) {
+      const keys = Object.keys(e).sort();
+      expect(keys).toEqual(e.path === join(root, "d.dbf") ? ["format", "note", "path", "sha256", "size"] : ["format", "path", "sha256", "size"]);
+    }
+    expect(parsed.find((e) => e.path === join(root, "a", "z.dbf"))).toEqual({
+      path: join(root, "a", "z.dbf"),
+      format: "dbf",
+      size: SAMPLE_DBF.length,
+      sha256: sha256(SAMPLE_DBF),
+    });
+    expect(run.stderr).toBe(NOTICE);
+    expect(run.status).toBe(0);
+  });
+
+  it("exits 2 with an error when the path does not exist", () => {
+    const run = lazarus(join(root, "missing"));
+    expect(run.status).toBe(2);
+    expect(run.stdout).toBe("");
+    expect(run.stderr).toContain("missing");
+  });
+
+  it("exits 2 with usage when no path is given", () => {
+    const run = lazarus();
+    expect(run.status).toBe(2);
+    expect(run.stdout).toBe("");
+    expect(run.stderr).toContain("usage: bun run lazarus <path> [--json]");
+  });
+
+  it("skips an unreadable file, reports it on stderr and exits 1", () => {
+    const dir = mkdtempSync(join(tmpdir(), "lazarus-cli-locked-"));
+    writeFileSync(join(dir, "a.wk1"), WK1);
+    writeFileSync(join(dir, "b.wk1"), WK1);
+    chmodSync(join(dir, "a.wk1"), 0o000);
+    const run = lazarus(dir);
+    rmSync(dir, { recursive: true, force: true });
+    expect(run.status).toBe(1);
+    expect(run.stdout).toBe(`${join(dir, "b.wk1")}\twk1\t${WK1.length}\t${sha256(WK1)}\n`);
+    expect(run.stderr).toContain(join(dir, "a.wk1"));
+  });
+
+  it("imports only node:crypto, node:fs, node:path and its own modules (no network, no React, no DOM)", () => {
+    for (const name of readdirSync("src/cli")) {
+      const source = readFileSync(join("src/cli", name), "utf8");
+      for (const [, spec] of source.matchAll(/from\s+"([^"]+)"/g)) {
+        expect(spec, `${name} imports ${spec}`).toMatch(/^(node:(crypto|fs|fs\/promises|path)|\.\/[\w-]+\.ts)$/);
+      }
+    }
   });
 });
 

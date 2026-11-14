@@ -11,7 +11,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "e2e": "playwright test",
-    "oracle": "bun scripts/oracle.ts"
+    "oracle": "bun scripts/oracle.ts",
+    "lazarus": "bun src/cli/lazarus.ts"
   },
   "dependencies": {
     "react": "^19.3.1",
