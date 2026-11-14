@@ -31,6 +31,7 @@ Scripts (`bun run <script>`):
 - `test:watch`: Vitest in watch mode
 - `e2e`: Playwright specs under `e2e/` (builds and previews the app)
 - `oracle`: start the lotus-oracle MCP server (prints "not built yet" until it exists)
+- `lazarus <path> [--json]`: inventory a file or folder, one line per file with path, format (wk1, wks, dbf or unknown), size and sha256. It does not parse cells yet. Example: `bun run lazarus fixtures`
 
 ## License
 
