@@ -17,13 +17,13 @@ Red first: write each test and watch it fail before the code that makes it pass.
 - [x] 8. Red: `decode-refs.test.ts`: absolute ref, relative ref with positive and negative offsets, `0xBFFB` (column -5) and `0xBFFF` (row -1) from the KSBASE-style words, mixed flags per axis, the origin at A1, at IV8192. Green: reference decoding with the sign-extension rules. (Req 21, 22)
 - [x] 9. Red: refs that resolve outside the grid on each of the four sides give `reference-out-of-grid` with the offset; wrong high bits give `reserved-bits-set` and still decode. Green: the grid and reserved-bit checks. (Req 23)
 - [x] 10. Red: range token cases: absolute corners, relative corners, mixed flags, a cut range. Green: range decoding. (Req 12, 21, 22)
-- [ ] 11. Red: `decode-operators.test.ts` for the binary operators in the table: operand order for subtract and divide, each comparison, AND, OR, concatenation. Green: binary operator decoding. (Req 14)
-- [ ] 12. Red: unary negate, unary plus, NOT, and the parentheses marker (kept as a `paren` node). Green: unary and paren decoding. (Req 14, 15)
-- [ ] 13. Red: `decode-functions.test.ts` for fixed-arity functions (IF with 3, ROUND with 2, ABS, INT, SQRT, MOD, DATE, NPV, PMT, PV, FV, NA, ERR, TRUE, FALSE, PI, NOW, RAND, VLOOKUP, HLOOKUP): argument order, and stack underflow with one operand too few. Green: function decoding. Use only opcodes that task 2 recorded. (Req 16, 17, 41)
-- [ ] 14. Red: variable-arity functions (SUM, AVG, COUNT, MIN, MAX, CHOOSE) with count 0, 1, 2 and 255, a missing count byte, a count larger than the stack. Green: count-byte reading. (Req 16, 41)
-- [ ] 15. Red: unknown opcode gives `unknown-opcode` with the opcode and offset in the message and in `unknown`, nothing after it is read, and a candidate opcode gives `unconfirmed-opcode` once per opcode and still decodes. Green: unknown and candidate handling. (Req 18, 39)
-- [ ] 16. Red: truncation sweep. For a good formula built from literal bytes, cut it at every length from 0 to length-1: never throws, always `unverifiable`-shaped (error, `ast` null). Stack tests: two nodes at return gives `stack-imbalance` with the depth. Green: fix whatever fails. (Req 8, 40 to 42)
-- [ ] 17. Red: a chain of 257 nested negates gives `nesting-too-deep`; 256 decodes. Green: depth tracking in the decoder. (Req 20)
+- [x] 11. Red: `decode-operators.test.ts` for the binary operators in the table: operand order for subtract and divide, each comparison, AND, OR, concatenation. Green: binary operator decoding. (Req 14)
+- [x] 12. Red: unary negate, unary plus, NOT, and the parentheses marker (kept as a `paren` node). Green: unary and paren decoding. (Req 14, 15)
+- [x] 13. Red: `decode-functions.test.ts` for fixed-arity functions (IF with 3, ROUND with 2, ABS, INT, SQRT, MOD, DATE, NPV, PMT, PV, FV, NA, ERR, TRUE, FALSE, PI, NOW, RAND, VLOOKUP, HLOOKUP): argument order, and stack underflow with one operand too few. Green: function decoding. Use only opcodes that task 2 recorded. (Req 16, 17, 41)
+- [x] 14. Red: variable-arity functions (SUM, AVG, COUNT, MIN, MAX, CHOOSE) with count 0, 1, 2 and 255, a missing count byte, a count larger than the stack. Green: count-byte reading. (Req 16, 41)
+- [x] 15. Red: unknown opcode gives `unknown-opcode` with the opcode and offset in the message and in `unknown`, nothing after it is read, and a candidate opcode gives `unconfirmed-opcode` once per opcode and still decodes. Green: unknown and candidate handling. (Req 18, 39)
+- [x] 16. Red: truncation sweep. For a good formula built from literal bytes, cut it at every length from 0 to length-1: never throws, always `unverifiable`-shaped (error, `ast` null). Stack tests: two nodes at return gives `stack-imbalance` with the depth. Green: fix whatever fails. (Req 8, 40 to 42)
+- [x] 17. Red: a chain of 257 nested negates gives `nesting-too-deep`; 256 decodes. Green: depth tracking in the decoder. (Req 20)
 
 ## Translation and printing
 

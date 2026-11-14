@@ -1,9 +1,9 @@
 // decodeRpn: a stack machine over the RPN bytes of one FORMULA cell. One forward pass, no
 // recursion; every iteration reads at least one byte, so it ends on any input.
 import { ByteReader } from "../parser/index.ts";
-import type { Expr, Origin, Ref } from "./ast.ts";
+import { MAX_DEPTH, type Expr, type Origin, type Ref } from "./ast.ts";
 import { diag, type FormulaDiagnostic } from "./diagnostics.ts";
-import { OPCODE_TABLE, type OperandName } from "./opcodes.ts";
+import { OPCODE_TABLE, type OpcodeEntry, type OperandName } from "./opcodes.ts";
 
 export type DecodeResult = {
   ast: Expr | null;
@@ -102,18 +102,75 @@ export function decodeRpn(rpn: Uint8Array, origin: Origin): DecodeResult {
     }
   };
 
+  // depths[i] is the nesting depth of stack[i]: 0 for an operand, 1 + deepest child otherwise.
+  const depths: number[] = [];
+  const warned = new Set<number>();
+
   for (;;) {
     const at = reader.pos;
     const op = reader.u8();
     if (op === null) return fail(diag("truncated-stream", "error", at, "formula ends without a return token"));
     const entry = OPCODE_TABLE.get(op);
-    if (!entry) return fail(diag("unknown-opcode", "error", at, "opcode not in the table", op));
+    if (!entry) {
+      // Operand length is unknown, so nothing after this byte can be read safely.
+      const result = fail(diag("unknown-opcode", "error", at, "opcode not in the table; decoding stops here", op));
+      return { ...result, unknown: { opcode: op, offset: at } };
+    }
+    if (entry.status === "candidate" && !warned.has(op)) {
+      warned.add(op);
+      diagnostics.push(diag("unconfirmed-opcode", "warning", at, `opcode read as ${describe(entry)} from written references only, not yet seen in a real fixture`, op));
+    }
 
+    /** Pops n nodes in written order, or null on underflow. */
+    const pop = (n: number): { nodes: Expr[]; depth: number } | null => {
+      if (stack.length < n) return null;
+      const nodes = stack.splice(stack.length - n, n);
+      const depth = n === 0 ? -1 : Math.max(...depths.splice(depths.length - n, n));
+      return { nodes, depth };
+    };
+    const underflow = (n: number) =>
+      fail(diag("stack-underflow", "error", at, `token needs ${n} operands, the stack holds ${stack.length}`, op));
+    const push = (node: Expr, depth: number): DecodeResult | null => {
+      if (depth > MAX_DEPTH) return fail(diag("nesting-too-deep", "error", at, `formula nests deeper than ${MAX_DEPTH} levels`, op));
+      stack.push(node);
+      depths.push(depth);
+      return null;
+    };
+
+    let stop: DecodeResult | null = null;
     switch (entry.kind) {
       case "operand": {
         const node = readOperand(entry.name, at, op);
         if (isFault(node)) return fail(diag(node.code, "error", at, node.message, op));
-        stack.push(node);
+        stop = push(node, 0);
+        break;
+      }
+      case "unary":
+      case "paren": {
+        const p = pop(1);
+        if (!p) return underflow(1);
+        const arg = p.nodes[0]!;
+        stop = push(entry.kind === "paren" ? { type: "paren", inner: arg } : { type: "unary", op: entry.op, arg }, p.depth + 1);
+        break;
+      }
+      case "binary": {
+        const p = pop(2);
+        if (!p) return underflow(2);
+        stop = push({ type: "binary", op: entry.op, left: p.nodes[0]!, right: p.nodes[1]! }, p.depth + 1);
+        break;
+      }
+      case "function": {
+        let n: number;
+        if (entry.arity === "variable") {
+          const count = reader.u8();
+          if (count === null) return fail(diag("truncated-stream", "error", at, "stream ends before the argument count byte", op));
+          n = count;
+        } else {
+          n = entry.arity;
+        }
+        const p = pop(n);
+        if (!p) return underflow(n);
+        stop = push({ type: "call", name: entry.name, args: p.nodes }, p.depth + 1);
         break;
       }
       case "return": {
@@ -124,8 +181,20 @@ export function decodeRpn(rpn: Uint8Array, origin: Origin): DecodeResult {
         if (rest > 0) diagnostics.push(diag("trailing-bytes", "info", reader.pos, `${rest} bytes after the return token`));
         return { ast: stack[0]!, diagnostics, unknown: null, bytesRead: reader.pos };
       }
-      default:
-        return fail(diag("unknown-opcode", "error", at, "opcode not in the table", op));
     }
+    if (stop) return stop;
+  }
+}
+
+function describe(entry: OpcodeEntry): string {
+  switch (entry.kind) {
+    case "operand":
+    case "function":
+      return entry.name;
+    case "unary":
+    case "binary":
+      return entry.op;
+    default:
+      return entry.kind;
   }
 }
