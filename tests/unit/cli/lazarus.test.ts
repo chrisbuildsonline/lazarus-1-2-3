@@ -125,6 +125,18 @@ describe("lazarus cli", () => {
     expect(run.stderr).toContain(join(dir, "a.wk1"));
   });
 
+  it("agrees with fixtures/manifest.json on every corpus file's format and sha256", () => {
+    const run = lazarus("fixtures", "--json");
+    expect(run.status).toBe(0);
+    const listed = JSON.parse(run.stdout) as { path: string; format: string; sha256: string; note?: string }[];
+    const manifest = JSON.parse(readFileSync("fixtures/manifest.json", "utf8")) as { fixtures: { path: string; format: string; sha256: string }[] };
+    const corpus = listed.filter((e) => e.format !== "unknown");
+    expect(corpus.map(({ path, format, sha256 }) => ({ path, format, sha256 }))).toEqual(
+      manifest.fixtures.map(({ path, format, sha256 }) => ({ path, format, sha256 })),
+    );
+    expect(listed.filter((e) => e.note)).toEqual([]);
+  });
+
   it("imports only node:crypto, node:fs, node:path and its own modules (no network, no React, no DOM)", () => {
     for (const name of readdirSync("src/cli")) {
       const source = readFileSync(join("src/cli", name), "utf8");
