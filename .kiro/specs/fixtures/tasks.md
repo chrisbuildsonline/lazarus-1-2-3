@@ -9,7 +9,7 @@ Red first: write each test before the code that makes it pass. Run `bun run test
 
 ## WK1 writer and manifest guard
 
-- [ ] 3. Red: `tests/unit/helpers/wk1-scan.ts` is a test helper, so first write `tests/unit/fixtures/wk1-scan.test.ts` with a hand-written byte array (BOF, one INTEGER, one NUMBER, one LABEL, one FORMULA, EOF) and expected counts. Then write the helper (record walker returning counts and cells, bounds-checked, no throw on truncation). (Req 17)
+- [x] 3. Red: `tests/unit/helpers/wk1-scan.ts` is a test helper, so first write `tests/unit/fixtures/wk1-scan.test.ts` with a hand-written byte array (BOF, one INTEGER, one NUMBER, one LABEL, one FORMULA, EOF) and expected counts. Then write the helper (record walker returning counts and cells, bounds-checked, no throw on truncation). (Req 17)
 - [ ] 4. Red: `tests/unit/fixtures/manifest.test.ts` against an empty manifest `{ "version": 1, "fixtures": [] }`. It fails on the minimum count, origin mix, license and unlisted-file checks. Then add the checks listed in design.md (exists, sha256, LICENSE.txt keys, unlisted files, counts, expected values). (Req 10, 15, 16, 17)
 - [ ] 5. Red: `tests/unit/fixtures/gen-fixtures.test.ts` for the writer: BOF/EOF framing, DIMENSIONS, INTEGER, NUMBER, LABEL with `'`, `"`, `^`, FORMULA with cached double, little-endian layout, and `buildAll()` deterministic across two calls. Green: `scripts/lib/wk1-writer.ts`. (Req 5, 6, 7, 18)
 
