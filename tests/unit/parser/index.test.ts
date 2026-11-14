@@ -7,8 +7,13 @@ import { concat } from "../helpers/bytes.ts";
 describe("src/parser public exports", () => {
   it("exports the parser and helpers", () => {
     expect(Object.keys(parser).sort()).toEqual(
-      ["MAX_DIAGNOSTICS", "a1", "cellKey", "cellsInRowMajorOrder", "getCell", "parseA1", "parseWk1"].sort(),
+      ["ByteReader", "MAX_DIAGNOSTICS", "a1", "cellKey", "cellsInRowMajorOrder", "getCell", "parseA1", "parseWk1"].sort(),
     );
+  });
+
+  it("exports the bounds-checked ByteReader for the formula decoder", () => {
+    const reader = new parser.ByteReader(new Uint8Array([0x34, 0x12]));
+    expect([reader.u16(), reader.u8()]).toEqual([0x1234, null]);
   });
 
   it("works end to end through the index", () => {
