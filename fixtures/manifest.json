@@ -33,6 +33,42 @@
       ]
     },
     {
+      "path": "fixtures/dates/dates.wk1",
+      "format": "wk1",
+      "origin": "synthetic",
+      "sourceUrl": null,
+      "license": "MIT",
+      "sha256": "86716367a19673697b9b290d15cfdca793398aaad6acc3f384a761021578d1fb",
+      "counts": {
+        "cells": 16,
+        "formulas": 1,
+        "labels": 8,
+        "numbers": 7
+      },
+      "expectedValues": [
+        {
+          "cell": "A3",
+          "kind": "integer",
+          "cached": 60
+        },
+        {
+          "cell": "A5",
+          "kind": "number",
+          "cached": 60
+        },
+        {
+          "cell": "A6",
+          "kind": "number",
+          "cached": 36585
+        },
+        {
+          "cell": "A8",
+          "kind": "formula",
+          "cached": 36586
+        }
+      ]
+    },
+    {
       "path": "fixtures/formulas/formulas.wk1",
       "format": "wk1",
       "origin": "synthetic",
@@ -106,6 +142,47 @@
           "cell": "A2",
           "kind": "label",
           "cached": ""
+        }
+      ]
+    },
+    {
+      "path": "fixtures/mixed/mixed.wk1",
+      "format": "wk1",
+      "origin": "synthetic",
+      "sourceUrl": null,
+      "license": "MIT",
+      "sha256": "1fe3425f6660e1a5d53606083119bd5f3abfdefaee6900dd7164132f8255096f",
+      "counts": {
+        "cells": 15,
+        "formulas": 4,
+        "labels": 7,
+        "numbers": 4
+      },
+      "expectedValues": [
+        {
+          "cell": "A2",
+          "kind": "label",
+          "cached": "Apples"
+        },
+        {
+          "cell": "B2",
+          "kind": "integer",
+          "cached": 3
+        },
+        {
+          "cell": "C2",
+          "kind": "number",
+          "cached": 0.5
+        },
+        {
+          "cell": "D2",
+          "kind": "formula",
+          "cached": 1.5
+        },
+        {
+          "cell": "D4",
+          "kind": "formula",
+          "cached": 4.5
         }
       ]
     }

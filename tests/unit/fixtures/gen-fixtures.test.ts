@@ -38,6 +38,25 @@ describe("buildAll", () => {
     expect(f!.manifestEntry.expectedValues.filter((v) => v.kind === "formula").length).toBeGreaterThanOrEqual(3);
   });
 
+  it("writes date serials 1, 59, 60, 61 and a leap day, plus a formula with a date cached value", () => {
+    const f = first.find((x) => x.path === "fixtures/dates/dates.wk1");
+    expect(f).toBeDefined();
+    const cells = scanWk1(f!.bytes).cells;
+    const stored = (kind: string) => cells.filter((c) => c.kind === kind).map((c) => c.value);
+    expect(stored("integer")).toEqual(expect.arrayContaining([1, 59, 60, 61]));
+    expect(stored("number")).toEqual(expect.arrayContaining([60, 36585])); // 36585 = 2000-02-29
+    expect(stored("formula")).toContain(36586);
+    expect(f!.manifestEntry.expectedValues).toContainEqual({ cell: "A3", kind: "integer", cached: 60 });
+  });
+
+  it("has a mixed file with every cell record kind and all three label prefixes", () => {
+    const f = first.find((x) => x.path === "fixtures/mixed/mixed.wk1");
+    expect(f).toBeDefined();
+    const cells = scanWk1(f!.bytes).cells;
+    expect(new Set(cells.map((c) => c.kind))).toEqual(new Set(["integer", "number", "label", "formula"]));
+    expect(new Set(cells.flatMap((c) => (c.kind === "label" ? [c.prefix] : [])))).toEqual(new Set(["'", '"', "^"]));
+  });
+
   it("ends every RPN stream with the return token", () => {
     for (const f of first) {
       const view = new DataView(f.bytes.buffer, f.bytes.byteOffset, f.bytes.byteLength);

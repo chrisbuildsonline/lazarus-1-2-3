@@ -98,4 +98,52 @@ export const SPECS: FixtureSpec[] = [
     ],
     expect: ["A2", "C2", "A3", "B3", "C3"],
   },
+  {
+    // Date serials stored as plain numbers (1900-01-01 = 1, serial 60 is the
+    // nonexistent 1900-02-29). Column B says what each serial means.
+    name: "dates",
+    version: WK1_VERSION,
+    cells: [
+      int(0, 0, 1),
+      lbl(1, 0, "'", "1900-01-01"),
+      int(0, 1, 59),
+      lbl(1, 1, "'", "1900-02-28"),
+      int(0, 2, 60),
+      lbl(1, 2, "'", "1900-02-29, a day that never existed"),
+      int(0, 3, 61),
+      lbl(1, 3, "'", "1900-03-01"),
+      num(0, 4, 60),
+      lbl(1, 4, "'", "serial 60 again, stored as a NUMBER record"),
+      num(0, 5, 36585),
+      lbl(1, 5, "'", "2000-02-29, leap day"),
+      num(0, 6, 45351.5),
+      lbl(1, 6, "'", "2024-02-29 at noon"),
+      fml(0, 7, 36586, [...ref(0, -2), INT, ...u16(1), ADD]), // A8: +A6+1
+      lbl(1, 7, "'", "2000-03-01, the day after the leap day"),
+    ],
+    expect: ["A3", "A5", "A6", "A8"],
+  },
+  {
+    // Small sheet with every cell record kind; the main smoke input.
+    name: "mixed",
+    version: WK1_VERSION,
+    cells: [
+      lbl(0, 0, "'", "Item"),
+      lbl(1, 0, '"', "Qty"),
+      lbl(2, 0, '"', "Price"),
+      lbl(3, 0, "^", "Total"),
+      lbl(0, 1, "'", "Apples"),
+      int(1, 1, 3),
+      num(2, 1, 0.5),
+      fml(3, 1, 1.5, [...ref(-2, 0), ...ref(-1, 0), MUL]), // D2: +B2*C2
+      lbl(0, 2, "'", "Pears"),
+      int(1, 2, 4),
+      num(2, 2, 0.75),
+      fml(3, 2, 3, [...ref(-2, 0), ...ref(-1, 0), MUL]), // D3: +B3*C3
+      lbl(0, 3, "'", "Total"),
+      fml(1, 3, 7, [...range(0, -2, 0, -1), SUM, 1]), // B4: @SUM(B2..B3)
+      fml(3, 3, 4.5, [...range(0, -2, 0, -1), SUM, 1]), // D4: @SUM(D2..D3)
+    ],
+    expect: ["A2", "B2", "C2", "D2", "D4"],
+  },
 ];
