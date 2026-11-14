@@ -3,7 +3,7 @@
 
 import { DiagnosticSink, type Diagnostic } from "./diagnostics.ts";
 import { ByteReader } from "./reader.ts";
-import type { Sheet } from "./sheet.ts";
+import { cellKey, type Cell, type Sheet } from "./sheet.ts";
 
 export type Wk1Stats = {
   records: number;
@@ -21,12 +21,37 @@ export type Wk1ParseResult = { sheet: Sheet; diagnostics: Diagnostic[]; stats: W
 const BOF = 0x0000;
 const EOF = 0x0001;
 const DIMENSIONS = 0x0006;
+const INTEGER = 0x000d;
+const NUMBER = 0x000e;
+
+/** Cell opcodes, their names and the smallest body that holds a cell. */
+const CELL_RECORDS = new Map<number, { name: string; needs: number }>([
+  [INTEGER, { name: "INTEGER", needs: 7 }],
+  [NUMBER, { name: "NUMBER", needs: 13 }],
+]);
 
 const VERSION_WKS = 0x0404;
 const VERSION_WK1 = 0x0406;
 
 function hex(n: number): string {
   return `0x${n.toString(16).padStart(4, "0")}`;
+}
+
+/** Decodes a cell body: format u8 (not modelled), col u16, row u16, then the value. Null if short. */
+function decodeCell(opcode: number, body: ByteReader): Cell | null {
+  const format = body.u8();
+  const col = body.u16();
+  const row = body.u16();
+  if (format === null || col === null || row === null) return null;
+  if (opcode === INTEGER) {
+    const value = body.i16();
+    return value === null ? null : { kind: "integer", col, row, value };
+  }
+  if (opcode === NUMBER) {
+    const value = body.f64();
+    return value === null ? null : { kind: "number", col, row, value };
+  }
+  return null;
 }
 
 export function parseWk1(bytes: Uint8Array): Wk1ParseResult {
@@ -104,6 +129,18 @@ export function parseWk1(bytes: Uint8Array): Wk1ParseResult {
         continue;
       }
       sheet.declaredDimensions = { firstCol, firstRow, lastCol, lastRow };
+    } else {
+      const cellRecord = CELL_RECORDS.get(opcode);
+      if (cellRecord) {
+        const cell = decodeCell(opcode, body);
+        if (cell === null) {
+          shortRecord(cellRecord.name, cellRecord.needs);
+          continue;
+        }
+        stats.cells++;
+        if (cell.kind === "integer" || cell.kind === "number") stats.numbers++;
+        sheet.cells.set(cellKey(cell.col, cell.row), cell);
+      }
     }
   }
 

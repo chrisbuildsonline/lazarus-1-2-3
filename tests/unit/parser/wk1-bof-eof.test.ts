@@ -46,6 +46,11 @@ describe("parseWk1 BOF and EOF", () => {
       expect(warning).toMatchObject({ severity: "warning", offset: 0 });
       expect(warning?.message).toContain(hex);
     });
+
+    it(`still parses an INTEGER after version ${hex}`, () => {
+      const { sheet } = parseWk1(concat(bof(version), integer(2, 3, -7), eof()));
+      expect(sheet.cells.get(3 * 65536 + 2)).toEqual({ kind: "integer", col: 2, row: 3, value: -7 });
+    });
   }
 
   it("reports missing-bof when the first record is not BOF and still parses from offset 0", () => {

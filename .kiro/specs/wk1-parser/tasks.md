@@ -13,8 +13,8 @@ Red first: write each test and watch it fail before the code that makes it pass.
 
 - [x] 5. Red: `wk1-bof-eof.test.ts` with the cases listed in design.md (0x0404, 0x0406, 0x0405, 0x1234, no BOF, short BOF, no EOF, trailing bytes). Green: `parseWk1` record loop in `src/parser/wk1.ts`, BOF and EOF decoding, `Wk1ParseResult` and stats. (Req 1, 4, 11 to 17, 35)
 - [x] 6. Red: `wk1-dimensions.test.ts`. Green: DIMENSIONS decoder. (Req 18)
-- [ ] 7. Red: `wk1-integer.test.ts`. Green: INTEGER decoder. (Req 19)
-- [ ] 8. Red: `wk1-number.test.ts` with exact-bit checks (0.1, -2.5, max double). Green: NUMBER decoder. (Req 20)
+- [x] 7. Red: `wk1-integer.test.ts`. Green: INTEGER decoder. (Req 19)
+- [x] 8. Red: `wk1-number.test.ts` with exact-bit checks (0.1, -2.5, max double). Green: NUMBER decoder. (Req 20)
 - [ ] 9. Red: `wk1-label.test.ts` covering the five prefixes, an unknown prefix, empty label, high bytes, no NUL, short body. Green: LABEL decoder with the manual Latin-1 loop. (Req 21 to 23)
 - [ ] 10. Red: `wk1-formula.test.ts` covering exact cached double, exact RPN bytes, RPN is a copy, `rpnLen` 0, overrun gives `short-record`, no RPN decoding. Green: FORMULA decoder. (Req 3, 24 to 26)
 - [ ] 11. Red: `wk1-skip.test.ts` for unknown opcodes, per-record counts, one info diagnostic per distinct opcode, parsing continues, 0xFFFF length gives `truncated-record`. Green: skip path. (Req 7, 28, 29)
