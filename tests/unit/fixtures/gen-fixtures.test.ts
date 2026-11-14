@@ -1,10 +1,59 @@
 import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { buildAll } from "../../../scripts/gen-fixtures.ts";
+import { LICENSE_TEXT, buildAll } from "../../../scripts/gen-fixtures.ts";
 import { bof, dimensions, eof, formula, integer, label, number, writeWk1 } from "../../../scripts/lib/wk1-writer.ts";
-import { scanWk1 } from "../helpers/wk1-scan.ts";
+import { a1, scanWk1 } from "../helpers/wk1-scan.ts";
 
 const bytes = (u: Uint8Array) => [...u];
+
+function formulaRecords(file: Uint8Array): { col: number; row: number; cached: number; rpn: Uint8Array }[] {
+  const view = new DataView(file.buffer, file.byteOffset, file.byteLength);
+  const out = [];
+  for (let pos = 0; pos + 4 <= file.length; pos += 4 + view.getUint16(pos + 2, true)) {
+    if (view.getUint16(pos, true) !== 0x0010) continue;
+    const body = pos + 4;
+    out.push({
+      col: view.getUint16(body + 1, true),
+      row: view.getUint16(body + 3, true),
+      cached: view.getFloat64(body + 5, true),
+      rpn: file.subarray(body + 15, body + 15 + view.getUint16(body + 13, true)),
+    });
+  }
+  return out;
+}
+
+// Independent evaluator for the opcodes the synthetic specs use. Relative references set
+// bit 15 and store a signed offset in the low 14 bits.
+function evalRpn(rpn: Uint8Array, col: number, row: number, valueAt: (col: number, row: number) => number): number {
+  const view = new DataView(rpn.buffer, rpn.byteOffset, rpn.byteLength);
+  const coord = (here: number, w: number) => (w & 0x8000 ? here + ((w << 18) >> 18) : w & 0x3fff);
+  const word = (p: number) => view.getUint16(p, true);
+  const stack: number[][] = [];
+  const pop = () => stack.pop() ?? [];
+  for (let p = 0; p < rpn.length; ) {
+    const op = rpn[p++];
+    if (op === 0x00) (stack.push([view.getFloat64(p, true)]), (p += 8));
+    else if (op === 0x01) (stack.push([valueAt(coord(col, word(p)), coord(row, word(p + 2)))]), (p += 4));
+    else if (op === 0x02) {
+      const [c1, r1, c2, r2] = [coord(col, word(p)), coord(row, word(p + 2)), coord(col, word(p + 4)), coord(row, word(p + 6))];
+      const values = [];
+      for (let r = r1; r <= r2; r++) for (let c = c1; c <= c2; c++) values.push(valueAt(c, r));
+      stack.push(values);
+      p += 8;
+    } else if (op === 0x03) return pop()[0] ?? NaN;
+    else if (op === 0x05) (stack.push([view.getInt16(p, true)]), (p += 2));
+    else if (op === 0x09 || op === 0x0b) {
+      const b = pop()[0] ?? NaN;
+      const a = pop()[0] ?? NaN;
+      stack.push([op === 0x09 ? a + b : a * b]);
+    } else if (op === 0x50) {
+      const args = Array.from({ length: rpn[p++] ?? 0 }, pop);
+      stack.push([args.flat().reduce((s, v) => s + v, 0)]);
+    } else if (op !== 0x04) throw new Error(`unexpected opcode ${op}`);
+  }
+  throw new Error("no return token");
+}
 
 describe("buildAll", () => {
   const first = buildAll();
@@ -55,6 +104,27 @@ describe("buildAll", () => {
     const cells = scanWk1(f!.bytes).cells;
     expect(new Set(cells.map((c) => c.kind))).toEqual(new Set(["integer", "number", "label", "formula"]));
     expect(new Set(cells.flatMap((c) => (c.kind === "label" ? [c.prefix] : [])))).toEqual(new Set(["'", '"', "^"]));
+  });
+
+  it("has RPN streams that evaluate to their cached values", () => {
+    let checked = 0;
+    for (const f of first) {
+      const cells = scanWk1(f.bytes).cells;
+      const valueAt = (col: number, row: number) => {
+        const c = cells.find((x) => x.cell === a1(col, row));
+        if (!c || typeof c.value !== "number") throw new Error(`${f.path}: no number at ${a1(col, row)}`);
+        return c.value;
+      };
+      for (const { col, row, cached, rpn } of formulaRecords(f.bytes)) {
+        expect(evalRpn(rpn, col, row, valueAt), `${f.path} ${a1(col, row)}`).toBe(cached);
+        checked++;
+      }
+    }
+    expect(checked).toBe(11); // formulas 6, dates 1, mixed 4
+  });
+
+  it("writes the committed LICENSE.txt next to every synthetic file", () => {
+    for (const f of first) expect(readFileSync(join(dirname(f.path), "LICENSE.txt"), "utf8"), f.path).toBe(LICENSE_TEXT);
   });
 
   it("ends every RPN stream with the return token", () => {

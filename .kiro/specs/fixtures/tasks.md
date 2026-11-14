@@ -35,4 +35,4 @@ Red first: write each test before the code that makes it pass. Run `bun run test
 
 ## Gate
 
-- [ ] 17. Run `bun run typecheck` and `bun run test`, both exit 0. Run `bun scripts/gen-fixtures.ts` once more and check `git status` shows no change to fixtures. (Acceptance)
+- [x] 17. Run `bun run typecheck` and `bun run test`, both exit 0. Run `bun scripts/gen-fixtures.ts` once more and check `git status` shows no change to fixtures. (Acceptance)

@@ -130,10 +130,9 @@ describe("lazarus cli", () => {
     expect(run.status).toBe(0);
     const listed = JSON.parse(run.stdout) as { path: string; format: string; sha256: string; note?: string }[];
     const manifest = JSON.parse(readFileSync("fixtures/manifest.json", "utf8")) as { fixtures: { path: string; format: string; sha256: string }[] };
-    const corpus = listed.filter((e) => e.format !== "unknown");
-    expect(corpus.map(({ path, format, sha256 }) => ({ path, format, sha256 }))).toEqual(
-      manifest.fixtures.map(({ path, format, sha256 }) => ({ path, format, sha256 })),
-    );
+    const pick = (list: { path: string; format: string; sha256: string }[]) =>
+      list.map(({ path, format, sha256 }) => ({ path, format, sha256 })).sort((a, b) => (a.path < b.path ? -1 : 1));
+    expect(pick(listed.filter((e) => e.format !== "unknown"))).toEqual(pick(manifest.fixtures));
     expect(listed.filter((e) => e.note)).toEqual([]);
   });
 

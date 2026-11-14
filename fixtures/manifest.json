@@ -37,7 +37,7 @@
       "format": "wk1",
       "origin": "real",
       "sourceUrl": "https://www2.census.gov/govs/local/92stlde.wk1",
-      "license": "US-Government-Work (public domain, 17 U.S.C. 105)",
+      "license": "US-Government-Work (public domain in the U.S., 17 U.S.C. 105)",
       "sha256": "90cd1e1a9cc970250c129858aeed50f5bfef253c3aabd228f63b1037b7f5802b",
       "counts": {
         "cells": 357,
@@ -315,7 +315,7 @@
       "format": "dbf",
       "origin": "real",
       "sourceUrl": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/110m_physical/ne_110m_land.dbf",
-      "license": "Public domain (Natural Earth)",
+      "license": "Public domain",
       "sha256": "db7cf6d2de2811df09bd7fcc6f243ab78a715b83571a0cb7b36b4e2af3297caa",
       "counts": {
         "cells": 381,
