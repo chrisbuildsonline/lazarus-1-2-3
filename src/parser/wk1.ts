@@ -3,7 +3,8 @@
 
 import { DiagnosticSink, type Diagnostic } from "./diagnostics.ts";
 import { ByteReader } from "./reader.ts";
-import { cellKey, type Cell, type Sheet } from "./sheet.ts";
+import { a1 } from "./address.ts";
+import { cellKey, type Cell, type LabelPrefix, type Sheet } from "./sheet.ts";
 
 export type Wk1Stats = {
   records: number;
@@ -23,12 +24,17 @@ const EOF = 0x0001;
 const DIMENSIONS = 0x0006;
 const INTEGER = 0x000d;
 const NUMBER = 0x000e;
+const LABEL = 0x000f;
+const FORMULA = 0x0010;
 
-/** Cell opcodes, their names and the smallest body that holds a cell. */
-const CELL_RECORDS = new Map<number, { name: string; needs: number }>([
-  [INTEGER, { name: "INTEGER", needs: 7 }],
-  [NUMBER, { name: "NUMBER", needs: 13 }],
+const CELL_RECORDS = new Map<number, string>([
+  [INTEGER, "INTEGER"],
+  [NUMBER, "NUMBER"],
+  [LABEL, "LABEL"],
+  [FORMULA, "FORMULA"],
 ]);
+
+const LABEL_PREFIXES: ReadonlySet<string> = new Set<LabelPrefix>(["'", '"', "^", "\\", "|"]);
 
 const VERSION_WKS = 0x0404;
 const VERSION_WK1 = 0x0406;
@@ -51,7 +57,31 @@ function decodeCell(opcode: number, body: ByteReader): Cell | null {
     const value = body.f64();
     return value === null ? null : { kind: "number", col, row, value };
   }
+  if (opcode === LABEL) {
+    const prefix = body.u8();
+    return prefix === null ? null : { kind: "label", col, row, prefix: String.fromCharCode(prefix), text: latin1UpToNul(body) };
+  }
+  if (opcode === FORMULA) {
+    const cached = body.f64();
+    const rpnLen = body.u16();
+    const rpn = rpnLen === null ? null : body.slice(rpnLen);
+    return cached === null || rpn === null ? null : { kind: "formula", col, row, cached, rpn };
+  }
   return null;
+}
+
+/** Bytes up to the first 0x00 or the end, one char per byte. No TextDecoder, so every runtime agrees. */
+function latin1UpToNul(body: ByteReader): string {
+  let text = "";
+  let chunk: number[] = [];
+  for (let b = body.u8(); b !== null && b !== 0; b = body.u8()) {
+    chunk.push(b);
+    if (chunk.length === 4096) {
+      text += String.fromCharCode(...chunk);
+      chunk = [];
+    }
+  }
+  return text + String.fromCharCode(...chunk);
 }
 
 export function parseWk1(bytes: Uint8Array): Wk1ParseResult {
@@ -107,13 +137,13 @@ export function parseWk1(bytes: Uint8Array): Wk1ParseResult {
       }
       break;
     }
-    const shortRecord = (name: string, needs: number) =>
-      sink.add({ severity: "error", code: "short-record", offset, opcode, message: `${name} body is ${length} bytes, needs ${needs}` });
+    const shortRecord = (name: string) =>
+      sink.add({ severity: "error", code: "short-record", offset, opcode, message: `${name} body of ${length} bytes is too short` });
 
     if (opcode === BOF && first) {
       const version = body.u16();
       if (version === null) {
-        shortRecord("BOF", 2);
+        shortRecord("BOF");
         continue;
       }
       sheet.version = version;
@@ -125,20 +155,33 @@ export function parseWk1(bytes: Uint8Array): Wk1ParseResult {
     } else if (opcode === DIMENSIONS) {
       const [firstCol, firstRow, lastCol, lastRow] = [body.u16(), body.u16(), body.u16(), body.u16()];
       if (firstCol === null || firstRow === null || lastCol === null || lastRow === null) {
-        shortRecord("DIMENSIONS", 8);
+        shortRecord("DIMENSIONS");
         continue;
       }
       sheet.declaredDimensions = { firstCol, firstRow, lastCol, lastRow };
     } else {
-      const cellRecord = CELL_RECORDS.get(opcode);
-      if (cellRecord) {
+      const cellName = CELL_RECORDS.get(opcode);
+      if (cellName) {
         const cell = decodeCell(opcode, body);
         if (cell === null) {
-          shortRecord(cellRecord.name, cellRecord.needs);
+          shortRecord(cellName);
           continue;
         }
         stats.cells++;
         if (cell.kind === "integer" || cell.kind === "number") stats.numbers++;
+        if (cell.kind === "formula") stats.formulas++;
+        if (cell.kind === "label") {
+          stats.labels++;
+          if (!LABEL_PREFIXES.has(cell.prefix)) {
+            sink.add({
+              severity: "warning",
+              code: "unknown-label-prefix",
+              offset,
+              opcode,
+              message: `label at ${a1(cell.col, cell.row)} has prefix byte ${hex(cell.prefix.charCodeAt(0))}`,
+            });
+          }
+        }
         sheet.cells.set(cellKey(cell.col, cell.row), cell);
       }
     }
