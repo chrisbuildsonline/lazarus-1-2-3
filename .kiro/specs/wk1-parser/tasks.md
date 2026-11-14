@@ -6,8 +6,8 @@ Red first: write each test and watch it fail before the code that makes it pass.
 
 - [x] 1. Red: `tests/unit/parser/address.test.ts`. Examples from requirement 32 (`A1`, `Z1`, `AA1`, `IV8192`), `parseA1` accepts `a1` and `IV8192`, rejects `""`, `A0`, `1A`, `A-1`, and the round trip over sample cells. Green: `src/parser/address.ts`. (Req 32)
 - [x] 2. Red: `tests/unit/parser/sheet.test.ts`. `cellKey` is unique at the four u16 corners, `getCell` hit and miss, `cellsInRowMajorOrder` after inserting cells in a scrambled order. Green: `src/parser/sheet.ts` (types, `cellKey`, `getCell`, `cellsInRowMajorOrder`). (Req 30, 31)
-- [ ] 3. Red: `tests/unit/parser/reader.test.ts`. Every method returns `null` and leaves `pos` unchanged when it would pass `end`. A sub-reader cannot read past its own `end`. Works on a `subarray` with a non-zero `byteOffset`. Green: `src/parser/reader.ts`. (Req 4, 5)
-- [ ] 4. Red then green: `src/parser/diagnostics.ts` with a unit test for the cap: the 1001st diagnostic becomes one `diagnostics-truncated`, later ones are dropped. (Req 10)
+- [x] 3. Red: `tests/unit/parser/reader.test.ts`. Every method returns `null` and leaves `pos` unchanged when it would pass `end`. A sub-reader cannot read past its own `end`. Works on a `subarray` with a non-zero `byteOffset`. Green: `src/parser/reader.ts`. (Req 4, 5)
+- [x] 4. Red then green: `src/parser/diagnostics.ts` with a unit test for the cap: the 1001st diagnostic becomes one `diagnostics-truncated`, later ones are dropped. (Req 10)
 
 ## Records, one failing test each
 
