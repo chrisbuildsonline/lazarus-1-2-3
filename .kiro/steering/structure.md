@@ -11,6 +11,7 @@ src/
   verify/      Recalculate, compare to cached values, classify matched/mismatched/unverifiable, build provenance report.
   xlsx/        Workbook model to XLSX. The only module that imports the writer library.
   macro/       Brace keystroke and slash-command parser, plain-English step list, approval state.
+  cli/         The `lazarus` inventory CLI (lazarus.ts entry, inventory.ts logic). Lists path, format, size, sha256. No cell parsing.
   ui/          React components, design tokens, worker clients.
   workers/     Web Worker entry points (parse, recalc).
 mcp/

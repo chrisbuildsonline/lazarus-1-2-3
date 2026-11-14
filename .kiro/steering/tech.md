@@ -31,6 +31,7 @@ Run everything with `bun run <script>`:
 - `test:watch`: Vitest watch
 - `e2e`: Playwright
 - `oracle`: start the lotus-oracle MCP server
+- `lazarus <path> [--json]`: inventory a file or folder (path, format, size, sha256). Inventory only, no cell parsing. Run as `bun run lazarus <path> [--json]`.
 
 If a script does not exist yet, add it to package.json rather than calling the tool directly.
 

@@ -23,13 +23,24 @@ Always bounds-check `length` against the remaining bytes. Skip unknown opcodes b
 
 | Opcode | Name | Body |
 |---|---|---|
-| 0x0000 | BOF | version uint16 (0x0404 for WK1, 0x0406 for WKS) |
+| 0x0000 | BOF | version uint16 (0x0404 = release 1 / WKS, 0x0406 = release 2 / WK1; see BOF version below) |
 | 0x0001 | EOF | empty |
 | 0x0006 | DIMENSIONS | first col, first row, last col, last row (4 x uint16) |
 | 0x000D | INTEGER | format u8, col u16, row u16, value int16 |
 | 0x000E | NUMBER | format u8, col u16, row u16, IEEE 754 double (8 bytes) |
 | 0x000F | LABEL | format u8, col u16, row u16, prefix char, text, 0x00 |
 | 0x0010 | FORMULA | format u8, col u16, row u16, cached double (8 bytes), formula length u16, RPN token stream |
+
+### BOF version
+
+Evidence from real fixtures:
+
+- `.wk1` files carry 0x0406: `fixtures/ksbase/KSBASE.WK1`, `fixtures/census-delaware-1992/92stlde.wk1`.
+- `.wks` files carry 0x0404: `fixtures/lotus123-wks/testLotus123.wks`, `fixtures/libreoffice-wks-functions/gnome647171-1.wks`.
+- LibreOffice `sc/source/filter/lotus/filter.cxx` maps 0x0404 to release 1 (WKS) and 0x0406 to release 2 (WK1).
+- 0x0405 is Symphony. Treat it as unknown. Gnumeric also names 0x0406 as Symphony 2, so the version word alone is ambiguous; confirm with the file extension and the records present.
+
+Decide the format from the version word, not only the file extension, and report a disagreement as a diagnostic.
 
 The FORMULA cached double is the oracle for verification. Read it exactly; do not round it.
 
@@ -54,7 +65,7 @@ The stream is RPN (postfix), terminated by a return token. Decode into an AST, t
 - parentheses marker (affects only display; do not lose it)
 - function tokens: fixed argument count for most, a count byte for variadic ones (e.g. @SUM)
 
-Cell references carry relative/absolute flags in the high bits of the column and row words. Preserve them as `$` in the Excel output. Do not hard-code the opcode table from memory: record each opcode with a source note, and keep unknown ones as `unverifiable` with the raw byte.
+Cell references carry relative/absolute flags in the high bits of the column and row words. Bit 15 set means the reference is relative. When relative, the column value is a signed 8-bit offset from the formula cell, and in WK1 the row value is a signed 13-bit offset. Resolve offsets against the formula cell's position before emitting. Preserve absolute references as `$` in the Excel output. Do not hard-code the opcode table from memory: record each opcode with a source note, and keep unknown ones as `unverifiable` with the raw byte.
 
 ## @functions to Excel
 
