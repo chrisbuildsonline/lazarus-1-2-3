@@ -4,8 +4,8 @@ Red first: write each test before the code that makes it pass. Run `bun run test
 
 ## PII scanner
 
-- [ ] 1. Red: `tests/unit/fixtures/pii.test.ts` with scanner samples. Positives: an email, `(555) 123-4567`, `555-123-4567`, `123-45-6789`, `4111 1111 1111 1111`. Negatives: `1234567890123` (fails Luhn), a version string `1.2.3`, a date `2026-11-14`, a plain 6-digit number. (Req 19, 20)
-- [ ] 2. Green: `tests/unit/helpers/pii-scan.ts` (`scanBytes(bytes) -> {kind, text}[]`, Luhn check, allowlist type). (Req 19, 21)
+- [x] 1. Red: `tests/unit/fixtures/pii.test.ts` with scanner samples. Positives: an email, `(555) 123-4567`, `555-123-4567`, `123-45-6789`, `4111 1111 1111 1111`. Negatives: `1234567890123` (fails Luhn), a version string `1.2.3`, a date `2026-11-14`, a plain 6-digit number. (Req 19, 20)
+- [x] 2. Green: `tests/unit/helpers/pii-scan.ts` (`scanBytes(bytes) -> {kind, text}[]`, Luhn check, allowlist type). (Req 19, 21)
 
 ## WK1 writer and manifest guard
 
