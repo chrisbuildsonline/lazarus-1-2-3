@@ -31,8 +31,8 @@ Red first: write each test and watch it fail before the code that makes it pass.
 
 ## Differential test and acceptance
 
-- [ ] 19. `tests/differential/parser/wk1-manifest.test.ts` following design.md steps 1 to 7, for every wk1/wks manifest entry, plus a guard that at least one such entry exists. Run it. Any failure on a real file is a finding: read the bytes, decide whether the parser or the manifest is wrong, and write it down in the task notes. Do not loosen a check. (Acceptance 1 to 3)
-- [ ] 20. Record the skipped opcodes and counts that the real fixtures produce (the Quattro Pro extras) in a short comment at the top of the differential test, with the file names. If any `unknown-version` warning shows up on a fixture, add the evidence to `.kiro/steering/lotus-format.md`. (Req 28)
+- [x] 19. `tests/differential/parser/wk1-manifest.test.ts` following design.md steps 1 to 7, for every wk1/wks manifest entry, plus a guard that at least one such entry exists. Run it. Any failure on a real file is a finding: read the bytes, decide whether the parser or the manifest is wrong, and write it down in the task notes. Do not loosen a check. (Acceptance 1 to 3)
+- [x] 20. Record the skipped opcodes and counts that the real fixtures produce (the Quattro Pro extras) in a short comment at the top of the differential test, with the file names. If any `unknown-version` warning shows up on a fixture, add the evidence to `.kiro/steering/lotus-format.md`. (Req 28)
 - [ ] 21. Run in bun and in a worker context: add a test that imports `src/parser` with no Node globals available beyond what a worker has. Cheapest form is a check (test or script) that the import graph of `src/parser` has no `node:*`, `react` or `document` references. (Req 2, 3)
 
 ## Docs and gate
