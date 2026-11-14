@@ -6,7 +6,7 @@ inclusion: always
 
 ```
 src/
-  parser/      WKS/WK1 (later WK3) record reader, DBF reader. Bytes in, typed records + diagnostics out.
+  parser/      WKS/WK1 reader implemented (parseWk1 in src/parser); DBF and WK3 later. Bytes in, typed records plus diagnostics out.
   formula/     RPN token decoder, Excel formula emitter, @function name map, deterministic engine.
   verify/      Recalculate, compare to cached values, classify matched/mismatched/unverifiable, build provenance report.
   xlsx/        Workbook model to XLSX. The only module that imports the writer library.

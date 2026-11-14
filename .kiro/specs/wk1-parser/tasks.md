@@ -37,5 +37,5 @@ Red first: write each test and watch it fail before the code that makes it pass.
 
 ## Docs and gate
 
-- [ ] 22. Update `.kiro/steering/structure.md`: `parser/` line now states "WKS/WK1 reader implemented (parseWk1); DBF and WK3 later". Update README only if it lists parser status. (Design: Layout)
+- [x] 22. Update `.kiro/steering/structure.md`: `parser/` line now states "WKS/WK1 reader implemented (parseWk1); DBF and WK3 later". Update README only if it lists parser status. (Design: Layout)
 - [x] 23. Gate: `bun run typecheck` and `bun run test` both exit 0, and the differential test shows every wk1/wks manifest fixture parsed with counts equal to the manifest. (Acceptance 5)
