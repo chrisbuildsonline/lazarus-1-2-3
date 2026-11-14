@@ -36,6 +36,10 @@ const CELL_RECORDS = new Map<number, string>([
 
 const LABEL_PREFIXES: ReadonlySet<string> = new Set<LabelPrefix>(["'", '"', "^", "\\", "|"]);
 
+/** Last column (IV) and row (8192) of the WK1 grid, 0-based. */
+const MAX_COL = 255;
+const MAX_ROW = 8191;
+
 const VERSION_WKS = 0x0404;
 const VERSION_WK1 = 0x0406;
 
@@ -99,6 +103,7 @@ export function parseWk1(bytes: Uint8Array): Wk1ParseResult {
   const sink = new DiagnosticSink();
   const input = new ByteReader(bytes);
   let truncated = false;
+  const seenSkipped = new Set<number>();
 
   while (input.remaining() > 0) {
     const offset = input.pos;
@@ -167,22 +172,32 @@ export function parseWk1(bytes: Uint8Array): Wk1ParseResult {
           shortRecord(cellName);
           continue;
         }
+        const where = a1(cell.col, cell.row);
         stats.cells++;
         if (cell.kind === "integer" || cell.kind === "number") stats.numbers++;
         if (cell.kind === "formula") stats.formulas++;
         if (cell.kind === "label") {
           stats.labels++;
           if (!LABEL_PREFIXES.has(cell.prefix)) {
-            sink.add({
-              severity: "warning",
-              code: "unknown-label-prefix",
-              offset,
-              opcode,
-              message: `label at ${a1(cell.col, cell.row)} has prefix byte ${hex(cell.prefix.charCodeAt(0))}`,
-            });
+            const byte = hex(cell.prefix.charCodeAt(0));
+            sink.add({ severity: "warning", code: "unknown-label-prefix", offset, opcode, message: `label at ${where} has prefix byte ${byte}` });
           }
         }
-        sheet.cells.set(cellKey(cell.col, cell.row), cell);
+        if (cell.col > MAX_COL || cell.row > MAX_ROW) {
+          sink.add({ severity: "warning", code: "address-out-of-range", offset, opcode, message: `${where} is outside the WK1 grid A1:IV8192` });
+        }
+        const key = cellKey(cell.col, cell.row);
+        if (sheet.cells.has(key)) {
+          sink.add({ severity: "warning", code: "duplicate-cell", offset, opcode, message: `${where} appears again; the later record wins` });
+        }
+        sheet.cells.set(key, cell);
+      } else {
+        stats.skippedRecords++;
+        stats.skippedByOpcode[opcode] = (stats.skippedByOpcode[opcode] ?? 0) + 1;
+        if (!seenSkipped.has(opcode)) {
+          seenSkipped.add(opcode);
+          sink.add({ severity: "info", code: "skipped-opcode", offset, opcode, message: `skipped record ${hex(opcode)}` });
+        }
       }
     }
   }
