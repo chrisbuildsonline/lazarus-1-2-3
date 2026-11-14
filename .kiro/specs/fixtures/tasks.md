@@ -16,7 +16,7 @@ Red first: write each test before the code that makes it pass. Run `bun run test
 ## Synthetic corpus
 
 - [x] 6. Write `scripts/lib/fixture-specs.ts` for `basic-values` and `labels`, plus `scripts/gen-fixtures.ts` that writes files, `LICENSE.txt` and the manifest entries (merge, sorted). Run `bun scripts/gen-fixtures.ts`. Manifest and PII tests now cover 2 synthetic files. (Req 5, 9, 12, 13)
-- [ ] 7. Add `formulas` to the specs. Use only RPN opcodes confirmed by a source note in a code comment. Regenerate. (Req 6, 8, 11)
+- [x] 7. Add `formulas` to the specs. Use only RPN opcodes confirmed by a source note in a code comment. Regenerate. (Req 6, 8, 11)
 - [ ] 8. Add `dates` (serials 1, 59, 60, 61, a leap day, plus a FORMULA with a date cached value) and `mixed`. Regenerate. Confirm a second run leaves `git status` unchanged. (Req 5, 8, 18)
 
 ## Real corpus (human review)

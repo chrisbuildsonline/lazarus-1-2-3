@@ -33,6 +33,47 @@
       ]
     },
     {
+      "path": "fixtures/formulas/formulas.wk1",
+      "format": "wk1",
+      "origin": "synthetic",
+      "sourceUrl": null,
+      "license": "MIT",
+      "sha256": "5280e1982eeca32dcfb5eeadd3d84eb9294bc21d2ffb2a451a228ef6c5aca97f",
+      "counts": {
+        "cells": 9,
+        "formulas": 6,
+        "labels": 0,
+        "numbers": 3
+      },
+      "expectedValues": [
+        {
+          "cell": "A2",
+          "kind": "formula",
+          "cached": 30
+        },
+        {
+          "cell": "C2",
+          "kind": "formula",
+          "cached": 32.5
+        },
+        {
+          "cell": "A3",
+          "kind": "formula",
+          "cached": 60
+        },
+        {
+          "cell": "B3",
+          "kind": "formula",
+          "cached": 10
+        },
+        {
+          "cell": "C3",
+          "kind": "formula",
+          "cached": 147.5
+        }
+      ]
+    },
+    {
       "path": "fixtures/labels/labels.wk1",
       "format": "wk1",
       "origin": "synthetic",

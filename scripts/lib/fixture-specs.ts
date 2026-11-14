@@ -20,7 +20,32 @@ const int = (col: number, row: number, value: number): CellSpec => ({ kind: "int
 const num = (col: number, row: number, value: number): CellSpec => ({ kind: "number", col, row, value });
 const lbl = (col: number, row: number, prefix: "'" | '"' | "^", text: string): CellSpec => ({ kind: "label", col, row, prefix, text });
 
-const LONG_TEXT = "Lotus 1-2-3 kept this label on one line, however wide the column was. ".repeat(3).trimEnd();
+// RPN token opcodes, each confirmed twice: by the WK1/WKS opcode table in LibreOffice
+// sc/source/filter/lotus/lotform.cxx (MPL-2.0), and by the bytes of a real fixture:
+const NUM = 0x00; // 8-byte double. KSBASE.WK1 O3 has "00 00..e03f" = 0.5 inside 0.5*(J3+J4)
+const REF = 0x01; // cell reference, col u16 + row u16. testLotus123.wks C2..C11 = A*B
+const RANGE = 0x02; // range, two corners. gnome647171-1.wks A2 = @SUM(A1..B1)
+const RET = 0x03; // end of formula. Last byte of every real formula seen
+const PAREN = 0x04; // parentheses marker, display only. KSBASE.WK1 O3, right after the add
+const INT = 0x05; // 2-byte integer. KSBASE.WK1 O3 (N3=1), gnome647171-1.wks A5
+const ADD = 0x09; // KSBASE.WK1 O3 (J3+J4)
+const MUL = 0x0b; // testLotus123.wks C2 = A2*B2, cached 1*10 = 10, C3 cached 2*9 = 18
+const SUM = 0x50; // @SUM, followed by an argument count byte. gnome647171-1.wks A2, cached 10+11.5 = 21.5
+// Relative references set bit 15 and store a signed offset from the formula cell.
+// KSBASE.WK1 writes col -5 as 0xBFFB and row -1 as 0xBFFF; LibreOffice reads the low
+// 8 bits (col) and 13 bits (WK1 row) as signed, so offset & 0x3FFF decodes the same.
+const u16 = (v: number) => [v & 0xff, (v >> 8) & 0xff];
+const rel = (offset: number) => u16(0x8000 | (offset & 0x3fff));
+const ref = (dc: number, dr: number) => [REF, ...rel(dc), ...rel(dr)];
+const range = (dc1: number, dr1: number, dc2: number, dr2: number) => [RANGE, ...rel(dc1), ...rel(dr1), ...rel(dc2), ...rel(dr2)];
+const f64 = (v: number) => {
+  const b = new Uint8Array(8);
+  new DataView(b.buffer).setFloat64(0, v, true);
+  return [NUM, ...b];
+};
+const fml = (col: number, row: number, cached: number, rpn: number[]): CellSpec => ({ kind: "formula", col, row, cached, rpn: [...rpn, RET] });
+
+const LONG_TEXT ="Lotus 1-2-3 kept this label on one line, however wide the column was. ".repeat(3).trimEnd();
 
 export const SPECS: FixtureSpec[] = [
   {
@@ -56,5 +81,21 @@ export const SPECS: FixtureSpec[] = [
       lbl(0, 3, "'", "Punctuation: !#$%&()*+,-./:;<=>?[]_{}~"),
     ],
     expect: ["A1", "B1", "C1", "A2"],
+  },
+  {
+    name: "formulas",
+    version: WK1_VERSION,
+    cells: [
+      int(0, 0, 10),
+      int(1, 0, 20),
+      num(2, 0, 2.5),
+      fml(0, 1, 30, [...ref(0, -1), ...ref(1, -1), ADD]), // A2: +A1+B1
+      fml(1, 1, 25, [...ref(-1, -1), ...ref(1, -1), MUL]), // B2: +A1*C1
+      fml(2, 1, 32.5, [...range(-2, -1, 0, -1), SUM, 1]), // C2: @SUM(A1..C1)
+      fml(0, 2, 60, [...ref(0, -2), ...ref(1, -2), ADD, PAREN, INT, ...u16(2), MUL]), // A3: (A1+B1)*2
+      fml(1, 2, 10, [...f64(0.5), ...ref(0, -2), MUL]), // B3: 0.5*B1
+      fml(2, 2, 147.5, [...range(-2, -1, 0, -1), SUM, 1, ...ref(-2, 0), ADD]), // C3: @SUM(A2..C2)+A3
+    ],
+    expect: ["A2", "C2", "A3", "B3", "C3"],
   },
 ];

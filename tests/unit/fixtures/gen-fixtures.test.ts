@@ -26,7 +26,28 @@ describe("buildAll", () => {
 
   it("matches the synthetic entries in the committed manifest", () => {
     const manifest = JSON.parse(readFileSync("fixtures/manifest.json", "utf8")) as { fixtures: { origin: string }[] };
-    expect(manifest.fixtures.filter((e) => e.origin === "synthetic")).toEqual(first.map((f) => f.manifestEntry));
+    const built = first.map((f) => f.manifestEntry).sort((a, b) => (a.path < b.path ? -1 : 1));
+    expect(manifest.fixtures.filter((e) => e.origin === "synthetic")).toEqual(built);
+  });
+
+  it("writes FORMULA records whose cached values are in the manifest", () => {
+    const f = first.find((x) => x.path === "fixtures/formulas/formulas.wk1");
+    expect(f).toBeDefined();
+    const formulas = scanWk1(f!.bytes).cells.filter((c) => c.kind === "formula");
+    expect(formulas.length).toBeGreaterThanOrEqual(5);
+    expect(f!.manifestEntry.expectedValues.filter((v) => v.kind === "formula").length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("ends every RPN stream with the return token", () => {
+    for (const f of first) {
+      const view = new DataView(f.bytes.buffer, f.bytes.byteOffset, f.bytes.byteLength);
+      for (let pos = 0; pos + 4 <= f.bytes.length; pos += 4 + view.getUint16(pos + 2, true)) {
+        if (view.getUint16(pos, true) !== 0x0010) continue;
+        const rpnLength = view.getUint16(pos + 4 + 13, true);
+        expect(view.getUint16(pos + 2, true), f.path).toBe(15 + rpnLength);
+        expect(f.bytes[pos + 4 + 15 + rpnLength - 1], f.path).toBe(0x03);
+      }
+    }
   });
 
   it("writes LABEL cells with all three prefixes", () => {
