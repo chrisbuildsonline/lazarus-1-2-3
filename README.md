@@ -12,6 +12,26 @@ You drop in a Lotus 1-2-3 worksheet or a dBase table. Lazarus 1-2-3 parses the b
 
 TypeScript, React with Vite, runs fully in the browser; Web Workers for parsing and recalculation; Vitest for differential tests; SheetJS-style XLSX writer (or exceljs) for output; a small Node MCP server (lotus-oracle); an LLM API used only for macro explanation and unknown-opcode suggestions, behind an approval queue; static hosting.
 
+## Setup
+
+Requires [bun](https://bun.sh).
+
+```sh
+bun install
+bunx playwright install chromium   # one-time browser download for e2e
+```
+
+Scripts (`bun run <script>`):
+
+- `dev`: Vite dev server
+- `build`: production build into `dist/`
+- `preview`: serve the production build
+- `typecheck`: `tsc --noEmit` (strict)
+- `test`: Vitest, whole suite under `tests/`
+- `test:watch`: Vitest in watch mode
+- `e2e`: Playwright specs under `e2e/` (builds and previews the app)
+- `oracle`: start the lotus-oracle MCP server (prints "not built yet" until it exists)
+
 ## License
 
 MIT, see LICENSE.
