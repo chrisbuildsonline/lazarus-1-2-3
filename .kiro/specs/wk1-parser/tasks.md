@@ -19,8 +19,8 @@ Red first: write each test and watch it fail before the code that makes it pass.
 - [x] 10. Red: `wk1-formula.test.ts` covering exact cached double, exact RPN bytes, RPN is a copy, `rpnLen` 0, overrun gives `short-record`, no RPN decoding. Green: FORMULA decoder. (Req 3, 24 to 26)
 - [x] 11. Red: `wk1-skip.test.ts` for unknown opcodes, per-record counts, one info diagnostic per distinct opcode, parsing continues, 0xFFFF length gives `truncated-record`. Green: skip path. (Req 7, 28, 29)
 - [x] 12. Red: tests for `duplicate-cell` (stats count both, map keeps the later) and `address-out-of-range` (col 256, row 8192 kept with a warning). Green: the two checks. (Req 27, 34)
-- [ ] 13. Red: `wk1-robustness.test.ts`: empty, 1 to 3 bytes, header only, all 0xFF, all 0x00 (terminates, diagnostics capped), `subarray` input with non-zero offset gives the same result as a copy, input bytes unchanged after parse. Green: fix whatever fails. (Req 3, 5 to 10)
-- [ ] 14. Add `src/parser/index.ts` exporting `parseWk1`, types, `a1`, `parseA1`, `cellKey`, `getCell`, `cellsInRowMajorOrder`. Check that nothing under `src/parser` imports `node:*`, `react` or the DOM (a grep in this task, plus step 20). (Req 2)
+- [x] 13. Red: `wk1-robustness.test.ts`: empty, 1 to 3 bytes, header only, all 0xFF, all 0x00 (terminates, diagnostics capped), `subarray` input with non-zero offset gives the same result as a copy, input bytes unchanged after parse. Green: fix whatever fails. (Req 3, 5 to 10)
+- [x] 14. Add `src/parser/index.ts` exporting `parseWk1`, types, `a1`, `parseA1`, `cellKey`, `getCell`, `cellsInRowMajorOrder`. Check that nothing under `src/parser` imports `node:*`, `react` or the DOM (a grep in this task, plus step 20). (Req 2)
 
 ## Property tests
 

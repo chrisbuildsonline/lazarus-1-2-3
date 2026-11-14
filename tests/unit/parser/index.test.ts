@@ -1,0 +1,27 @@
+import { describe, expect, it } from "vitest";
+import { bof, eof, integer } from "../../../scripts/lib/wk1-writer.ts";
+import * as parser from "../../../src/parser/index.ts";
+import type { Cell, Diagnostic, LabelPrefix, Sheet, Wk1Format, Wk1ParseResult, Wk1Stats } from "../../../src/parser/index.ts";
+import { concat } from "../helpers/bytes.ts";
+
+describe("src/parser public exports", () => {
+  it("exports the parser and helpers", () => {
+    expect(Object.keys(parser).sort()).toEqual(
+      ["MAX_DIAGNOSTICS", "a1", "cellKey", "cellsInRowMajorOrder", "getCell", "parseA1", "parseWk1"].sort(),
+    );
+  });
+
+  it("works end to end through the index", () => {
+    const result: Wk1ParseResult = parser.parseWk1(concat(bof(0x0406), integer(0, 0, 1), eof()));
+    const sheet: Sheet = result.sheet;
+    const format: Wk1Format = sheet.format;
+    const stats: Wk1Stats = result.stats;
+    const diagnostics: Diagnostic[] = result.diagnostics;
+    const cell: Cell | undefined = parser.getCell(sheet, 0, 0);
+    const prefix: LabelPrefix = "'";
+    expect([format, stats.cells, diagnostics.length, cell?.kind, prefix]).toEqual(["wk1", 1, 0, "integer", "'"]);
+    expect(parser.cellsInRowMajorOrder(sheet).map((c) => parser.a1(c.col, c.row))).toEqual(["A1"]);
+    expect(parser.parseA1("A1")).toEqual({ col: 0, row: 0 });
+    expect(parser.cellKey(0, 0)).toBe(0);
+  });
+});
