@@ -1,8 +1,39 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { buildAll } from "../../../scripts/gen-fixtures.ts";
 import { bof, dimensions, eof, formula, integer, label, number, writeWk1 } from "../../../scripts/lib/wk1-writer.ts";
 import { scanWk1 } from "../helpers/wk1-scan.ts";
 
 const bytes = (u: Uint8Array) => [...u];
+
+describe("buildAll", () => {
+  const first = buildAll();
+
+  it("is deterministic across two calls", () => {
+    const second = buildAll();
+    expect(second.map((f) => f.path)).toEqual(first.map((f) => f.path));
+    second.forEach((f, i) => {
+      expect(Buffer.from(f.bytes).equals(Buffer.from(first[i]!.bytes)), f.path).toBe(true);
+      expect(f.manifestEntry).toEqual(first[i]!.manifestEntry);
+    });
+  });
+
+  it("matches the committed fixture bytes", () => {
+    for (const f of first) {
+      expect(Buffer.from(readFileSync(f.path)).equals(Buffer.from(f.bytes)), f.path).toBe(true);
+    }
+  });
+
+  it("matches the synthetic entries in the committed manifest", () => {
+    const manifest = JSON.parse(readFileSync("fixtures/manifest.json", "utf8")) as { fixtures: { origin: string }[] };
+    expect(manifest.fixtures.filter((e) => e.origin === "synthetic")).toEqual(first.map((f) => f.manifestEntry));
+  });
+
+  it("writes LABEL cells with all three prefixes", () => {
+    const prefixes = new Set(first.flatMap((f) => scanWk1(f.bytes).cells.flatMap((c) => (c.kind === "label" ? [c.prefix] : []))));
+    expect([...prefixes].sort()).toEqual(['"', "'", "^"]);
+  });
+});
 
 describe("wk1 writer records", () => {
   it("writes BOF with the given version, little-endian", () => {
