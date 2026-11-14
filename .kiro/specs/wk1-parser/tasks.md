@@ -24,10 +24,10 @@ Red first: write each test and watch it fail before the code that makes it pass.
 
 ## Property tests
 
-- [ ] 15. `tests/property/parser/wk1.property.test.ts`: arbitrary bytes never throw and results are well formed. (Req 6, Acceptance 4)
-- [ ] 16. Same file: framed garbage (valid frames, random opcodes, bodies and lengths), checking `bytesRead` and diagnostic offsets stay in range. (Req 5, 7)
-- [ ] 17. Same file: mutated fixtures. For every wk1/wks entry of the manifest, apply random byte flips, truncation, insertion and deletion. Never throws. (Req 6, Acceptance 4)
-- [ ] 18. Same file: writer round trip with `writeWk1` (exact doubles, exact RPN bytes, label text and prefix), a NaN and infinity example test, and the `parseA1(a1(c, r))` property with the test helper's `a1`. (Req 19 to 24, 32, 33)
+- [x] 15. `tests/property/parser/wk1.property.test.ts`: arbitrary bytes never throw and results are well formed. (Req 6, Acceptance 4)
+- [x] 16. Same file: framed garbage (valid frames, random opcodes, bodies and lengths), checking `bytesRead` and diagnostic offsets stay in range. (Req 5, 7)
+- [x] 17. Same file: mutated fixtures. For every wk1/wks entry of the manifest, apply random byte flips, truncation, insertion and deletion. Never throws. (Req 6, Acceptance 4)
+- [x] 18. Same file: writer round trip with `writeWk1` (exact doubles, exact RPN bytes, label text and prefix), a NaN and infinity example test, and the `parseA1(a1(c, r))` property with the test helper's `a1`. (Req 19 to 24, 32, 33)
 
 ## Differential test and acceptance
 
