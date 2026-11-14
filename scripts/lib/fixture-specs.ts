@@ -11,9 +11,8 @@ export type FixtureSpec = {
   expect: string[];
 };
 
-// BOF version for .wk1 files. Public documentation gives 0x0406 for WK1 (1-2-3 Release 2)
-// and 0x0404 for WKS (Release 1A); lotus-format.md lists them the other way round and asks
-// for confirmation from a real file.
+// BOF version for .wk1 files. The real fixtures confirm 0x0406 for WK1 (KSBASE.WK1, 92stlde.wk1)
+// and 0x0404 for WKS (testLotus123.wks, gnome647171-1.wks); lotus-format.md lists them reversed.
 export const WK1_VERSION = 0x0406;
 
 const int = (col: number, row: number, value: number): CellSpec => ({ kind: "integer", col, row, value });
