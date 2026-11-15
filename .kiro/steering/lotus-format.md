@@ -67,6 +67,13 @@ The stream is RPN (postfix), terminated by a return token. Decode into an AST, t
 
 Cell references carry relative/absolute flags in the high bits of the column and row words. Bit 15 set means the reference is relative. When relative, the column value is a signed 8-bit offset from the formula cell, and in WK1 the row value is a signed 13-bit offset. Resolve offsets against the formula cell's position before emitting. Preserve absolute references as `$` in the Excel output. Do not hard-code the opcode table from memory: record each opcode with a source note, and keep unknown ones as `unverifiable` with the raw byte.
 
+### Opcodes confirmed by fixtures
+
+The differential test `tests/differential/formula/fixtures.test.ts` decodes all 185 formulas in the wk1 and wks fixtures with status ok. The opcodes the real fixtures use, each also named by LibreOffice `lotform.cxx` and the Lotus WSFF5 file format note: 0x00 number, 0x01 cell reference, 0x02 range, 0x03 return, 0x04 parentheses, 0x05 integer, 0x06 string, 0x09 add, 0x0B multiply, 0x0E equals, 0x14 AND, 0x2F MOD (2 arguments), 0x33 FALSE (no arguments), 0x3B IF (3 arguments), and 0x50 SUM, 0x52 COUNT and 0x58 STD, these three followed by an argument count byte. Evidence per cell is in `.kiro/specs/formula-translator/evidence.md`. The source of every table entry is in `src/formula/opcodes.ts`. Every other opcode in the table stays candidate until a real fixture shows it.
+
+- Relative column words differ between files. `testLotus123.wks` writes them without sign extension (0x80FE for minus 2), while `KSBASE.WK1` sign extends (0xBFFB for minus 5). Reading the low 8 bits as signed handles both. The decoder reports the first form as a reserved-bits-set warning.
+- `gnome647171-1.wks` C2 uses STD. Its cached value 0.75 for 10 and 11.5 is the population standard deviation, so STD maps to Excel STDEVP.
+
 ## @functions to Excel
 
 Map names one to one where semantics are identical (@SUM -> SUM, @AVG -> AVERAGE, @MIN, @MAX, @COUNT, @IF -> IF, @ROUND -> ROUND, @ABS, @INT, @SQRT, @LN, @LOG, @EXP, @MOD, @PMT, @PV, @FV, @NPV, @IRR, @VLOOKUP, @HLOOKUP, @DATE, @DAY, @MONTH, @YEAR).
