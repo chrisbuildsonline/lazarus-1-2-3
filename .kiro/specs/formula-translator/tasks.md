@@ -59,5 +59,5 @@ Red first: write each test and watch it fail before the code that makes it pass.
 
 ## Docs and gate
 
-- [ ] 38. Update `.kiro/steering/structure.md`: the `formula/` line says what is implemented (decoder, Excel translator, printer) and that the engine is later. Update the README only if it lists formula status. (Design: Layout)
+- [x] 38. Update `.kiro/steering/structure.md`: the `formula/` line says what is implemented (decoder, Excel translator, printer) and that the engine is later. Update the README only if it lists formula status. (Design: Layout)
 - [ ] 39. Gate: `bun run typecheck` and `bun run test` both exit 0, and the differential test shows every wk1/wks fixture formula decoded or flagged with the counts equal to the manifest. (Acceptance 5)

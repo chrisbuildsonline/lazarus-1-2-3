@@ -7,7 +7,7 @@ inclusion: always
 ```
 src/
   parser/      WKS/WK1 reader implemented (parseWk1 in src/parser); DBF and WK3 later. Bytes in, typed records plus diagnostics out.
-  formula/     RPN token decoder, Excel formula emitter, @function name map, deterministic engine.
+  formula/     RPN token decoder, Excel translator and printer implemented (translateFormula in src/formula, chaining decodeRpn, toExcelAst and printExcel); deterministic engine later.
   verify/      Recalculate, compare to cached values, classify matched/mismatched/unverifiable, build provenance report.
   xlsx/        Workbook model to XLSX. The only module that imports the writer library.
   macro/       Brace keystroke and slash-command parser, plain-English step list, approval state.
