@@ -23,10 +23,10 @@ Red first: write each test and watch it fail before the code that makes it pass.
 
 ## Operators
 
-- [ ] 11. Red: `tests/unit/verify/ops.test.ts`: add, subtract, multiply, divide, power, negate and plus on numbers; `1/0`, `-1/0` and `0/0` give ERR; an overflow (`1e308 * 10`) gives ERR; `(-8) ^ 0.5` gives ERR; `0 ^ 0` is unverifiable `U04`; `2 ^ 10` is 1024. Green: `src/verify/ops.ts` arithmetic. (S13, U04; Req 42, 43)
-- [ ] 12. Red: propagation: ERR or NA in either operand of each operator gives that error, an operand error wins over the operation's own ERR (`NA / 0` is NA), ERR with NA is unverifiable `U08`. One `propagate(values)` helper serves them all. Green: `propagate`. (S12, U08; Req 44)
-- [ ] 13. Red: comparisons give 1 or 0 for all six operators, with exact equality (`0.1 + 0.2 = 0.3` is 0); AND, OR and NOT treat any nonzero number as true and return 1 or 0; propagation applies. Green: comparisons and logic. (S14; Req 45)
-- [ ] 14. Red: `U01`: a string operand of any arithmetic operator, a string concatenation, a label or empty operand of a comparison are all unverifiable; a label operand of an arithmetic operator reads as 0 (S01). Green: the operand conversion. If task 1 found that KSBASE depends on label comparison, note the count it affects in the test header. (S01, U01; Req 38, 40, 47)
+- [x] 11. Red: `tests/unit/verify/ops.test.ts`: add, subtract, multiply, divide, power, negate and plus on numbers; `1/0`, `-1/0` and `0/0` give ERR; an overflow (`1e308 * 10`) gives ERR; `(-8) ^ 0.5` gives ERR; `0 ^ 0` is unverifiable `U04`; `2 ^ 10` is 1024. Green: `src/verify/ops.ts` arithmetic. (S13, U04; Req 42, 43)
+- [x] 12. Red: propagation: ERR or NA in either operand of each operator gives that error, an operand error wins over the operation's own ERR (`NA / 0` is NA), ERR with NA is unverifiable `U08`. One `propagate(values)` helper serves them all. Green: `propagate`. (S12, U08; Req 44)
+- [x] 13. Red: comparisons give 1 or 0 for all six operators, with exact equality (`0.1 + 0.2 = 0.3` is 0); AND, OR and NOT treat any nonzero number as true and return 1 or 0; propagation applies. Green: comparisons and logic. (S14; Req 45)
+- [x] 14. Red: `U01`: a string operand of any arithmetic operator, a string concatenation, a label or empty operand of a comparison are all unverifiable; a label operand of an arithmetic operator reads as 0 (S01). Green: the operand conversion. If task 1 found that KSBASE depends on label comparison, note the count it affects in the test header. (S01, U01; Req 38, 40, 47)
 
 ## Functions
 

@@ -6,7 +6,13 @@ export type Value =
   | { t: "err" }
   | { t: "na" };
 
+/** A value, or an empty cell read through a single reference. How it converts depends on where it is used. */
+export type Operand = Value | { t: "empty" };
+
 export const num = (v: number): Value => ({ t: "num", v });
+/** A label cell read as a value: the number 0, flagged so a bare label result becomes U02. */
+export const labelZero = (): Value => ({ t: "num", v: 0, label: true });
+export const empty = (): Operand => ({ t: "empty" });
 export const str = (v: string): Value => ({ t: "str", v });
 export const err = (): Value => ({ t: "err" });
 export const na = (): Value => ({ t: "na" });
