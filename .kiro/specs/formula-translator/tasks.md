@@ -46,10 +46,10 @@ Red first: write each test and watch it fail before the code that makes it pass.
 
 ## Property tests
 
-- [ ] 31. `tests/property/formula/formula.property.test.ts`: the `Expr` generators (Excel and Lotus forms) and the Excel round trip. (Req 36, Acceptance 4)
-- [ ] 32. Same file: the Lotus round trip through `toExcelAst`, and encode then decode equality. (Req 14 to 16, 24 to 27)
-- [ ] 33. Same file: arbitrary bytes and biased bytes never throw, results are well formed (requirements 6, 7, 9, 45). (Req 8, Acceptance 4)
-- [ ] 34. Same file: mutated real fixture formulas never throw, and the deep nesting example returns `nesting-too-deep` without overflowing. (Req 8, 20)
+- [x] 31. `tests/property/formula/formula.property.test.ts`: the `Expr` generators (Excel and Lotus forms) and the Excel round trip. (Req 36, Acceptance 4)
+- [x] 32. Same file: the Lotus round trip through `toExcelAst`, and encode then decode equality. (Req 14 to 16, 24 to 27)
+- [x] 33. Same file: arbitrary bytes and biased bytes never throw, results are well formed (requirements 6, 7, 9, 45). (Req 8, Acceptance 4)
+- [x] 34. Same file: mutated real fixture formulas never throw, and the deep nesting example returns `nesting-too-deep` without overflowing. (Req 8, 20)
 
 ## Differential test and acceptance
 
