@@ -21,6 +21,8 @@ type Rule = {
   note?: string;
   /** semantics-note only when an argument is a range: labels in the range may count differently. */
   rangeNote?: boolean;
+  /** Value changes on every recalculation, so the cached value cannot check it. */
+  volatile?: boolean;
 };
 
 const CASH_FLOW = (note: string): Rule => ({ order: [1, 2, 0], neg: true, note: `${note}; Excel takes rate and term first and returns the cash-flow sign, so the result is negated` });
@@ -41,6 +43,8 @@ const RULES: Record<string, Rule> = {
   CHOOSE: { base1: 0, note: "Lotus indexes from 0; Excel gets index+1" },
   VLOOKUP: LOOKUP,
   HLOOKUP: LOOKUP,
+  NOW: { volatile: true },
+  RAND: { volatile: true },
 };
 
 /** Functions with no Excel form. */
@@ -68,6 +72,7 @@ export function toExcelAst(ast: Expr, end = 0): TranslateResult {
     const rule = RULES[name] ?? {};
     const note = rule.note ?? (rule.rangeNote && args.some((a) => a.type === "range") ? "labels and blanks in a range may count differently in Excel" : null);
     if (note) diagnostics.push(diag("semantics-note", "info", end, `${name}: ${note}`));
+    if (rule.volatile) diagnostics.push(diag("volatile-function", "warning", end, `${name} is volatile; its cached value cannot be checked`));
     const out: Expr = { type: "call", name: rule.excel ?? name, args: rule.order ? rule.order.map((i) => args[i]!) : args };
     if (rule.base1 !== undefined) {
       out.args[rule.base1] = { type: "binary", op: "add", left: out.args[rule.base1]!, right: { type: "int", value: 1 } };

@@ -130,9 +130,9 @@ export function decodeRpn(rpn: Uint8Array, origin: Origin): DecodeResult {
     };
     const underflow = (n: number) =>
       fail(diag("stack-underflow", "error", at, `token needs ${n} operands, the stack holds ${stack.length}`, op));
-    const push = (node: Expr, depth: number): DecodeResult | null => {
+    const push = (e: Expr, depth: number): DecodeResult | null => {
       if (depth > MAX_DEPTH) return fail(diag("nesting-too-deep", "error", at, `formula nests deeper than ${MAX_DEPTH} levels`, op));
-      stack.push(node);
+      stack.push(e);
       depths.push(depth);
       return null;
     };

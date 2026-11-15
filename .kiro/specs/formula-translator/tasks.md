@@ -36,8 +36,8 @@ Red first: write each test and watch it fail before the code that makes it pass.
 - [x] 24. Red: CHOOSE gets `+1` on its index, VLOOKUP and HLOOKUP get `+1` on the offset and a trailing `TRUE()`, constants not folded. Green: offset rules. (Req 26)
 - [x] 25. Red: AND, OR and NOT operators become calls and the tree has none left; NA, TRUE, FALSE, PI, NOW, RAND become zero-argument calls; ERR gives `no-excel-equivalent` and no tree; a call with the wrong argument count gives `no-excel-equivalent` and does not index out of range. Green: those rules. (Req 27 to 29)
 - [x] 26. Red: `semantics-note` info diagnostics for INT, COUNT, MOD, PMT, PV, FV, CHOOSE, lookups, and for SUM, AVG, MIN and MAX only when an argument is a range; none for IF, ROUND, ABS, SQRT, DATE. Green: the notes. (Req 31)
-- [ ] 27. Red: `translate.test.ts`: `status` rules (error gives unverifiable, volatile gives unverifiable with text kept, `semantics-note` alone stays ok), `excel` null on decode failure, `unknown` passed through, a string over 255 characters and text over 8192 give `excel-limit`. Green: `src/formula/translate.ts` with `isUnverifiable`. (Req 5 to 7, 29, 30, 38, 45)
-- [ ] 28. Add `src/formula/index.ts` exporting the four functions and the types. Red then green: `tests/unit/formula/purity.test.ts`, adapted from `tests/unit/parser/purity.test.ts`: imports only inside `src/formula` or `../parser/`, and none of the forbidden APIs. (Req 1 to 3)
+- [x] 27. Red: `translate.test.ts`: `status` rules (error gives unverifiable, volatile gives unverifiable with text kept, `semantics-note` alone stays ok), `excel` null on decode failure, `unknown` passed through, a string over 255 characters and text over 8192 give `excel-limit`. Green: `src/formula/translate.ts` with `isUnverifiable`. (Req 5 to 7, 29, 30, 38, 45)
+- [x] 28. Add `src/formula/index.ts` exporting the four functions and the types. Red then green: `tests/unit/formula/purity.test.ts`, adapted from `tests/unit/parser/purity.test.ts`: imports only inside `src/formula` or `../parser/`, and none of the forbidden APIs. (Req 1 to 3)
 
 ## Test helpers
 

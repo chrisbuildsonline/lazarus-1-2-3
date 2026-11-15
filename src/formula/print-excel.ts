@@ -25,6 +25,7 @@ const BINARY: Partial<Record<BinaryOp, [string, number]>> = {
   le: ["<=", 1],
   ge: [">=", 1],
 };
+const MAX_STRING = 255;
 const UNARY = 6;
 const ATOM = 9;
 
@@ -44,7 +45,7 @@ export function printExcel(ast: Expr, end = 0): PrintResult {
   };
 
   let failed = false;
-  const fail = (code: "nesting-too-deep" | "no-excel-equivalent", message: string): string => {
+  const fail = (code: "nesting-too-deep" | "no-excel-equivalent" | "excel-limit", message: string): string => {
     if (!failed) diagnostics.push(diag(code, "error", end, message));
     failed = true;
     return "";
@@ -67,6 +68,7 @@ export function printExcel(ast: Expr, end = 0): PrintResult {
       case "int":
         return String(e.value);
       case "string":
+        if (e.value.length > MAX_STRING) return fail("excel-limit", `string constant has ${e.value.length} characters; Excel allows ${MAX_STRING}`);
         return `"${e.value.replaceAll('"', '""')}"`;
       case "ref":
         return ref(e.ref);
