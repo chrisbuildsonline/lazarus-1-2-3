@@ -141,6 +141,47 @@
       ]
     },
     {
+      "path": "fixtures/functions/functions.wk1",
+      "format": "wk1",
+      "origin": "synthetic",
+      "sourceUrl": null,
+      "license": "MIT",
+      "sha256": "de052bdea04bac7ab9357c5935f8636432efca1de3cfcbb11d01b2891eb2bd2f",
+      "counts": {
+        "cells": 33,
+        "formulas": 16,
+        "labels": 0,
+        "numbers": 17
+      },
+      "expectedValues": [
+        {
+          "cell": "A10",
+          "kind": "formula",
+          "cached": 3.5
+        },
+        {
+          "cell": "A14",
+          "kind": "formula",
+          "cached": -7
+        },
+        {
+          "cell": "A19",
+          "kind": "formula",
+          "cached": 4000
+        },
+        {
+          "cell": "A23",
+          "kind": "formula",
+          "cached": 20
+        },
+        {
+          "cell": "A24",
+          "kind": "formula",
+          "cached": 200
+        }
+      ]
+    },
+    {
       "path": "fixtures/ksbase/KSBASE.WK1",
       "format": "wk1",
       "origin": "real",

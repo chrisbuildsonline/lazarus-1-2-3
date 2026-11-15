@@ -43,6 +43,13 @@ const f64 = (v: number) => {
   return [NUM, ...b];
 };
 const fml = (col: number, row: number, cached: number, rpn: number[]): CellSpec => ({ kind: "formula", col, row, cached, rpn: [...rpn, RET] });
+const i16 = (v: number) => [INT, ...u16(v)];
+
+// Function opcodes no real fixture uses yet, so they stay `candidate` in src/formula/opcodes.ts:
+// one written source each (LibreOffice lotform.cxx IndexToType, WSFF5), not the decoder.
+// A count byte follows the variable ones (FT_FuncVar).
+const F = { ABS: 0x21, INT: 0x22, SQRT: 0x23, PI: 0x26, CHOOSE: 0x30, TRUE: 0x34, DATE: 0x36, PMT: 0x38, PV: 0x39, FV: 0x3a, ROUND: 0x3f };
+const V = { AVG: 0x51, MIN: 0x53, MAX: 0x54, VLOOKUP: 0x55, NPV: 0x56, HLOOKUP: 0x5a };
 
 const LONG_TEXT ="Lotus 1-2-3 kept this label on one line, however wide the column was. ".repeat(3).trimEnd();
 
@@ -144,5 +151,65 @@ export const SPECS: FixtureSpec[] = [
       fml(3, 3, 4.5, [...range(0, -2, 0, -1), SUM, 1]), // D4: @SUM(D2..D3)
     ],
     expect: ["A2", "B2", "C2", "D2", "D4"],
+  },
+  {
+    // One formula per function that no real fixture uses, cached values worked out by hand with
+    // inputs that are exact in binary. NA, ERR, NOW and RAND are left out: their stored value is
+    // a special or volatile one that cannot be worked out by hand.
+    name: "functions",
+    version: WK1_VERSION,
+    cells: [
+      int(0, 0, 2), // A1
+      num(1, 0, -7.5), // B1
+      int(2, 0, 16), // C1
+      int(4, 0, 1), // E1..F3: a vertical lookup table
+      int(5, 0, 100),
+      int(4, 1, 2),
+      int(5, 1, 200),
+      int(4, 2, 3),
+      int(5, 2, 300),
+      int(4, 4, 1), // E5..G6: a horizontal lookup table
+      int(5, 4, 2),
+      int(6, 4, 3),
+      int(4, 5, 10),
+      int(5, 5, 20),
+      int(6, 5, 30),
+      int(7, 0, 150), // H1..H2: cash flows
+      int(7, 1, 220),
+      // A10: @AVG(A1..C1) = (2 - 7.5 + 16) / 3 = 10.5 / 3 = 3.5
+      fml(0, 9, 3.5, [...range(0, -9, 2, -9), V.AVG, 1]),
+      // A11: @MIN(A1..C1) = -7.5
+      fml(0, 10, -7.5, [...range(0, -10, 2, -10), V.MIN, 1]),
+      // A12: @MAX(A1..C1) = 16
+      fml(0, 11, 16, [...range(0, -11, 2, -11), V.MAX, 1]),
+      // A13: @ABS(B1) = 7.5
+      fml(0, 12, 7.5, [...ref(1, -12), F.ABS]),
+      // A14: @INT(B1) = -7, Lotus truncates toward zero
+      fml(0, 13, -7, [...ref(1, -13), F.INT]),
+      // A15: @SQRT(C1) = 4
+      fml(0, 14, 4, [...ref(2, -14), F.SQRT]),
+      // A16: @ROUND(@PI, 2) = 3.14 (pi = 3.14159...)
+      fml(0, 15, 3.14, [F.PI, ...i16(2), F.ROUND]),
+      // A17: @TRUE = 1
+      fml(0, 16, 1, [F.TRUE]),
+      // A18: @DATE(92, 3, 1) = 1992-03-01. 2000-01-01 is 36526, so 1990-01-01 is 36526 - 3652 =
+      // 32874 (two leap days, 1992 and 1996); + 730 for 1990 and 1991 + 31 (Jan) + 29 (Feb) = 33664
+      fml(0, 17, 33664, [...i16(92), ...i16(3), ...i16(1), F.DATE]),
+      // A19: @PMT(3000, 1, 2) = 3000 * 1 / (1 - 2^-2) = 3000 / 0.75 = 4000
+      fml(0, 18, 4000, [...i16(3000), ...i16(1), ...i16(2), F.PMT]),
+      // A20: @PV(4000, 1, 2) = 4000 * (1 - 2^-2) / 1 = 3000
+      fml(0, 19, 3000, [...i16(4000), ...i16(1), ...i16(2), F.PV]),
+      // A21: @FV(4000, 1, 2) = 4000 * (2^2 - 1) / 1 = 12000
+      fml(0, 20, 12000, [...i16(4000), ...i16(1), ...i16(2), F.FV]),
+      // A22: @NPV(1, H1..H2) = 150 / 2 + 220 / 4 = 75 + 55 = 130
+      fml(0, 21, 130, [...i16(1), ...range(7, -21, 7, -20), V.NPV]),
+      // A23: @CHOOSE(1, 10, 20, 30) = 20, the index counts from 0
+      fml(0, 22, 20, [...i16(1), ...i16(10), ...i16(20), ...i16(30), F.CHOOSE, 4]),
+      // A24: @VLOOKUP(2, E1..F3, 1) = 200: row with key 2, offset 1 from the key column
+      fml(0, 23, 200, [...i16(2), ...range(4, -23, 5, -21), ...i16(1), V.VLOOKUP]),
+      // A25: @HLOOKUP(3, E5..G6, 1) = 30: column with key 3, offset 1 from the key row
+      fml(0, 24, 30, [...i16(3), ...range(4, -20, 6, -19), ...i16(1), V.HLOOKUP]),
+    ],
+    expect: ["A10", "A14", "A19", "A23", "A24"],
   },
 ];

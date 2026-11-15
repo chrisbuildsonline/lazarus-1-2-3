@@ -6,8 +6,9 @@
 //   fixtures/formulas/formulas.wk1                          6 / 0
 //   fixtures/mixed/mixed.wk1                                4 / 0
 //   fixtures/dates/dates.wk1                                1 / 0
+//   fixtures/functions/functions.wk1                       16 / 0  (added by task 37)
 //   basic-values, labels, 92stlde.wk1                       no formulas
-// 185 formulas, 185 ok, 0 unverifiable. No real formula raised unconfirmed-opcode: every opcode
+// 201 formulas, 201 ok, 0 unverifiable (185 before functions.wk1). No real formula raised unconfirmed-opcode: every opcode
 // the real files use (0x00 to 0x06, 0x09, 0x0B, 0x0E, 0x14, 0x2F, 0x33, 0x3B, 0x50, 0x52, 0x58)
 // was already confirmed in src/formula/opcodes.ts, so no status changed.
 // Finding: testLotus123.wks writes relative columns as 0x80FE (-2) and 0x80FF (-1), bit 15 set
@@ -17,6 +18,13 @@
 // it stays a warning and the status stays ok. Pinned below.
 // Finding: gnome647171-1.wks C2 is @STD (0x58), not in requirement 17. Its cached 0.75 is the
 // population deviation of 10 and 11.5, so it maps to STDEVP (src/formula/excel-ast.ts).
+// Still candidate: AVG, MIN, MAX, ABS, INT, SQRT, PI, ROUND, TRUE, DATE, PMT, PV, FV, NPV,
+// CHOOSE, VLOOKUP, HLOOKUP. functions.wk1 runs each of them through the whole chain with cached
+// values worked out by hand (and re-checked by the evaluator in gen-fixtures.test.ts), but a
+// synthetic file is written from the same opcode table, so it cannot be the second source;
+// they stay candidate until a real file shows them. NA, ERR, NOW and RAND have no fixture at
+// all: their stored values are special or volatile and cannot be worked out by hand. The
+// operators other than add, multiply, equals and AND are candidate for the same reason.
 
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
@@ -36,6 +44,25 @@ const GOLDEN: Record<string, Record<string, string>> = {
   "fixtures/formulas/formulas.wk1": { A2: "A1+B1", B2: "A1*C1", C2: "SUM(A1:C1)", A3: "(A1+B1)*2", B3: "0.5*B1", C3: "SUM(A2:C2)+A3" },
   "fixtures/mixed/mixed.wk1": { D2: "B2*C2", D3: "B3*C3", B4: "SUM(B2:B3)", D4: "SUM(D2:D3)" },
   "fixtures/dates/dates.wk1": { A8: "A6+1" },
+  // Lotus text from the comments in fixture-specs.ts, Excel form from requirements 24 to 28.
+  "fixtures/functions/functions.wk1": {
+    A10: "AVERAGE(A1:C1)",
+    A11: "MIN(A1:C1)",
+    A12: "MAX(A1:C1)",
+    A13: "ABS(B1)",
+    A14: "TRUNC(B1)",
+    A15: "SQRT(C1)",
+    A16: "ROUND(PI(),2)",
+    A17: "TRUE()",
+    A18: "DATE(92,3,1)",
+    A19: "-PMT(1,2,3000)",
+    A20: "-PV(1,2,4000)",
+    A21: "-FV(1,2,4000)",
+    A22: "NPV(1,H1:H2)",
+    A23: "CHOOSE(1+1,10,20,30)",
+    A24: "VLOOKUP(2,E1:F3,1+1,TRUE())",
+    A25: "HLOOKUP(3,E5:G6,1+1,TRUE())",
+  },
   // A2 02 00 80 ff bf 01 80 ff bf 50 01: A1..B1, @SUM. B2 the same range from B2, @COUNT (0x52).
   // C2 refs col -2 and -1, row -1 = A1, B1, @STD (0x58) with count 2. A5 per decode-functions.test.ts.
   "fixtures/libreoffice-wks-functions/gnome647171-1.wks": {
