@@ -27,10 +27,10 @@ Red first: write each test and watch it fail before the code that makes it pass.
 
 ## Translation and printing
 
-- [ ] 18. Red: `print-excel.test.ts`, literals: `0.1`, `2`, `1E+100`, `1.5E-7`, a negative constant `-2.5`, `-0` as `0`, strings with `"` doubled, `constant-precision` for 17 digit constants. Green: `src/formula/print-excel.ts` literal printing. (Req 36, 37)
-- [ ] 19. Red: refs and ranges: `A1`, `$A$1`, `$A1`, `A$1`, `IV8192`, `A1:B2`, `$A$1:B2`. Green: reference printing with the column-name algorithm. (Req 33)
-- [ ] 20. Red: precedence: `neg(pow(2,2))` prints `-(2^2)` and `pow(neg(2),2)` prints `-2^2`; `a-(b-c)`, `(a-b)-c`, `a^(b^c)`, `(a^b)^c`, `a&b=c`, `(a=b)&c`, a `paren` node printed once. Green: precedence-driven parentheses. (Req 34, 35)
-- [ ] 21. Red: calls print as `NAME(a,b)` and `NAME()`. Green: call printing and the depth check. (Req 36)
+- [x] 18. Red: `print-excel.test.ts`, literals: `0.1`, `2`, `1E+100`, `1.5E-7`, a negative constant `-2.5`, `-0` as `0`, strings with `"` doubled, `constant-precision` for 17 digit constants. Green: `src/formula/print-excel.ts` literal printing. (Req 36, 37)
+- [x] 19. Red: refs and ranges: `A1`, `$A$1`, `$A1`, `A$1`, `IV8192`, `A1:B2`, `$A$1:B2`. Green: reference printing with the column-name algorithm. (Req 33)
+- [x] 20. Red: precedence: `neg(pow(2,2))` prints `-(2^2)` and `pow(neg(2),2)` prints `-2^2`; `a-(b-c)`, `(a-b)-c`, `a^(b^c)`, `(a^b)^c`, `a&b=c`, `(a=b)&c`, a `paren` node printed once. Green: precedence-driven parentheses. (Req 34, 35)
+- [x] 21. Red: calls print as `NAME(a,b)` and `NAME()`. Green: call printing and the depth check. (Req 36)
 - [ ] 22. Red: `excel-ast.test.ts`, renames: AVG to AVERAGE, COUNT to COUNTA, INT to TRUNC, others unchanged. Green: `src/formula/excel-ast.ts` rename table. (Req 24)
 - [ ] 23. Red: PMT, PV and FV argument order and the `neg` wrapper, checked against hand-written expected trees and printed text such as `-PMT(B1,C1,A1)`. Green: reorder rules. (Req 25)
 - [ ] 24. Red: CHOOSE gets `+1` on its index, VLOOKUP and HLOOKUP get `+1` on the offset and a trailing `TRUE()`, constants not folded. Green: offset rules. (Req 26)
