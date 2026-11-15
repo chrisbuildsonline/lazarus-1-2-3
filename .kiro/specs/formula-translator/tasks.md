@@ -41,8 +41,8 @@ Red first: write each test and watch it fail before the code that makes it pass.
 
 ## Test helpers
 
-- [ ] 29. Red: tests for `tests/unit/helpers/excel-parse.ts` with example inputs and expected trees, written by hand (precedence, left association, `$` refs, strings with `""`, nested calls, `TRUE()`), and rejection of malformed text with an error result. Green: the helper. It does not import `src/formula/print-excel.ts`. (Design: Test helpers)
-- [ ] 30. Red then green: `tests/unit/helpers/rpn-encode.ts` (Lotus `Expr` to bytes, using the opcode table), with example tests that its output equals the literal byte arrays from task 6 to 14 for the same trees.
+- [x] 29. Red: tests for `tests/unit/helpers/excel-parse.ts` with example inputs and expected trees, written by hand (precedence, left association, `$` refs, strings with `""`, nested calls, `TRUE()`), and rejection of malformed text with an error result. Green: the helper. It does not import `src/formula/print-excel.ts`. (Design: Test helpers)
+- [x] 30. Red then green: `tests/unit/helpers/rpn-encode.ts` (Lotus `Expr` to bytes, using the opcode table), with example tests that its output equals the literal byte arrays from task 6 to 14 for the same trees.
 
 ## Property tests
 
