@@ -72,6 +72,22 @@ function operandNumber(v: Operand, comparison: boolean): number | Outcome<Value>
   return v.t === "num" ? v.v : 0;
 }
 
+/**
+ * The arguments of a number function as numbers: ERR/NA first (S12, U08), then a string is U01,
+ * and a label or an empty cell is 0 (S01).
+ */
+export function numbers(args: readonly Operand[]): number[] | Outcome<Value> {
+  const stop = propagate(args);
+  if (stop) return stop;
+  const out: number[] = [];
+  for (const a of args) {
+    const x = operandNumber(a, false);
+    if (typeof x !== "number") return x;
+    out.push(x);
+  }
+  return out;
+}
+
 export function binary(op: BinaryOp, a: Operand, b: Operand): Outcome<Value> {
   if (op === "concat") return u01("joining text with &");
   const stop = propagate([a, b]);
