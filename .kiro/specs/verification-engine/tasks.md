@@ -11,8 +11,8 @@ Red first: write each test and watch it fail before the code that makes it pass.
 
 ## Values and reasons
 
-- [ ] 5. Red: `tests/unit/verify/value.test.ts`: `valueFromDouble` gives `err` for `+Infinity`, `na` for `-Infinity`, `null` for NaN, `num` for finite numbers including `-0` and the largest and smallest doubles (S27). Constructors for `num`, `err`, `na`, `str`. Green: `src/verify/value.ts`. (Req 22, 23)
-- [ ] 6. Red: reason helpers: `unverifiable(code, rule, message)` and a `matchedReason`/`mismatchedReason` pair return objects of the closed set of codes in design.md, and a test lists the set and fails if a code is added without a test. Messages for each unverifiable code are non-empty, contain no `undefined`, and the opcode form is `0x%02X` with a decimal offset. Green: the helpers in `src/verify/value.ts`. (Req 17, 18)
+- [x] 5. Red: `tests/unit/verify/value.test.ts`: `valueFromDouble` gives `err` for `+Infinity`, `na` for `-Infinity`, `null` for NaN, `num` for finite numbers including `-0` and the largest and smallest doubles (S27). Constructors for `num`, `err`, `na`, `str`. Green: `src/verify/value.ts`. (Req 22, 23)
+- [x] 6. Red: reason helpers: `unverifiable(code, rule, message)` and a `matchedReason`/`mismatchedReason` pair return objects of the closed set of codes in design.md, and a test lists the set and fails if a code is added without a test. Messages for each unverifiable code are non-empty, contain no `undefined`, and the opcode form is `0x%02X` with a decimal offset. Green: the helpers in `src/verify/value.ts`. (Req 17, 18)
 
 ## Date and rounding arithmetic
 
