@@ -47,6 +47,12 @@ export type Reason = { code: ReasonCode; rule?: string; message: string };
 export type Unverifiable = { code: UnverifiableCode; rule?: string; message: string };
 export type Outcome<T> = { ok: true; v: T } | { ok: false; u: Unverifiable };
 
+/** A cell inside a range: its operand, or the reason a formula cell there could not be checked. */
+export type RangeCell = Operand | { t: "unverifiable"; u: Unverifiable };
+
+/** The cells of a range in row-major order, with its shape. */
+export type Range = { rows: number; cols: number; cells: readonly RangeCell[] };
+
 // Messages are for estate executors and archivists: plain words first, technical detail in brackets.
 
 export function unverifiable(code: UnverifiableCode, rule: string | undefined, message: string): Unverifiable {
