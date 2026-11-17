@@ -1,0 +1,90 @@
+/* Copy of the css block in design/DESIGN.md section 2. Checked by tests/unit/ui/tokens-css.test.ts. */
+:root {
+  /* colour: neutrals */
+  --canvas: #eef0f4;
+  --surface: #ffffff;
+  --surface-sunken: #f5f6f9;      /* code blocks, inset rows inside a surface */
+  --text: #12141a;
+  --text-muted: #646a7b;
+  --hairline: #e6e8ee;            /* grid lines, list dividers; never a box border */
+  --on-primary: #ffffff;
+  --primary: #12141a;             /* the one near-black pill */
+  --primary-hover: #2b2f3a;
+
+  /* colour: the one accent (spectral violet) */
+  --accent: #7563e6;              /* focus ring, selection edge, progress, chart line */
+  --accent-ink: #5b4bd1;          /* accent text and links */
+  --accent-soft: #efecff;         /* selected row/cell/tab fill */
+  --accent-glow: rgba(117, 99, 230, 0.18);
+  --candle-core: rgba(255, 248, 236, 0.95);
+
+  /* colour: status (pill bg / pill text / grid marker) */
+  --status-matched-bg: #e2f3e9;
+  --status-matched-fg: #1d6b43;
+  --status-matched-mark: #2f9e62;
+  --status-mismatched-bg: #fbe6eb;
+  --status-mismatched-fg: #a4243f;
+  --status-mismatched-mark: #a4243f;
+  --status-unverifiable-bg: #e8eaf0;
+  --status-unverifiable-fg: #4b5163;
+  --status-unverifiable-mark: #8a90a2;
+
+  /* colour: errors (parse failure, unsupported file, failed batch item) */
+  --danger: #b42318;
+  --danger-soft: #fdecea;
+
+  /* ghost cells */
+  --ghost-ink: #646a7b;                     /* unverifiable value text (AA on white) */
+  --ghost-fill: rgba(18, 20, 26, 0.06);     /* not-yet-raised placeholder bar */
+
+  /* radius */
+  --radius-xs: 6px;      /* grid selection ring, small chips */
+  --radius-sm: 10px;     /* inputs, code blocks */
+  --radius-md: 12px;     /* queue items, inner panels */
+  --radius-lg: 20px;     /* surfaces, drawer, drop zone */
+  --radius-pill: 999px;
+
+  /* shadow */
+  --shadow-surface: 0 12px 32px rgba(20, 24, 40, 0.08), 0 1px 2px rgba(20, 24, 40, 0.04);
+  --shadow-raised: 0 24px 64px rgba(20, 24, 40, 0.16), 0 2px 6px rgba(20, 24, 40, 0.06);
+  --shadow-primary: 0 6px 16px rgba(18, 20, 26, 0.18);
+
+  /* spacing (4px base) */
+  --space-1: 4px;  --space-2: 8px;  --space-3: 12px; --space-4: 16px;
+  --space-5: 20px; --space-6: 24px; --space-8: 32px; --space-10: 40px;
+  --space-14: 56px; --space-18: 72px;
+
+  /* type */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+  --text-display: 600 56px/1.0 var(--font-sans);   /* % verified, drawer value */
+  --text-display-sm: 600 40px/1.05 var(--font-sans); /* phone display, stat tiles */
+  --text-title: 650 32px/1.15 var(--font-sans);    /* screen title (44px on Summon) */
+  --text-h2: 600 20px/1.3 var(--font-sans);
+  --text-body: 400 15px/1.5 var(--font-sans);
+  --text-body-strong: 600 15px/1.5 var(--font-sans);
+  --text-small: 500 13px/1.4 var(--font-sans);     /* pills, list meta */
+  --text-label: 500 12px/1.3 var(--font-sans);     /* muted labels, column letters */
+  --text-mono: 400 14px/1.5 var(--font-mono);      /* formulas, addresses */
+  --tracking-display: -0.02em;
+  --tracking-label: 0.02em;
+
+  /* layering */
+  --z-sticky: 10;
+  --z-drawer: 50;     /* phone scrim sits at 49 */
+  --z-toast: 60;
+
+  /* motion */
+  --dur-fast: 150ms;   /* hover, press, pill colour */
+  --dur-base: 200ms;   /* tab/filter change, toast */
+  --dur-slow: 250ms;   /* drawer slide, ghost solidify, glow bloom */
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --focus-ring: 0 0 0 2px var(--surface), 0 0 0 4px var(--accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --dur-fast: 0ms; --dur-base: 0ms; --dur-slow: 0ms; }
+}
+
+body { background: var(--canvas); color: var(--text); font: var(--text-body); font-variant-numeric: tabular-nums; }
