@@ -32,17 +32,23 @@ async function asset(url: string): Promise<{ url: string; length: number; sha256
   return { url, length: buffer.byteLength, sha256: await hex(buffer) };
 }
 
-function askWorker(): Promise<{ type: string; id: unknown; totals: unknown }> {
-  const worker = new Worker(new URL("../../../src/workers/verify.worker.ts", import.meta.url), { type: "module" });
+function askWorker(): Promise<{ steps: string[]; type: string; id: unknown; totals: unknown; sha256: unknown; transferred: boolean }> {
+  const worker = new Worker(new URL("../../../src/workers/raise.worker.ts", import.meta.url), { type: "module" });
+  const steps: string[] = [];
+  let transferred = false;
   return new Promise((resolve, reject) => {
     worker.onmessage = (e: MessageEvent) => {
+      if (e.data.type === "progress") return void steps.push(e.data.step);
       worker.terminate();
-      resolve({ type: e.data.type, id: e.data.id, totals: e.data.result?.verification?.totals ?? null });
+      resolve({ steps, type: e.data.type, id: e.data.id, totals: e.data.file?.verification?.totals ?? null, sha256: e.data.file?.sha256 ?? null, transferred });
     };
     worker.onerror = (e) => reject(new Error(`worker error: ${e.message}`));
     fetch(ksbaseUrl)
       .then((r) => r.arrayBuffer())
-      .then((bytes) => worker.postMessage({ type: "verify", id: 7, name: "KSBASE.WK1", bytes }, [bytes]));
+      .then((bytes) => {
+        worker.postMessage({ type: "raise", id: 7, name: "KSBASE.WK1", bytes }, [bytes]);
+        transferred = bytes.byteLength === 0;
+      });
   });
 }
 

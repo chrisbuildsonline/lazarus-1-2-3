@@ -8,8 +8,10 @@
 //     case kept) serving 24,291 bytes with the manifest SHA-256, and the 691-byte functions.wk1 is
 //     emitted as /assets/functions-<hash>.wk1, not inlined as data:. No vite.config.ts change needed.
 // (b) new Worker(new URL("<path>.worker.ts", import.meta.url), { type: "module" }) is emitted as
-//     /assets/<name>.worker-<hash>.js, loads from the app origin and answers a message (here
-//     verify.worker.ts, the only worker before the raise worker exists). No config change needed.
+//     /assets/<name>.worker-<hash>.js, loads from the app origin and answers a message. First run
+//     with verify.worker.ts (before the raise worker existed), now with raise.worker.ts: the
+//     transferred buffer is detached on the page, the worker posts read, check, then raised with
+//     the manifest SHA-256 (Web Crypto works inside the worker). No config change needed.
 // (c) locator.setInputFiles(<directory>) on <input type="file" webkitdirectory> gives one File per
 //     file in the tree, with webkitRelativePath "<folder>/<sub>/<name>" (sub-folders included).
 // (d) A drop event carrying a DataTransfer built in the page with items.add(file) reaches the
@@ -27,7 +29,7 @@ import { build, preview, type PreviewServer } from "vite";
 type Probe = {
   urls: { ksbase: string; functions: string };
   asset(url: string): Promise<{ url: string; length: number; sha256: string }>;
-  askWorker(): Promise<{ type: string; id: unknown; totals: unknown }>;
+  askWorker(): Promise<{ steps: string[]; type: string; id: unknown; totals: unknown; sha256: unknown; transferred: boolean }>;
   drops: { items: { kind: string; entry: null | { isFile: boolean; isDirectory: boolean; name: string; fullPath: string } }[]; files: { name: string; size: number }[] }[];
   subtle: boolean;
   secure: boolean;
@@ -87,13 +89,16 @@ test("(b) a module worker is emitted under /assets/ and answers a message", asyn
   page.on("request", (r) => requests.push(new URL(r.url()).pathname));
   await open(page);
   const answer = await page.evaluate(() => probe.askWorker());
-  expect(answer.type).toBe("result");
+  expect(answer.steps).toEqual(["read", "check"]);
+  expect(answer.type).toBe("raised");
   expect(answer.id).toBe(7);
+  expect(answer.transferred).toBe(true);
   // golden.json: KSBASE has 160 formulas, all matched.
   expect(answer.totals).toMatchObject({ formulas: 160, matched: 160, mismatched: 0, unverifiable: 0 });
+  expect(answer.sha256).toBe(sha("fixtures/ksbase/KSBASE.WK1"));
   const workerPaths = requests.filter((p) => /worker/i.test(p));
   expect(workerPaths).toHaveLength(1);
-  expect(workerPaths[0]).toMatch(/^\/assets\/verify\.worker-[\w-]+\.js$/);
+  expect(workerPaths[0]).toMatch(/^\/assets\/raise\.worker-[\w-]+\.js$/);
 });
 
 test("(c) setInputFiles with a directory on a webkitdirectory input gives webkitRelativePath", async ({ page }) => {
