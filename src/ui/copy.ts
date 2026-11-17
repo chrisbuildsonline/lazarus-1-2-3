@@ -4,4 +4,7 @@ export const COPY = {
   missingRecalculated: "Could not be calculated",
   noFormulas: "No formulas",
   andMore: (n: number) => `and ${n} more`,
+  status: { matched: "Matched", mismatched: "Mismatched", unverifiable: "Unverifiable" },
+  emptyCell: "empty",
+  noStoredValue: "no stored value",
 } as const;
