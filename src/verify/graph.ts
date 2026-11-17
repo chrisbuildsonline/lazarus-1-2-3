@@ -69,39 +69,39 @@ export function naturalOrder(graph: ReadonlyMap<number, readonly number[]>): Com
   const onStack = new Set<number>();
   const stack: number[] = [];
   const out: Component[] = [];
-  const visit = (node: number) => {
-    index.set(node, index.size);
-    low.set(node, index.get(node)!);
-    stack.push(node);
-    onStack.add(node);
+  const visit = (cell: number) => {
+    index.set(cell, index.size);
+    low.set(cell, index.get(cell)!);
+    stack.push(cell);
+    onStack.add(cell);
   };
   for (const root of [...graph.keys()].sort((a, b) => a - b)) {
     if (index.has(root)) continue;
     visit(root);
-    const frames = [{ node: root, next: 0 }];
+    const frames = [{ cell: root, next: 0 }];
     while (frames.length > 0) {
       const frame = frames[frames.length - 1]!;
-      const edges = graph.get(frame.node) ?? [];
+      const edges = graph.get(frame.cell) ?? [];
       if (frame.next < edges.length) {
         const w = edges[frame.next++]!;
         if (!index.has(w)) {
           visit(w);
-          frames.push({ node: w, next: 0 });
-        } else if (onStack.has(w)) low.set(frame.node, Math.min(low.get(frame.node)!, index.get(w)!));
+          frames.push({ cell: w, next: 0 });
+        } else if (onStack.has(w)) low.set(frame.cell, Math.min(low.get(frame.cell)!, index.get(w)!));
         continue;
       }
       frames.pop();
       const parent = frames[frames.length - 1];
-      if (parent) low.set(parent.node, Math.min(low.get(parent.node)!, low.get(frame.node)!));
-      if (low.get(frame.node) !== index.get(frame.node)) continue;
+      if (parent) low.set(parent.cell, Math.min(low.get(parent.cell)!, low.get(frame.cell)!));
+      if (low.get(frame.cell) !== index.get(frame.cell)) continue;
       const members: number[] = [];
       for (let w = stack.pop()!; ; w = stack.pop()!) {
         onStack.delete(w);
         members.push(w);
-        if (w === frame.node) break;
+        if (w === frame.cell) break;
       }
       // Two or more members, or one cell with an edge to itself, is a circular reference.
-      out.push({ members: members.sort((a, b) => a - b), cycle: members.length > 1 || edges.includes(frame.node) });
+      out.push({ members: members.sort((a, b) => a - b), cycle: members.length > 1 || edges.includes(frame.cell) });
     }
   }
   return out;
