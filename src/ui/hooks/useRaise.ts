@@ -28,8 +28,11 @@ export function useRaise() {
     dispatch({ type: "summoned", batchId, entries: accepted.map(({ name, path, size }) => ({ name, path, size })), skipped: [...skippedBefore, ...skipped] });
 
     // One file at a time, read just before it is sent, so a big batch holds one buffer at most.
+    // An engine failure fails every unfinished row at once (requirement 22), so the loop stops there
+    // instead of starting a new worker for rows already shown as failed.
+    let engineDown = false;
     for (const [id, entry] of accepted.entries()) {
-      if (client.current !== mine) return;
+      if (client.current !== mine || engineDown) return;
       let bytes: ArrayBuffer;
       try {
         bytes = await entry.file.arrayBuffer();
@@ -42,7 +45,10 @@ export function useRaise() {
       await mine.raise({ name: entry.name, bytes }, (m) => {
         if (m.type === "progress") dispatch({ type: "progress", batchId, id, step: m.step });
         else if (m.type === "raised") dispatch({ type: "raised", batchId, id, file: m.file });
-        else if (ENGINE.some((text) => m.message.startsWith(text))) dispatch({ type: "workerFailed", batchId, message: m.message });
+        else if (ENGINE.some((text) => m.message.startsWith(text))) {
+          engineDown = true;
+          dispatch({ type: "workerFailed", batchId, message: m.message });
+        }
         else dispatch({ type: "fileFailed", batchId, id, message: m.message });
       });
     }
