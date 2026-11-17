@@ -1,4 +1,5 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { parseRuleTable, ruleProblems, urlsIn } from "../helpers/rule-table.ts";
 
@@ -73,4 +74,30 @@ describe("the real rule tables", () => {
   it("every rule cites an allowed source, ids are unique, and requirements name only defined ids", () => {
     expect(ruleProblems(rows, new Set(sources), requirements)).toEqual([]);
   });
+
+  // Acceptance 5. This file and the rule-table helper are left out: their sample ids prove nothing.
+  it("every S and U id of design.md appears in at least one test file", () => {
+    const own = new Set(["tests/unit/verify/rules.test.ts", "tests/unit/helpers/rule-table.ts"]);
+    const text = tsFiles("tests")
+      .filter((f) => !own.has(f))
+      .map((f) => readFileSync(f, "utf8"))
+      .join("\n");
+    const missing = (ids: string[]) => ids.filter((id) => !new RegExp(`\\b${id}\\b`).test(text));
+    expect(missing(["S01", "S98"])).toEqual(["S98"]); // the scan does catch an id no test names
+    expect(missing(rows.map((r) => r.id))).toEqual([]);
+  });
+
+  it("every rule id the engine can put in reason.rule is defined in design.md", () => {
+    const defined = new Set(rows.map((r) => r.id));
+    const emitted = tsFiles("src/verify").flatMap((f) => [...readFileSync(f, "utf8").matchAll(/["'`]([A-Z]\d{2})["'`]/g)].map((m) => `${f}: ${m[1]}`));
+    expect(emitted.length).toBeGreaterThan(0);
+    expect(emitted.filter((e) => !defined.has(e.slice(-3)))).toEqual([]);
+  });
 });
+
+function tsFiles(dir: string): string[] {
+  return readdirSync(dir, { recursive: true, encoding: "utf8" })
+    .filter((f) => f.endsWith(".ts"))
+    .map((f) => join(dir, f))
+    .sort();
+}
