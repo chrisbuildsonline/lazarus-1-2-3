@@ -19,4 +19,5 @@ export const COPY = {
   engineCouldNotStart: "The checking engine could not start.",
   engineStopped: "The checking engine stopped.",
   engineUnreadable: "The checking engine sent a message that could not be read.",
+  noFingerprint: "This browser cannot fingerprint the file here. Use https or localhost.",
 } as const;
