@@ -4,4 +4,5 @@ export { type FormulaDiagnostic, type FormulaDiagnosticCode } from "./diagnostic
 export { toExcelAst, type TranslateResult } from "./excel-ast.ts";
 export { OPCODE_TABLE, OPCODES, type OpcodeEntry, type OpcodeStatus } from "./opcodes.ts";
 export { printExcel, type PrintResult } from "./print-excel.ts";
+export { printLotus } from "./print-lotus.ts";
 export { isUnverifiable, translateFormula, type FormulaTranslation } from "./translate.ts";

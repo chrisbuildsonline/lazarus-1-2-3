@@ -12,6 +12,7 @@ const cell = (status: CellResult["status"], code: ReasonCode, i: number): CellRe
   recalculated: null,
   reason: { code, message: "m" },
   formula: null,
+  lotusFormula: null,
   candidateOpcodes: [],
 });
 

@@ -1,6 +1,6 @@
 // classify: compare the recalculated outcome with the cached value (design.md "Classification"),
 // and build one CellResult per formula cell. Decoding happens in recalc.ts, before evaluation.
-import { translateFormula, type Expr } from "../formula/index.ts";
+import { printLotus, translateFormula, type Expr } from "../formula/index.ts";
 import { a1, cellKey, cellsInRowMajorOrder, type Cell, type Sheet } from "../parser/index.ts";
 import { filterRange, precedents } from "./graph.ts";
 import { recalcSheet } from "./recalc.ts";
@@ -23,6 +23,8 @@ export type CellResult = {
   reason: Reason;
   /** Excel text, for display; null when the translation fails. */
   formula: string | null;
+  /** Lotus @ text of the decoded formula, for the report; null when decoding fails. */
+  lotusFormula: string | null;
   candidateOpcodes: number[];
   /** Mismatched only: the first 20 direct precedents. */
   inputs?: InputRow[];
@@ -62,7 +64,7 @@ export function classifySheet(sheet: Sheet): CellResult[] {
     const { status, reason } = classify(cached, outcome);
     const formula = translateFormula(cell.rpn, { col: cell.col, row: cell.row }).excel;
     const recalculated = outcome.ok ? outcome.v : null;
-    const result: CellResult = { address: a1(cell.col, cell.row), col: cell.col, row: cell.row, status, cached, recalculated, reason, formula, candidateOpcodes };
+    const result: CellResult = { address: a1(cell.col, cell.row), col: cell.col, row: cell.row, status, cached, recalculated, reason, formula, lotusFormula: ast ? printLotus(ast) : null, candidateOpcodes };
     if (status === "mismatched" && ast) {
       const rows = inputs(ast);
       result.inputs = rows.slice(0, MAX_INPUTS);

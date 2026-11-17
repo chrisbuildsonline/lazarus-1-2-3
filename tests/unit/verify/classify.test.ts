@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { decodeRpn, printLotus } from "../../../src/formula/index.ts";
 import { classify, classifySheet, type CellResult } from "../../../src/verify/classify.ts";
 import { bin, buildSheet, call, n, ref, type Spec } from "../helpers/build-sheet.ts";
 import { err, labelZero, na, num, str, valueFromDouble, volatileFunction, type Outcome, type Value } from "../../../src/verify/value.ts";
@@ -95,6 +96,22 @@ describe("decode failures (requirements 66 to 69)", () => {
   it("a cached NaN is cached-not-a-number and still shows the recalculated value", () => {
     const r = classifySheet(buildSheet({ A1: { f: bin("add", n(1), n(2)), cached: Number.NaN } }))[0]!;
     expect(r).toMatchObject({ status: "unverifiable", cached: null, recalculated: num(3), reason: { code: "cached-not-a-number" } });
+  });
+});
+
+describe("lotusFormula (xlsx-writer requirement 45)", () => {
+  it("a matched and an unverifiable cell carry printLotus of their decoded AST", () => {
+    const sheet = buildSheet({ A1: { f: bin("add", ref("A1"), n(1)), cached: 1 }, B1: { f: call("SUM", ref("C1")), cached: 5 }, C1: 5 });
+    const m = new Map(classifySheet(sheet).map((r) => [r.address, r]));
+    const a1Cell = sheet.cells.get(0)!;
+    if (a1Cell.kind !== "formula") throw new Error("A1 is not a formula");
+    expect(m.get("A1")).toMatchObject({ status: "unverifiable" });
+    expect(m.get("A1")!.lotusFormula).toBe(printLotus(decodeRpn(a1Cell.rpn, { col: 0, row: 0 }).ast!));
+    expect(m.get("B1")).toMatchObject({ status: "matched", lotusFormula: "@SUM($C$1)" });
+  });
+
+  it("a cell whose decode fails has a null lotusFormula", () => {
+    expect(only([0x00, 0, 0, 0, 0, 0, 0, 0xf0, 0x3f, 0xff, 0x03]).lotusFormula).toBeNull();
   });
 });
 
