@@ -138,8 +138,11 @@ pre {
   overflow-wrap: anywhere;
 }
 
-.title:focus {
+/* The h1 takes focus by script when a view appears (tabindex -1); it is not a control, so no ring. */
+.title:focus,
+.title:focus-visible {
   outline: none;
+  box-shadow: none;
 }
 
 /* ---------- buttons ---------- */
@@ -741,6 +744,10 @@ pre {
   letter-spacing: var(--tracking-display);
 }
 
+.tile__value--words {
+  font: var(--text-display-sm);
+}
+
 .proof {
   display: flex;
   gap: calc(var(--space-1) / 2);
@@ -829,8 +836,8 @@ pre {
 
 .grid {
   position: relative;
-  height: calc(var(--grid-head) + var(--grid-row) * 16);
-  max-height: 72vh;
+  /* A small sheet ends with its last row instead of a tall empty card. */
+  max-height: min(calc(var(--grid-head) + var(--grid-row) * 16), 72vh);
   overflow: auto;
   overscroll-behavior: contain;
   border-top: 1px solid var(--hairline);

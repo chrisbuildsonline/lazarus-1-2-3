@@ -25,7 +25,8 @@ export function TotalsSurface({ totals }: { totals: Totals }) {
       <div className="totals__tiles" id={countsId}>
         <div className="tile tile--headline">
           <span className="tile__label">{COPY.verified}</span>
-          <span className="tile__value tile__value--display">{headline(totals)}</span>
+          {/* "No formulas" is words, not a number: one step smaller so the tiles stay on one line. */}
+          <span className={totals.formulas === 0 ? "tile__value tile__value--display tile__value--words" : "tile__value tile__value--display"}>{headline(totals)}</span>
         </div>
         {STATUS_ORDER.map((s) => (
           <CountTile key={s} status={s} count={totals[s]} />
