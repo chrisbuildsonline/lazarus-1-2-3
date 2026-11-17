@@ -50,6 +50,13 @@ describe("writer properties", () => {
     );
   });
 
+  // Found by the property above (seed 275313591): a label "\r" read back as "\n".
+  it("keeps carriage returns in labels", async () => {
+    const texts = ["\r", "a\r\nb", "\r\r", "_x000D_\r"];
+    const back = await readXlsx((await writeXlsx(build(texts.map((text, row) => ({ kind: "label", col: 0, row, prefix: "'", text }))))).bytes);
+    expect(texts.map((_, row) => back.cells.get(a1(0, row))?.value)).toEqual(texts);
+  });
+
   it("parseWk1, verifySheet and writeXlsx never throw on arbitrary bytes", async () => {
     await fc.assert(
       fc.asyncProperty(fc.uint8Array({ maxLength: 300 }), async (bytes) => {

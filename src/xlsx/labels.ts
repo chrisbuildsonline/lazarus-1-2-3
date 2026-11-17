@@ -40,8 +40,12 @@ export function sanitizeXmlText(text: string): { text: string; replaced: number 
   return { text: replaced === 0 ? text : out, replaced };
 }
 
-/** OOXML reads `_xHHHH_` in cell text as an escaped character; escaping the `_` keeps it literal. */
-export const escapeOoxmlText = (text: string): string => text.replace(/_(?=x[0-9A-Fa-f]{4}_)/g, "_x005F_");
+/**
+ * OOXML reads `_xHHHH_` in cell text as an escaped character; escaping the `_` keeps it literal.
+ * A raw carriage return would reach a reader as a line feed (XML end-of-line handling), so it is
+ * written as `_x000D_`, after the underscores are escaped.
+ */
+export const escapeOoxmlText = (text: string): string => text.replace(/_(?=x[0-9A-Fa-f]{4}_)/g, "_x005F_").replace(/\r/g, "_x000D_");
 
 export function storedValue(cached: Value | null): PlannedValue {
   if (cached === null || cached.t === "str") return { kind: "none" };

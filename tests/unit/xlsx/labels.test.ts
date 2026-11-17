@@ -38,6 +38,12 @@ describe("escapeOoxmlText", () => {
     expect(escapeOoxmlText("a_x00e9_b_x12_")).toBe("a_x005F_x00e9_b_x12_");
     expect(escapeOoxmlText("plain_text")).toBe("plain_text");
   });
+
+  it("writes carriage return as _x000D_, since an XML reader turns a raw CR into LF", () => {
+    expect(escapeOoxmlText("\r")).toBe("_x000D_");
+    expect(escapeOoxmlText("a\r\nb")).toBe("a_x000D_\nb");
+    expect(escapeOoxmlText("_x000D_\r")).toBe("_x005F_x000D__x000D_");
+  });
 });
 
 describe("storedValue", () => {
