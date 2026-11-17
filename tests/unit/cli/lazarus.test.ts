@@ -140,8 +140,14 @@ describe("lazarus cli", () => {
     for (const name of readdirSync("src/cli")) {
       const source = readFileSync(join("src/cli", name), "utf8");
       for (const [, spec] of source.matchAll(/from\s+"([^"]+)"/g)) {
-        // Requirement 73: verify-summary.ts alone may reach src/verify and src/parser.
-        const allowed = name === "verify-summary.ts" ? /^(\.\.\/(verify|parser)\/index\.ts|\.\/[\w-]+\.ts)$/ : /^(node:(crypto|fs|fs\/promises|path)|\.\/[\w-]+\.ts)$/;
+        // Requirement 73: verify-summary.ts may reach src/verify and src/parser. xlsx-writer design
+        // "Layout": export.ts may also reach src/xlsx and src/report, through their index files.
+        const allowed =
+          name === "verify-summary.ts"
+            ? /^(\.\.\/(verify|parser)\/index\.ts|\.\/[\w-]+\.ts)$/
+            : name === "export.ts"
+              ? /^(node:(fs\/promises|path)|\.\.\/(verify|parser|xlsx|report)\/index\.ts|\.\/[\w-]+\.ts)$/
+              : /^(node:(crypto|fs|fs\/promises|path)|\.\/[\w-]+\.ts)$/;
         expect(spec, `${name} imports ${spec}`).toMatch(allowed);
       }
     }

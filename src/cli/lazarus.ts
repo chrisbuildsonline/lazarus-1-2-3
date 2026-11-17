@@ -1,10 +1,12 @@
 // lazarus CLI entry: bun run lazarus <path> [--json] [--verify] [--xlsx <out.xlsx>] [--report <out.json|out.html>]
 // Lists format, size and sha256 of each file. With --verify it also parses each WK1/WKS file,
-// recalculates its formulas and adds the matched, mismatched and unverifiable counts.
+// recalculates its formulas and adds the matched, mismatched and unverifiable counts. With --xlsx
+// and/or --report it writes the workbook and the provenance report for one WK1/WKS file (export.ts).
 // Exit codes: 0 ok (unknown formats, mismatched and unverifiable cells included), 1 some file could
 // not be read, 2 bad usage or missing path.
 import { readFile, stat } from "node:fs/promises";
 import { USAGE, parseArgs } from "./args.ts";
+import { runExport } from "./export.ts";
 import { formatLine, inventoryFile, walk, type Entry } from "./inventory.ts";
 import { VERIFY_NOTICE, formatSummary, summarizeFile, summaryJson, type VerifySummary } from "./verify-summary.ts";
 
@@ -13,11 +15,13 @@ type Listed = { entry: Entry; summary: VerifySummary | null };
 async function main(args: string[]): Promise<number> {
   const parsed = parseArgs(args);
   const verify = args.includes("--verify");
-  process.stderr.write(verify ? `${VERIFY_NOTICE}\n` : "lazarus: inventory only. Parsing is not implemented yet.\n");
+  const exporting = parsed.kind === "ok" && (parsed.xlsx !== null || parsed.report !== null);
+  process.stderr.write(verify || exporting ? `${VERIFY_NOTICE}\n` : "lazarus: inventory only. Parsing is not implemented yet.\n");
   if (parsed.kind === "usage") {
     process.stderr.write(`lazarus: ${parsed.message}\n${USAGE}\n`);
     return 2;
   }
+  if (exporting) return runExport(parsed);
   const { path, json } = parsed;
   try {
     await stat(path);
