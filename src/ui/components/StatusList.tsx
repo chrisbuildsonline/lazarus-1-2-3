@@ -28,12 +28,13 @@ function Row({ r, selected, onOpen }: { r: CellResult; selected: boolean; onOpen
         data-address={r.address}
         onClick={() => onOpen(r.address)}
       >
+        {/* Spaces between the parts so the visible text reads as the label does (axe label-content-name-mismatch). */}
         <span className="status-row__main">
-          <span className="status-row__addr">{r.address}</span>
+          <span className="status-row__addr">{r.address}</span>{" "}
           <span className="status-row__formula">{formula}</span>
-        </span>
+        </span>{" "}
         <span className="status-row__side">
-          <span className={r.cached === null ? "status-row__value is-missing" : "status-row__value"}>{value}</span>
+          <span className={r.cached === null ? "status-row__value is-missing" : "status-row__value"}>{value}</span>{" "}
           <StatusPill status={r.status} />
         </span>
       </button>
