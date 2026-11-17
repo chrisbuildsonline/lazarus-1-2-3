@@ -140,9 +140,97 @@ describe("lazarus cli", () => {
     for (const name of readdirSync("src/cli")) {
       const source = readFileSync(join("src/cli", name), "utf8");
       for (const [, spec] of source.matchAll(/from\s+"([^"]+)"/g)) {
-        expect(spec, `${name} imports ${spec}`).toMatch(/^(node:(crypto|fs|fs\/promises|path)|\.\/[\w-]+\.ts)$/);
+        // Requirement 73: verify-summary.ts alone may reach src/verify and src/parser.
+        const allowed = name === "verify-summary.ts" ? /^(\.\.\/(verify|parser)\/index\.ts|\.\/[\w-]+\.ts)$/ : /^(node:(crypto|fs|fs\/promises|path)|\.\/[\w-]+\.ts)$/;
+        expect(spec, `${name} imports ${spec}`).toMatch(allowed);
       }
     }
+  });
+
+  it("lazarus fixtures --verify --json gives the golden counts for real fixtures and all matched for synthetic ones", () => {
+    const run = lazarus("fixtures", "--verify", "--json");
+    expect(run.status).toBe(0);
+    const listed = JSON.parse(run.stdout) as { path: string; format: string; verify?: Record<string, unknown> }[];
+    const golden = JSON.parse(readFileSync("tests/differential/verify/golden.json", "utf8")) as Record<string, Record<string, unknown>>;
+    const manifest = JSON.parse(readFileSync("fixtures/manifest.json", "utf8")) as { fixtures: { path: string; format: string; origin: string; counts: { formulas: number } }[] };
+    const spreadsheets = manifest.fixtures.filter((e) => e.format === "wk1" || e.format === "wks");
+    expect(spreadsheets.length).toBeGreaterThan(0);
+    for (const e of spreadsheets) {
+      const v = listed.find((x) => x.path === e.path)?.verify;
+      expect(v, e.path).toBeDefined();
+      const g = golden[e.path];
+      if (g) {
+        const { formulas, matched, mismatched, unverifiable, exact, withinTolerance, byReason } = g;
+        expect(v, e.path).toEqual({ formulas, matched, mismatched, unverifiable, exact, withinTolerance, byReason });
+      } else if (e.origin === "synthetic") {
+        const n = e.counts.formulas;
+        expect(v, e.path).toEqual({ formulas: n, matched: n, mismatched: 0, unverifiable: 0, exact: n, withinTolerance: 0, byReason: n > 0 ? { exact: n } : {} });
+      } else {
+        expect(v?.formulas, e.path).toBe(0); // a real file without formulas has no golden entry
+      }
+    }
+    expect(Object.keys(golden).every((p) => listed.some((x) => x.path === p))).toBe(true);
+  });
+});
+
+const VERIFY_NOTICE = "lazarus: verify: formulas are recalculated and compared with the values stored in the file. Stored values are never changed.\n";
+
+describe("lazarus cli --verify (requirements 70 to 72)", () => {
+  const line = (path: string, bytes: Uint8Array, format: string, extra: string[] = []) => [path, format, bytes.length, sha256(bytes), ...extra].join("\t");
+
+  it("appends one verify field to each wk1/wks line; other lines are unchanged", () => {
+    const run = lazarus(root, "--verify");
+    const lines = run.stdout.trimEnd().split("\n");
+    // mixed.wk1: 4 formulas, all synthetic and matched (manifest). x.wks holds one integer, no formula.
+    expect(lines).toContain(line(join(root, "b.wk1"), WK1, "wk1", ["verify: 4 formulas, 4 matched, 0 mismatched, 0 unverifiable"]));
+    expect(lines).toContain(line(join(root, "a", "y", "x.wks"), WKS, "wks", ["verify: 0 formulas, 0 matched, 0 mismatched, 0 unverifiable"]));
+    expect(lines).toContain(line(join(root, "d.dbf"), WK1, "wk1", ["(extension says dbf)", "verify: 4 formulas, 4 matched, 0 mismatched, 0 unverifiable"]));
+    expect(lines).toContain(line(join(root, "a", "z.dbf"), SAMPLE_DBF, "dbf"));
+    expect(lines.filter((l) => l.includes("verify:"))).toHaveLength(3);
+    expect(run.stderr).toBe(VERIFY_NOTICE);
+    expect(run.status).toBe(0);
+  });
+
+  it("exits 0 when cells are mismatched or unverifiable", () => {
+    const dir = mkdtempSync(join(tmpdir(), "lazarus-cli-verify-"));
+    // A2 = A1 + 1 with A1 = 1 is 2, stored as 99 (mismatched); B2 = A1 with a NaN cached value (unverifiable).
+    const bad = writeWk1(0x0406, [
+      { kind: "integer", col: 0, row: 0, value: 1 },
+      { kind: "formula", col: 0, row: 1, cached: 99, rpn: [0x01, 0x00, 0x00, 0x00, 0x00, 0x05, 0x01, 0x00, 0x09, 0x03] },
+      { kind: "formula", col: 1, row: 1, cached: NaN, rpn: [0x01, 0x00, 0x00, 0x00, 0x00, 0x03] },
+    ]);
+    writeFileSync(join(dir, "bad.wk1"), bad);
+    const run = lazarus(dir, "--verify");
+    rmSync(dir, { recursive: true, force: true });
+    expect(run.stdout).toBe(`${line(join(dir, "bad.wk1"), bad, "wk1", ["verify: 2 formulas, 0 matched, 1 mismatched, 1 unverifiable"])}\n`);
+    expect(run.status).toBe(0);
+  });
+
+  it("says so when a wk1 file has parser errors and still counts the cells that parsed", () => {
+    const dir = mkdtempSync(join(tmpdir(), "lazarus-cli-verify-"));
+    const cut = WK1.subarray(0, WK1.length - 4 - 31 + 8); // into D4's FORMULA record (see verify-summary.test.ts)
+    writeFileSync(join(dir, "cut.wk1"), cut);
+    const run = lazarus(dir, "--verify");
+    rmSync(dir, { recursive: true, force: true });
+    expect(run.stdout).toMatch(/\tverify: 3 formulas, 3 matched, 0 mismatched, 0 unverifiable \(parser errors: [1-9]\d*\)\n$/);
+    expect(run.status).toBe(0);
+  });
+
+  it("names --verify in the usage text", () => {
+    expect(lazarus().stderr).toContain("usage: bun run lazarus <path> [--json] [--verify]");
+  });
+
+  it("--verify --json adds a verify object to wk1/wks entries only", () => {
+    const run = lazarus(root, "--verify", "--json");
+    const parsed = JSON.parse(run.stdout) as Record<string, unknown>[];
+    expect(parsed.map((e) => e.path)).toEqual(ROOT_FILES);
+    const mixedVerify = { formulas: 4, matched: 4, mismatched: 0, unverifiable: 0, exact: 4, withinTolerance: 0, byReason: { exact: 4 } };
+    expect(parsed.find((e) => e.path === join(root, "b.wk1"))!.verify).toEqual(mixedVerify);
+    expect(parsed.find((e) => e.path === join(root, "d.dbf"))!.verify).toEqual(mixedVerify);
+    expect(parsed.find((e) => e.path === join(root, "a", "y", "x.wks"))!.verify).toEqual({ formulas: 0, matched: 0, mismatched: 0, unverifiable: 0, exact: 0, withinTolerance: 0, byReason: {} });
+    for (const e of parsed) expect("verify" in e, String(e.path)).toBe(e.format === "wk1" || e.format === "wks");
+    expect(run.stderr).toBe(VERIFY_NOTICE);
+    expect(run.status).toBe(0);
   });
 });
 
