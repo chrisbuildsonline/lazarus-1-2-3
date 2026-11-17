@@ -70,7 +70,7 @@ export async function runExport(args: ParsedArgs): Promise<number> {
   try {
     for (const o of outputs) {
       const temp = `${o.path}.${process.pid}.partial`;
-      await writeFile(temp, o.bytes);
+      await writeFile(temp, o.bytes, { flag: "wx" }); // never follow or reuse an existing path
       temps.push(temp);
     }
   } catch (e) {
