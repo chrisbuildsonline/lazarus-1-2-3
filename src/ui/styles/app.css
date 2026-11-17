@@ -89,6 +89,8 @@ pre {
   max-width: var(--content-max);
   margin: 0 auto;
   padding: 0 var(--gutter) var(--space-14);
+  /* The candle glow reaches 20% past the drop zone; clip it at the page edge on narrow screens. */
+  overflow-x: clip;
 }
 
 .topbar {
@@ -1444,12 +1446,17 @@ pre {
   overflow-y: auto;
 }
 
+/* Name and pill on the first line, kind and the short line under them across the full width, so a
+   320px panel does not cut "mismatch.wk1" or "66.6% verified, 1 mismatched". */
 .batch-row {
   min-height: 64px;
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    "name name side"
+    "kind line line";
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
+  row-gap: var(--space-1);
   padding: var(--space-3) var(--space-3);
   border-radius: var(--radius-md);
   border-top: 1px solid var(--hairline);
@@ -1471,21 +1478,14 @@ pre {
   background: var(--accent-soft);
 }
 
-.batch-row__main {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  min-width: 0;
-}
-
+.batch-row__main,
 .batch-row__top {
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-2);
-  min-width: 0;
+  display: contents;
 }
 
 .batch-row__name {
+  grid-area: name;
+  min-width: 0;
   font: var(--text-body-strong);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1493,12 +1493,16 @@ pre {
 }
 
 .batch-row__kind {
+  grid-area: kind;
+  margin-right: var(--space-2);
   font: var(--text-label);
   letter-spacing: var(--tracking-label);
   color: var(--text-muted);
 }
 
 .batch-row__line {
+  grid-area: line;
+  min-width: 0;
   font: var(--text-small);
   color: var(--text-muted);
   overflow: hidden;
@@ -1507,9 +1511,11 @@ pre {
 }
 
 .batch-row__side {
+  grid-area: side;
   display: flex;
   align-items: center;
-  flex: none;
+  justify-content: flex-end;
+  margin-left: var(--space-3);
 }
 
 /* Not yet raised: a ghost bar, never a spinner. */
