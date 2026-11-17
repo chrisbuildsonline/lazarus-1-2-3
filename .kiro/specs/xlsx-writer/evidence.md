@@ -9,12 +9,16 @@ Final gate run, measured.
 | `bun run test` | Test Files 89 passed (89), Tests 1190 passed (1190) |
 | `bun run typecheck` (`tsc --noEmit`) | exit 0, no output |
 | `bun run build` | vite v8.3.8, `dist/assets/index` js 219.60 kB (gzip 68.62 kB) |
-| `bun run e2e` | 2 passed (`smoke.spec.ts`, `xlsx-browser.spec.ts`) |
+| `bun run e2e` | 6 passed (`smoke.spec.ts`, `xlsx-browser.spec.ts`, and `e2e/report-layout.spec.ts`: no horizontal overflow at 390px and 1440px; on a phone each formula is a status-list row; every phone row puts the status pill flush right and lines up Stored and Recalculated) |
 | `bun run lazarus fixtures/ksbase/KSBASE.WK1 --xlsx /tmp/ksbase.xlsx --report /tmp/ksbase.html` | wrote both files; printed `verify: 160 formulas, 160 matched, 0 mismatched, 0 unverifiable` |
 
 ## Fix found in the final run
 
 A carriage return in a label came back as a line feed after the round trip. `escapeOoxmlText` in `src/xlsx/labels.ts` now writes CR as `_x000D_` (after escaping underscores that would otherwise read as `_xHHHH_`). A regression test covers it.
+
+## Fix found after the phone-layout check
+
+The HTML report stretched past the viewport on a phone because the wide formula table widened the page. In `src/report/html.ts` the main grid now uses `minmax(0,1fr)`, so the table no longer sets the page width. A media query for 640px and narrower turns the table into a status list with equal two-column rows. `e2e/report-layout.spec.ts` checks for no horizontal overflow at 390px and 1440px, and that on a phone each formula is a status-list row with the status pill flush right and Stored and Recalculated lined up.
 
 ## Acceptance requirements
 
