@@ -1592,7 +1592,8 @@ pre {
     top: var(--space-4);
   }
 
-  .sheet.has-drawer {
+  .sheet.has-drawer,
+  .page:has(.sheet.has-drawer) .topbar {
     padding-right: calc(var(--drawer-w) - var(--gutter) + var(--space-4) + var(--space-6));
   }
 }

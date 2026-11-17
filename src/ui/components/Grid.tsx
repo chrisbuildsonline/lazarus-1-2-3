@@ -23,13 +23,15 @@ export type GridProps = {
   viewport?: { width: number; height: number };
   onFocusCell: (pos: GridPos) => void;
   onOpenCell: (pos: GridPos) => void;
+  /** Escape in the grid: closes the drawer, and focus stays on the cell. */
+  onEscape?: () => void;
 };
 
 const range = (w: { start: number; end: number }) => Array.from({ length: Math.max(0, w.end - w.start) }, (_, i) => w.start + i);
 const withIndex = (list: number[], i: number, count: number) => (i < 0 || i >= count || list.includes(i) ? list : [...list, i].sort((a, b) => a - b));
 const sameCell = (a: GridPos | null, col: number, row: number) => a !== null && a.col === col && a.row === row;
 
-export function Grid({ model, label, focus, selected, rowsShown, empty, viewport, onFocusCell, onOpenCell }: GridProps) {
+export function Grid({ model, label, focus, selected, rowsShown, empty, viewport, onFocusCell, onOpenCell, onEscape }: GridProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [scroll, setScroll] = useState({ top: 0, left: 0 });
   const [size, setSize] = useState(viewport ?? { width: 1200, height: 600 });
@@ -65,7 +67,10 @@ export function Grid({ model, label, focus, selected, rowsShown, empty, viewport
   useLayoutEffect(() => {
     if (!keyed.current) return;
     keyed.current = false;
-    ref.current?.querySelector<HTMLElement>(`[data-col="${at.col}"][data-row="${at.row}"]`)?.focus({ preventScroll: true });
+    const cell = ref.current?.querySelector<HTMLElement>(`[data-col="${at.col}"][data-row="${at.row}"]`);
+    cell?.focus({ preventScroll: true });
+    // reveal() scrolled the grid; this brings the cell into the page's viewport too (requirement 38).
+    cell?.scrollIntoView({ block: "nearest", inline: "nearest" });
   }, [at.col, at.row]);
 
   /** Scrolls just enough to bring a cell inside the viewport. */
@@ -82,6 +87,11 @@ export function Grid({ model, label, focus, selected, rowsShown, empty, viewport
   };
 
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === "Escape" && onEscape) {
+      e.preventDefault();
+      onEscape();
+      return;
+    }
     if (e.key === "Enter") {
       if (model.at(at.col, at.row).kind === "formula") {
         e.preventDefault();

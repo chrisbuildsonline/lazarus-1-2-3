@@ -58,6 +58,7 @@ export const COPY = {
   statusListLabel: "Formula cells by status",
   cell: "Cell",
   cellName: (address: string) => `Cell ${address}`,
+  cellOpen: (address: string, status: string) => `Cell ${address} details open, ${status}`,
   closeCell: "Close cell details",
   backToList: "Back to list",
   lotus: "Lotus",

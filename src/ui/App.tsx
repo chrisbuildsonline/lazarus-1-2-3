@@ -136,6 +136,8 @@ export function App() {
         onSelectFile={(id) => dispatch({ type: "selectFile", id })}
         onFilter={(filter) => dispatch({ type: "setFilter", filter })}
         onOpenCell={(address) => dispatch({ type: "openCell", address })}
+        onCloseCell={() => dispatch({ type: "closeCell" })}
+        onCopy={copyText}
       />
     );
   } else {

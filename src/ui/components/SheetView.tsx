@@ -11,7 +11,10 @@ import { formatNumber } from "../model/format-value.ts";
 import { buildGridModel, columnLetters } from "../model/grid-model.ts";
 import type { GridPos } from "../model/grid-nav.ts";
 import { filterRows, statusCounts, type Filter } from "../model/status-groups.ts";
+import { useFocusReturn } from "../hooks/useFocusReturn.ts";
+import { drawerModel } from "../model/drawer-model.ts";
 import { BatchList } from "./BatchList.tsx";
+import { Drawer } from "./Drawer.tsx";
 import { Filters } from "./Filters.tsx";
 import { Grid } from "./Grid.tsx";
 import { StatusList } from "./StatusList.tsx";
@@ -34,6 +37,8 @@ export type SheetViewProps = {
   onSelectFile: (id: number) => void;
   onFilter: (f: Filter) => void;
   onOpenCell: (address: string) => void;
+  onCloseCell: () => void;
+  onCopy: (text: string) => void;
 };
 
 const address = (p: GridPos) => `${columnLetters(p.col)}${p.row + 1}`;
@@ -60,8 +65,23 @@ export function SheetView(p: SheetViewProps) {
       return next;
     });
 
+  const result = p.cell === null ? undefined : file.verification.cells.find((c) => c.address === p.cell);
+  const details = useMemo(() => (result ? drawerModel(result, file.verification.tolerance) : null), [result, file]);
+  useFocusReturn(details?.address ?? null, (a) => {
+    if (phone) return document.querySelector<HTMLElement>(`.status-row[data-address="${a}"]`);
+    const r = model.formulaCells.find((c) => c.address === a);
+    return r ? document.querySelector<HTMLElement>(`[role="grid"] [data-col="${r.col}"][data-row="${r.row}"]`) : null;
+  });
+  // While the drawer is open it follows the focused formula cell (requirement 47).
+  const focusCell = (pos: GridPos) => {
+    setFocus(pos);
+    if (p.cell !== null && model.at(pos.col, pos.row).kind === "formula") p.onOpenCell(address(pos));
+  };
+  const drawer = details && <Drawer model={details} mode={phone ? "phone" : "desktop"} onClose={p.onCloseCell} onCopyExcel={p.onCopy} />;
+  const classes = ["sheet", batch && "sheet--batch", details && !phone && "has-drawer"].filter(Boolean).join(" ");
+
   return (
-    <main className={batch ? "sheet sheet--batch" : "sheet"}>
+    <main className={classes}>
       {/* Two rows so the grid starts high enough for 14 rows above the fold at 1440x900:
           the title with the filters, then the meta line with the report links. */}
       <div className="sheet__top">
@@ -99,13 +119,19 @@ export function SheetView(p: SheetViewProps) {
                 selected={selected}
                 rowsShown={rowsShown}
                 empty={empty}
-                onFocusCell={setFocus}
+                onFocusCell={focusCell}
                 onOpenCell={(pos) => p.onOpenCell(address(pos))}
+                onEscape={p.cell === null ? undefined : p.onCloseCell}
               />
             </section>
           )}
+          {/* Right after the grid or the list in tab order (requirement 48). */}
+          {drawer}
         </div>
       </div>
+      <p className="visually-hidden" aria-live="polite">
+        {details ? COPY.cellOpen(details.address, COPY.status[details.status]) : ""}
+      </p>
     </main>
   );
 }
