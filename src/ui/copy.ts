@@ -74,5 +74,10 @@ export const COPY = {
   dismiss: "Dismiss",
   totals: "Totals",
   verified: "Verified",
+  pageTitle: (view: string) => `${view} · Lazarus 1-2-3`,
+  viewSummon: "Summon",
+  viewSheet: "Sheet",
+  sheetLabel: "Sheet",
+  sampleLine: "Sample: KSBASE.WK1, soil survey, CC0 (openpreserve format-corpus)",
   honestLimits: "Unverifiable cells are not wrong; we could not prove them. The report lists each one and why.",
 } as const;

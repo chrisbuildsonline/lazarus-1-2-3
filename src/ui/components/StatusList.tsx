@@ -51,7 +51,7 @@ export function StatusList({ cells, expanded, filter, selected, onToggle, onOpen
           {g.status === "matched" && filter !== "matched" ? (
             <button type="button" className="status-group__head status-group__toggle" aria-expanded={g.expanded} onClick={() => onToggle(g.status)}>
               {COPY.status[g.status]} <span className="status-group__count">{formatNumber(g.count)}</span>
-              {" · "}
+              <span className="visually-hidden">{" · "}</span>
               <span className="status-group__action">{g.expanded ? COPY.hide : COPY.showAll}</span>
             </button>
           ) : (

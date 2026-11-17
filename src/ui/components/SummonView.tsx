@@ -15,8 +15,8 @@ export type SummonViewProps = {
   /** Error or unsupported panel. */
   panel?: ReactNode;
   onSample: () => void;
-  onFiles: (files: FileList, from: "files" | "folder") => void;
-  onDrop: (dt: DataTransfer) => void;
+  onFiles?: (files: FileList, from: "files" | "folder") => void;
+  onDrop?: (dt: DataTransfer) => void;
 };
 
 const PRIMARY: Record<SummonMode, string> = { idle: COPY.summonPrimary, failed: COPY.tryAnother, unsupported: COPY.chooseAnother };
@@ -30,7 +30,7 @@ export function SummonView({ mode, folderSupported, busy, panel, onSample, onFil
   const pickFiles = () => files.current?.click();
   const picked = (from: "files" | "folder") => (e: ChangeEvent<HTMLInputElement>) => {
     const list = e.currentTarget.files;
-    if (list && list.length > 0) onFiles(list, from);
+    if (list && list.length > 0) onFiles?.(list, from);
     e.currentTarget.value = "";
   };
   return (
@@ -47,7 +47,7 @@ export function SummonView({ mode, folderSupported, busy, panel, onSample, onFil
       {panel}
       {busy ?? (
         <div className="summon__drop">
-          <DropZone onActivate={pickFiles} onDrop={onDrop} />
+          <DropZone onActivate={pickFiles} onDrop={(dt) => onDrop?.(dt)} />
           <div className="summon__pickers">
             <button type="button" className="btn-text" onClick={pickFiles}>
               {COPY.chooseFile}
