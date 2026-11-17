@@ -76,6 +76,7 @@ Longest long task between the drop and the first grid row, limit 200 ms:
 | --- | --- | --- | --- |
 | Spec alone | none recorded (no task of 50 ms or more) | 55 | 7 |
 | Full parallel e2e run | 94.0 ms | 107 | 14 |
+| Final gate full run | 123.0 ms | 132 | 16 |
 
 An 8,192 by 256 generated sheet keeps fewer than 2,000 gridcells in the DOM, also after scrolling to the middle.
 
@@ -101,4 +102,84 @@ An 8,192 by 256 generated sheet keeps fewer than 2,000 gridcells in the DOM, als
 | 78 | `tests/unit/ui/components/*.test.tsx` |
 | 79 | `e2e/seance-sample`, `seance-files`, `seance-drawer`, `seance-states`, `seance-downloads`, `seance-batch`, `seance-worker-failure`, `seance-privacy`, `seance-a11y` and `seance-layout` specs |
 | 80 | `e2e/fixtures/seance-files.ts` (mismatch.wk1, mixed-status.wk1 built with wk1-writer, not in the manifest) used by `e2e/seance-drawer.spec.ts` and `e2e/seance-states.spec.ts` |
-| 81 | The final gate (task 41) |
+| 81 | The final gate (task 41) below |
+
+## Final gate (task 41)
+
+| Command | Result |
+| --- | --- |
+| `bun run test` | 122 test files passed, 1464 tests passed |
+| `bun run typecheck` (`tsc --noEmit`) | clean, no output |
+| `bun run build` | built in 392ms; one warning that the lazily loaded xlsx chunk (933.52 kB) is over 500 kB, which is expected because it loads only on the first download |
+| `CI=1 bun run e2e` | 57 passed (20.6s) in 10 workers |
+
+No existing test changed its result, and no test is skipped or focused (`.skip` or `.only`).
+
+## Requirements 1 to 62
+
+Paths are short: unit tests are under tests/unit/ui (components under tests/unit/ui/components), e2e specs are under e2e/, and paths that start with tests/ are given in full.
+
+| Requirement | Test |
+| --- | --- |
+| 1 | `model/app-state.test.ts`, `seance-sample.spec.ts` |
+| 2 | `seance-privacy.spec.ts` |
+| 3 | `seance-sample.spec.ts` |
+| 4 | `summon-view.test.tsx`, `seance-layout.spec.ts` |
+| 5 | `summon-view.test.tsx` |
+| 6 | `summon-view.test.tsx`, `seance-a11y.spec.ts` |
+| 7 | `summon-view.test.tsx`, `seance-files.spec.ts` |
+| 8 | `drop.test.ts`, `seance-probe.spec.ts`, `seance-files.spec.ts` |
+| 9 | `drop.test.ts` |
+| 10 | `model/entries.test.ts`, `seance-files.spec.ts` |
+| 11 | `model/entries.test.ts` |
+| 12 | `model/entries.test.ts` |
+| 13 | `seance-files.spec.ts` |
+| 14 | `seance-probe.spec.ts`, `seance-sample.spec.ts`, `seance-privacy.spec.ts` |
+| 15 | `summon-view.test.tsx`, `model/app-state.test.ts`, `seance-files.spec.ts` |
+| 16 | `purity.test.ts`, `tests/unit/workers/raise-protocol.test.ts` |
+| 17 | `tests/unit/workers/raise-protocol.test.ts` |
+| 18 | `tests/unit/workers/raise-protocol.test.ts` |
+| 19 | `progress-surface.test.tsx`, `seance-responsive.spec.ts` |
+| 20 | `model/classify-file.test.ts` |
+| 21 | `model/classify-file.test.ts`, `error-panel.test.tsx`, `seance-files.spec.ts` |
+| 22 | `worker-client.test.ts`, `error-panel.test.tsx`, `seance-worker-failure.spec.ts` |
+| 23 | `seance-responsive.spec.ts` |
+| 24 | `worker-client.test.ts`, `model/app-state.test.ts`, `seance-files.spec.ts` |
+| 25 | `model/classify-file.test.ts`, `model/entries.test.ts`, `model/app-state.test.ts` |
+| 26 | `seance-sample.spec.ts` |
+| 27 | `model/totals.test.ts`, `totals-surface.test.tsx`, `seance-sample.spec.ts`, `seance-states.spec.ts` |
+| 28 | `model/totals.test.ts` |
+| 29 | `model/totals.test.ts`, `totals-surface.test.tsx` |
+| 30 | `totals-surface.test.tsx`, `seance-states.spec.ts` |
+| 31 | `seance-states.spec.ts` |
+| 32 | `seance-downloads.spec.ts` |
+| 33 | `model/grid-model.test.ts`, `grid.test.tsx` |
+| 34 | `model/grid-model.test.ts`, `grid.test.tsx`, `status-pill.test.tsx`, `seance-states.spec.ts` |
+| 35 | `model/grid-model.test.ts`, `grid.test.tsx` |
+| 36 | `model/format-value.test.ts` |
+| 37 | `model/window.test.ts`, `grid.test.tsx`, `seance-responsive.spec.ts` |
+| 38 | `model/grid-nav.test.ts`, `seance-drawer.spec.ts` |
+| 39 | `model/status-groups.test.ts`, `filters.test.tsx`, `seance-states.spec.ts` |
+| 40 | `model/status-groups.test.ts`, `status-list.test.tsx`, `seance-states.spec.ts` |
+| 41 | `model/status-groups.test.ts`, `seance-states.spec.ts` |
+| 42 | `seance-drawer.spec.ts` |
+| 43 | `model/drawer-model.test.ts`, `drawer.test.tsx`, `seance-drawer.spec.ts` |
+| 44 | `model/drawer-model.test.ts` |
+| 45 | `model/drawer-model.test.ts`, `model/format-value.test.ts` |
+| 46 | `model/drawer-model.test.ts`, `drawer.test.tsx` |
+| 47 | `drawer.test.tsx`, `seance-drawer.spec.ts` |
+| 48 | `seance-drawer.spec.ts` |
+| 49 | `seance-drawer.spec.ts` |
+| 50 | `drawer.test.tsx`, `seance-states.spec.ts` |
+| 51 | `css-tokens.test.ts`, `tokens-css.test.ts` |
+| 52 | `downloads.test.ts`, `seance-downloads.spec.ts` |
+| 53 | `downloads.test.ts` |
+| 54 | `model/file-names.test.ts` |
+| 55 | `downloads.test.ts` |
+| 56 | `toast.test.tsx`, `seance-downloads.spec.ts` |
+| 57 | `downloads.test.ts`, `seance-downloads.spec.ts` |
+| 58 | `batch-list.test.tsx`, `seance-files.spec.ts`, `seance-batch.spec.ts` |
+| 59 | `model/batch-rows.test.ts`, `batch-list.test.tsx`, `seance-batch.spec.ts` |
+| 60 | `model/app-state.test.ts`, `seance-batch.spec.ts` |
+| 61 | `model/app-state.test.ts`, `seance-batch.spec.ts` |
+| 62 | `copy.test.ts`, `summon-view.test.tsx` |
