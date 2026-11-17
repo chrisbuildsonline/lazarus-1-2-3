@@ -24,6 +24,22 @@ export function mismatchWk1(): Uint8Array {
   ]);
 }
 
+/** Opcode 0xFE is in no table of src/formula/opcodes.ts (checked by tests/unit/e2e/seance-files.test.ts). */
+export const UNKNOWN_OPCODE = 0xfe;
+export const UNKNOWN_RPN = [UNKNOWN_OPCODE, RET] as const;
+
+/** mismatch.wk1 plus D1, a formula with an unknown opcode: C1 mismatched, D1 unverifiable. */
+export function mixedStatusWk1(): Uint8Array {
+  return writeWk1(WK1, [
+    { kind: "integer", col: 0, row: 0, value: 2 },
+    { kind: "integer", col: 1, row: 0, value: 3 },
+    { kind: "formula", col: 2, row: 0, cached: 6, rpn: [...ref(-2, 0), ...ref(-1, 0), ADD, RET] },
+    { kind: "formula", col: 3, row: 0, cached: 1, rpn: UNKNOWN_RPN },
+    { kind: "formula", col: 0, row: 1, cached: 6, rpn: [...ref(0, -1), ...ref(1, -1), MUL, RET] },
+    { kind: "formula", col: 1, row: 1, cached: 5, rpn: [...ref(-1, -1), ...ref(0, -1), ADD, RET] },
+  ]);
+}
+
 /** A valid WK1 BOF, then a NUMBER record that claims 13 bytes and holds 3: format wk1, no cell, an error. */
 export function corruptWk1(): Uint8Array {
   return Uint8Array.from([...bof(WK1), 0x0e, 0x00, 0x0d, 0x00, 0xff, 0x00, 0x00]);
@@ -41,6 +57,7 @@ export const payload = (name: string, bytes: Uint8Array | string): Payload => ({
 
 export const files = {
   mismatch: () => payload("mismatch.wk1", mismatchWk1()),
+  mixedStatus: () => payload("mixed-status.wk1", mixedStatusWk1()),
   corrupt: () => payload("corrupt.wk1", corruptWk1()),
   notLotus: () => payload("not-lotus.txt", NOT_LOTUS),
 };
