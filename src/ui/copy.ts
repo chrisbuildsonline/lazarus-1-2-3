@@ -12,4 +12,8 @@ export const COPY = {
   unsupportedTitle: "This is not a WK1 or WKS file this version can read.",
   verifiedLine: (pct: string, mismatched: string | null) => `${pct} verified${mismatched === null ? "" : `, ${mismatched} mismatched`}`,
   couldNotRaise: (reason: string) => `Could not raise: ${reason}`,
+  sentence: { matched: "Raised value matches what the file remembers.", mismatched: "The numbers disagree." },
+  formulaUnreadable: "The formula could not be read.",
+  differsBy: (difference: string, relative: number, absolute: number) => `Differs by ${difference}. Tolerance ${relative} relative, ${absolute} absolute.`,
+  unconfirmedOpcode: "Read by this program but not yet confirmed against a real file.",
 } as const;
