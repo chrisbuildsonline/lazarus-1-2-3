@@ -36,6 +36,8 @@ export function DropZone({ onActivate, onDrop }: { onActivate: () => void; onDro
         }}
         onDrop={(e) => {
           e.preventDefault();
+          // The page's own window listener would summon the same drop a second time.
+          e.stopPropagation();
           leave();
           onDrop(e.dataTransfer);
         }}

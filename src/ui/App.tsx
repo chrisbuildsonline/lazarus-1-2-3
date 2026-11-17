@@ -12,11 +12,16 @@ import { TopBar } from "./components/TopBar.tsx";
 import { PHONE, useMatchMedia } from "./hooks/useMatchMedia.ts";
 import { useRaise } from "./hooks/useRaise.ts";
 import type { DownloadKind } from "./model/file-names.ts";
+import { collectDropped } from "./io/drop.ts";
 import { loadSample, SAMPLE_NAME } from "./io/sample.ts";
+import type { FoundFile, Skipped } from "./model/entries.ts";
 
 const UNFINISHED = new Set(["queued", "reading", "checking"]);
 
 const copyText = (text: string) => void navigator.clipboard?.writeText(text);
+
+/** A picked file keeps its path inside a picked folder (requirement 9). */
+const fromList = (list: FileList): FoundFile<File>[] => Array.from(list, (file) => ({ path: file.webkitRelativePath || file.name, name: file.name, size: file.size, file }));
 
 export function App() {
   const { state, dispatch, summon } = useRaise();
@@ -52,6 +57,37 @@ export function App() {
       dispatch({ type: "toast", kind: "error", text: e instanceof Error ? e.message : String(e) });
     }
   }, [summon, dispatch]);
+
+  const summonFiles = useCallback(
+    (found: FoundFile<File>[], skipped: Skipped[] = []) => {
+      setFromSample(false);
+      void summon(found, skipped);
+    },
+    [summon],
+  );
+
+  // collectDropped reads every entry before its first await, so it runs inside the event.
+  const summonDropped = useCallback((dt: DataTransfer) => void collectDropped<File>(dt).then(({ found, skipped }) => summonFiles(found, skipped)), [summonFiles]);
+
+  // Requirement 13: a file dropped anywhere on the page never makes the browser open it. A drop
+  // beside the zone, or on the Sheet view, starts a new summon like a drop on the zone.
+  useEffect(() => {
+    const over = (e: DragEvent) => {
+      if (!e.dataTransfer?.types.includes("Files")) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "copy";
+    };
+    const dropped = (e: DragEvent) => {
+      e.preventDefault();
+      if (e.dataTransfer && e.dataTransfer.files.length > 0) summonDropped(e.dataTransfer);
+    };
+    window.addEventListener("dragover", over);
+    window.addEventListener("drop", dropped);
+    return () => {
+      window.removeEventListener("dragover", over);
+      window.removeEventListener("drop", dropped);
+    };
+  }, [summonDropped]);
 
   const download = async (kind: DownloadKind) => {
     if (!file) return;
@@ -116,6 +152,8 @@ export function App() {
         busy={current && <ProgressSurface name={current.name} phase={current.phase as ProgressPhase} index={index} count={state.items.length} />}
         panel={panel && <ErrorPanel kind={panel.kind} reason={reason} lines={panel.lines} onCopy={copyText} />}
         onSample={() => void summonSample()}
+        onFiles={(list) => summonFiles(fromList(list))}
+        onDrop={summonDropped}
       />
     );
   }
