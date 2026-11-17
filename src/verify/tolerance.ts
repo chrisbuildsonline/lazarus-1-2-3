@@ -1,6 +1,7 @@
-// The one place a numeric comparison tolerance exists (requirement 26). Provisional: set in
-// task 3, signed off in task 50 from the largest difference measured on the real fixtures.
-// Why these numbers: design.md, "Tolerance".
+// The one place a numeric comparison tolerance exists (requirement 26). Why these numbers:
+// design.md, "Tolerance". Checked against the real fixtures: every matched real cell is
+// bit-identical (largest relative difference 0), so the data does not bound the numbers and
+// they stay as designed (docs/verify-evidence.md, "Tolerance sign-off").
 
 export const TOLERANCE = { relative: 1e-12, absolute: 1e-12 } as const;
 

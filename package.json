@@ -12,7 +12,8 @@
     "test:watch": "vitest",
     "e2e": "playwright test",
     "oracle": "bun scripts/oracle.ts",
-    "lazarus": "bun src/cli/lazarus.ts"
+    "lazarus": "bun src/cli/lazarus.ts",
+    "verify:golden": "bun scripts/verify-golden.ts"
   },
   "dependencies": {
     "react": "^19.3.1",

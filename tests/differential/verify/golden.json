@@ -1,0 +1,55 @@
+{
+  "fixtures/ksbase/KSBASE.WK1": {
+    "formulas": 160,
+    "matched": 160,
+    "mismatched": 0,
+    "unverifiable": 0,
+    "exact": 160,
+    "withinTolerance": 0,
+    "byReason": {
+      "exact": 160
+    },
+    "maxRelativeDifference": 0,
+    "candidateOpcodes": [],
+    "groups": []
+  },
+  "fixtures/libreoffice-wks-functions/gnome647171-1.wks": {
+    "formulas": 4,
+    "matched": 3,
+    "mismatched": 0,
+    "unverifiable": 1,
+    "exact": 3,
+    "withinTolerance": 0,
+    "byReason": {
+      "exact": 3,
+      "string-result": 1
+    },
+    "maxRelativeDifference": 0,
+    "candidateOpcodes": [],
+    "groups": [
+      {
+        "reason": "string-result",
+        "rule": null,
+        "count": 1,
+        "examples": [
+          "A5"
+        ],
+        "finding": "A5 is IF(MOD(A4,2)=1,\"Odd\",\"Even\"), a formula that returns text. Its stored bits are 7ff0ffffffffffff (sign 0, exponent 7FF, fraction non-zero), the WSFF2 STRING pattern (S27), so the file keeps the text in a following record the parser skips (open question 4). The engine computes a string and cannot compare it with a stored number, so the cell is unverifiable, not wrong. Its two inputs are plain numbers (A4 = number, docs/verify-evidence.md)."
+      }
+    ]
+  },
+  "fixtures/lotus123-wks/testLotus123.wks": {
+    "formulas": 10,
+    "matched": 10,
+    "mismatched": 0,
+    "unverifiable": 0,
+    "exact": 10,
+    "withinTolerance": 0,
+    "byReason": {
+      "exact": 10
+    },
+    "maxRelativeDifference": 0,
+    "candidateOpcodes": [],
+    "groups": []
+  }
+}
