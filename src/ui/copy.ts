@@ -20,4 +20,7 @@ export const COPY = {
   engineStopped: "The checking engine stopped.",
   engineUnreadable: "The checking engine sent a message that could not be read.",
   noFingerprint: "This browser cannot fingerprint the file here. Use https or localhost.",
+  totals: "Totals",
+  verified: "Verified",
+  honestLimits: "Unverifiable cells are not wrong; we could not prove them. The report lists each one and why.",
 } as const;
