@@ -40,6 +40,16 @@ export function mixedStatusWk1(): Uint8Array {
   ]);
 }
 
+/** Constants only: A1 = 1987, B1 = 4120, A2 = 1988, B2 = 4495. No formula, so nothing to verify. */
+export function noFormulasWk1(): Uint8Array {
+  return writeWk1(WK1, [
+    { kind: "integer", col: 0, row: 0, value: 1987 },
+    { kind: "integer", col: 1, row: 0, value: 4120 },
+    { kind: "integer", col: 0, row: 1, value: 1988 },
+    { kind: "integer", col: 1, row: 1, value: 4495 },
+  ]);
+}
+
 /** A valid WK1 BOF, then a NUMBER record that claims 13 bytes and holds 3: format wk1, no cell, an error. */
 export function corruptWk1(): Uint8Array {
   return Uint8Array.from([...bof(WK1), 0x0e, 0x00, 0x0d, 0x00, 0xff, 0x00, 0x00]);
@@ -60,6 +70,7 @@ export const files = {
   mixedStatus: () => payload("mixed-status.wk1", mixedStatusWk1()),
   corrupt: () => payload("corrupt.wk1", corruptWk1()),
   notLotus: () => payload("not-lotus.txt", NOT_LOTUS),
+  noFormulas: () => payload("constants.wk1", noFormulasWk1()),
 };
 
 /** Writes the payloads into a new temporary folder and returns its path. */
