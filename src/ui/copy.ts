@@ -16,4 +16,7 @@ export const COPY = {
   formulaUnreadable: "The formula could not be read.",
   differsBy: (difference: string, relative: number, absolute: number) => `Differs by ${difference}. Tolerance ${relative} relative, ${absolute} absolute.`,
   unconfirmedOpcode: "Read by this program but not yet confirmed against a real file.",
+  engineCouldNotStart: "The checking engine could not start.",
+  engineStopped: "The checking engine stopped.",
+  engineUnreadable: "The checking engine sent a message that could not be read.",
 } as const;
