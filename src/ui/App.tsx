@@ -41,6 +41,18 @@ export function App() {
     document.title = COPY.pageTitle(viewTitle);
   }, [viewTitle]);
 
+  // A chosen row remounts the sheet (it is keyed by file), so the focus goes back to that row.
+  const rowFocus = useRef(false);
+  useEffect(() => {
+    if (!rowFocus.current) return;
+    rowFocus.current = false;
+    document.querySelector<HTMLElement>(".batch-row.is-selected")?.focus();
+  }, [state.selectedId]);
+  const selectFile = (id: number) => {
+    if (id !== state.selectedId) rowFocus.current = true;
+    dispatch({ type: "selectFile", id });
+  };
+
   // Focus the new view's h1 when the view changes, not on the first paint of the page.
   useEffect(() => {
     if (firstView.current) {
@@ -150,7 +162,7 @@ export function App() {
             {noHash && <span className="sheet__reason">{COPY.noFingerprint}</span>}
           </>
         }
-        onSelectFile={(id) => dispatch({ type: "selectFile", id })}
+        onSelectFile={selectFile}
         onFilter={(filter) => dispatch({ type: "setFilter", filter })}
         onOpenCell={(address) => dispatch({ type: "openCell", address })}
         onCloseCell={() => dispatch({ type: "closeCell" })}
@@ -162,7 +174,7 @@ export function App() {
     const index = state.items.findIndex((i) => UNFINISHED.has(i.phase));
     const current = state.items[index];
     const panel = state.panel;
-    const mode: SummonMode = panel === null ? "idle" : panel.kind === "unsupported" ? "unsupported" : "failed";
+    const mode: SummonMode = panel === null ? "idle" : panel.kind === "unsupported" || panel.kind === "skipped" ? "unsupported" : "failed";
     const reason = state.items.find((i) => i.failure)?.failure?.reason;
     body = (
       <SummonView

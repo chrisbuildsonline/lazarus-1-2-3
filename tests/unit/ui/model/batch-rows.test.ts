@@ -48,8 +48,10 @@ describe("batchRow", () => {
     expect(row.pill).toBe("unverifiable");
   });
 
-  it("a sheet with no formulas", () => {
-    expect(batchRow(item({ raised: withTotals(t(0, 0, 0, 0)) })).line).toBe("No formulas");
+  it("a sheet with no formulas gets the neutral pill, not Matched", () => {
+    const row = batchRow(item({ raised: withTotals(t(0, 0, 0, 0)) }));
+    expect(row.line).toBe("No formulas");
+    expect(row.pill).toBe("none");
   });
 
   it("a failed file: the Failed pill and the reason", () => {

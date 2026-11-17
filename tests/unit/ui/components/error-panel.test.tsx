@@ -28,6 +28,17 @@ describe("ErrorPanel failed", () => {
   });
 });
 
+describe("ErrorPanel skipped", () => {
+  const html = renderToStaticMarkup(<ErrorPanel kind="skipped" lines={["1 file skipped: larger than 32 MiB."]} />);
+
+  it("names the size limit calmly, not the extensions", () => {
+    expect(/<h2[^>]*>([^<]*)<\/h2>/.exec(html)![1]).toBe("1 file skipped: larger than 32 MiB.");
+    expect(html).not.toContain("not a WK1 or WKS");
+    expect(html).not.toMatch(DANGER);
+    expect(html).not.toContain('role="alert"');
+  });
+});
+
 describe("ErrorPanel unsupported", () => {
   const html = renderToStaticMarkup(<ErrorPanel kind="unsupported" lines={[]} />);
 

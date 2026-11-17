@@ -3,7 +3,7 @@
 import { COPY } from "../copy.ts";
 
 export type ErrorPanelProps = {
-  kind: "failed" | "unsupported" | "worker";
+  kind: "failed" | "unsupported" | "skipped" | "worker";
   /** The first reason, shown in body text. */
   reason?: string;
   /** Diagnostics, one per line. */
@@ -14,6 +14,20 @@ export type ErrorPanelProps = {
 const EXTENSIONS = [".wk1", ".wks"];
 
 export function ErrorPanel({ kind, reason, lines, onCopy }: ErrorPanelProps) {
+  // Skipped before reading (too large, unreadable): calm, and the lines say why, as in a batch.
+  if (kind === "skipped") {
+    const [title, ...rest] = lines;
+    return (
+      <section className="surface panel">
+        <h2 className="panel__title">{title}</h2>
+        {rest.map((l) => (
+          <p key={l} className="panel__reason">
+            {l}
+          </p>
+        ))}
+      </section>
+    );
+  }
   if (kind === "unsupported") {
     return (
       <section className="surface panel">

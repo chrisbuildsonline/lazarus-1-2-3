@@ -3,7 +3,8 @@
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import { COPY } from "../copy.ts";
 import { batchRow, type FileItem } from "../model/batch-rows.ts";
-import { skippedCounts, type SkipReason, type Skipped } from "../model/entries.ts";
+import { skippedLines } from "../model/app-state.ts";
+import type { Skipped } from "../model/entries.ts";
 import { StatusPill } from "./StatusPill.tsx";
 
 export type BatchListProps = {
@@ -13,8 +14,6 @@ export type BatchListProps = {
   onSelect: (id: number) => void;
 };
 
-const REASONS: readonly SkipReason[] = ["extension", "too-large", "unreadable", "over-limit"];
-
 function Side({ pill }: { pill: ReturnType<typeof batchRow>["pill"] }) {
   if (pill === "raising") {
     return (
@@ -23,6 +22,7 @@ function Side({ pill }: { pill: ReturnType<typeof batchRow>["pill"] }) {
       </span>
     );
   }
+  if (pill === "none") return <span className="pill pill--neutral">{COPY.noFormulas}</span>;
   if (pill === "failed") {
     return (
       <span className="pill pill--danger">
@@ -62,7 +62,6 @@ export function BatchList({ items, skipped, selectedId, onSelect }: BatchListPro
     }
   };
 
-  const counts = skippedCounts(skipped);
   return (
     <section className="surface batch" aria-labelledby={titleId}>
       <h2 className="batch__title" id={titleId}>
@@ -99,9 +98,9 @@ export function BatchList({ items, skipped, selectedId, onSelect }: BatchListPro
           );
         })}
       </ul>
-      {REASONS.filter((r) => counts[r] > 0).map((r) => (
-        <p key={r} className="batch__skipped">
-          {COPY.skippedLine(counts[r], COPY.skipWhy[r])}
+      {skippedLines(skipped).map((line) => (
+        <p key={line} className="batch__skipped">
+          {line}
         </p>
       ))}
     </section>

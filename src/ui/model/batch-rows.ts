@@ -18,7 +18,7 @@ export type FileItem = {
   failure?: { reason: string; lines: string[] };
 };
 
-export type BatchRow = { name: string; kind: "WK1" | "WKS" | "-"; line: string; pill: Status | "failed" | "raising" };
+export type BatchRow = { name: string; kind: "WK1" | "WKS" | "-"; line: string; pill: Status | "failed" | "raising" | "none" };
 
 /** The worst status present: mismatched, then unverifiable, then matched. */
 export function worstStatus(t: Totals): Status {
@@ -42,7 +42,8 @@ export function batchRow(item: FileItem): BatchRow {
       return row(COPY.couldNotRaise(item.failure?.reason ?? COPY.unsupportedTitle), "failed");
     case "raised": {
       const t = item.raised!.verification.totals;
-      if (percentVerified(t).kind === "none") return row(COPY.noFormulas, worstStatus(t));
+      // No formulas: nothing was checked, so a neutral pill, never a green Matched.
+      if (percentVerified(t).kind === "none") return row(COPY.noFormulas, "none");
       return row(COPY.verifiedLine(headline(t), t.mismatched > 0 ? formatNumber(t.mismatched) : null), worstStatus(t));
     }
   }

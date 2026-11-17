@@ -274,6 +274,12 @@ pre {
   color: var(--danger);
 }
 
+/* Nothing was checked (a sheet with no formulas): a neutral tint, no status colour. */
+.pill--neutral {
+  background: var(--canvas);
+  color: var(--text-muted);
+}
+
 .pill__glyph {
   display: block;
   width: 6px;
@@ -1249,6 +1255,16 @@ pre {
   width: 100%;
   height: 48px;
   background: var(--surface-sunken);
+}
+
+/* Phone, in a batch: the way back to the file list, at the end of a file's sheet. */
+.sheet__back {
+  margin: 0;
+}
+
+.sheet__back .btn-ghost {
+  width: 100%;
+  min-height: 44px;
 }
 
 /* The phone scrim: the --text ink at 24% (DESIGN.md: rgba(18, 20, 26, 0.24), one below the drawer). */

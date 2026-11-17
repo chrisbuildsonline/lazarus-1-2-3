@@ -27,6 +27,17 @@ describe("appReducer", () => {
     expect(s.skipped).toEqual([{ path: "notes.txt", why: "extension" }]);
   });
 
+  it("a single file over 32 MiB names the size limit, not the extension", () => {
+    const s = run([summon([], 1, [{ path: "BIG.WK1", why: "too-large" }])]);
+    expect(s.view).toBe("summon");
+    expect(s.panel).toEqual({ kind: "skipped", lines: ["1 file skipped: larger than 32 MiB."] });
+  });
+
+  it("only skipped entries of several kinds: one line per reason, as in the batch", () => {
+    const s = run([summon([], 1, [{ path: "a.txt", why: "extension" }, { path: "BIG.WK1", why: "too-large" }, { path: "b.txt", why: "extension" }])]);
+    expect(s.panel).toEqual({ kind: "skipped", lines: ["2 files skipped: not WK1 or WKS.", "1 file skipped: larger than 32 MiB."] });
+  });
+
   it("progress moves one item through reading and checking", () => {
     const start = run([summon(["a.wk1", "b.wk1"])]);
     const reading = appReducer(start, { type: "progress", batchId: 1, id: 0, step: "start" });

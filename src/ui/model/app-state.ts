@@ -4,11 +4,24 @@ import type { RaisedFile } from "../../workers/verify-protocol.ts";
 import { COPY } from "../copy.ts";
 import type { FileItem, Phase } from "./batch-rows.ts";
 import { classifyRaised } from "./classify-file.ts";
-import type { Skipped } from "./entries.ts";
+import { skippedCounts, type SkipReason, type Skipped } from "./entries.ts";
 import type { Filter } from "./status-groups.ts";
 
 export type Toast = { id: number; kind: "info" | "error"; text: string };
-export type Panel = { kind: "unsupported" | "failed" | "worker"; lines: string[] };
+export type Panel = { kind: "unsupported" | "skipped" | "failed" | "worker"; lines: string[] };
+
+const REASONS: readonly SkipReason[] = ["extension", "too-large", "unreadable", "over-limit"];
+
+/** "3 files skipped: not WK1 or WKS.", one line per reason present, in a fixed order. */
+export function skippedLines(skipped: readonly Skipped[]): string[] {
+  const counts = skippedCounts(skipped);
+  return REASONS.filter((r) => counts[r] > 0).map((r) => COPY.skippedLine(counts[r], COPY.skipWhy[r]));
+}
+
+/** Nothing to raise: wrong extensions alone get the extensions panel; any other reason is named. */
+function skippedPanel(skipped: readonly Skipped[]): Panel {
+  return skipped.every((s) => s.why === "extension") ? { kind: "unsupported", lines: [] } : { kind: "skipped", lines: skippedLines(skipped) };
+}
 
 export type AppState = {
   view: "summon" | "sheet";
@@ -86,7 +99,7 @@ export function appReducer(s: AppState, a: AppAction): AppState {
   switch (a.type) {
     case "summoned": {
       const items = a.entries.map((e, id): FileItem => ({ id, ...e, phase: "queued" }));
-      const panel: Panel | null = items.length === 0 && a.skipped.length > 0 ? { kind: "unsupported", lines: [] } : null;
+      const panel: Panel | null = items.length === 0 && a.skipped.length > 0 ? skippedPanel(a.skipped) : null;
       return { ...initialState, batchId: a.batchId, items, skipped: a.skipped, panel, toasts: s.toasts };
     }
     case "progress": {

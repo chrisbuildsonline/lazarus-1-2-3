@@ -64,6 +64,7 @@ export const COPY = {
   cellOpen: (address: string, status: string) => `Cell ${address} details open, ${status}`,
   closeCell: "Close cell details",
   backToList: "Back to list",
+  backToFiles: "Back to files",
   lotus: "Lotus",
   excel: "Excel",
   inputs: "Inputs",

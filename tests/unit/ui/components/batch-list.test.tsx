@@ -52,6 +52,15 @@ describe("BatchList", () => {
     expect(k).toContain(">Matched<");
   });
 
+  it("a raised row with no formulas shows a neutral No formulas pill, never Matched", () => {
+    const empty = { ...items[0]!.raised!, verification: { ...items[0]!.raised!.verification, totals: { formulas: 0, matched: 0, mismatched: 0, unverifiable: 0, exact: 0, withinTolerance: 0, byReason: {} } } };
+    const html = renderToStaticMarkup(<BatchList items={[item(0, "labels.wk1", { phase: "raised", raised: empty }), items[1]!]} skipped={[]} selectedId={0} onSelect={() => {}} />);
+    const row = options(html)[0]!.inner;
+    expect(row).toMatch(/<span class="pill pill--neutral">No formulas<\/span>/);
+    expect(row).not.toContain("pill--matched");
+    expect(row).not.toContain(">Matched<");
+  });
+
   it("a raising row shows the ghost bar", () => {
     const r = options(render())[2]!;
     expect(r.inner).toMatch(/class="ghost-bar"/);

@@ -127,6 +127,14 @@ export function SheetView(p: SheetViewProps) {
           )}
           {/* Right after the grid or the list in tab order (requirement 48). */}
           {drawer}
+          {/* Phone: the list sits above, so a long sheet ends with a way back to it (requirement 61). */}
+          {phone && batch && (
+            <p className="sheet__back">
+              <button type="button" className="btn-ghost" onClick={() => document.querySelector<HTMLElement>(".batch-row.is-selected")?.focus()}>
+                {COPY.backToFiles}
+              </button>
+            </p>
+          )}
         </div>
       </div>
       <p className="visually-hidden" aria-live="polite">
