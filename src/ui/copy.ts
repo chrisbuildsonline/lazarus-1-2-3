@@ -8,4 +8,8 @@ export const COPY = {
   emptyCell: "empty",
   noStoredValue: "no stored value",
   noCellsWithStatus: (status: string) => `No ${status} cells on this sheet.`,
+  stages: { queued: "Waiting", read: "Reading records", check: "Recalculating and comparing" },
+  unsupportedTitle: "This is not a WK1 or WKS file this version can read.",
+  verifiedLine: (pct: string, mismatched: string | null) => `${pct} verified${mismatched === null ? "" : `, ${mismatched} mismatched`}`,
+  couldNotRaise: (reason: string) => `Could not raise: ${reason}`,
 } as const;
