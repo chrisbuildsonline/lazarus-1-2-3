@@ -123,8 +123,12 @@ test("keyboard focus shows the focus ring on each kind of control", async ({ pag
   await page.goto("/");
   await expectRing(page, page.getByRole("button", { name: "Summon the sample" }));
   await expectRing(page, page.getByRole("button", { name: "Choose file" }));
+  // Keyboard alone (requirement 69): Enter opens the picker, and the chosen file is raised.
+  const chooser = page.waitForEvent("filechooser");
+  await page.keyboard.press("Enter");
+  await (await chooser).setFiles(files.mixedStatus());
+  await expect(h1(page, "mixed-status.wk1")).toBeVisible();
 
-  await raise(page, files.mixedStatus());
   // The filters are one tab stop (roving tabindex): Tab reaches the selected one, arrows move on.
   await expectRing(page, page.getByRole("tab", { selected: true }));
   await page.keyboard.press("ArrowRight");
@@ -143,6 +147,9 @@ test("keyboard focus shows the focus ring on each kind of control", async ({ pag
   await expect(drawer).toBeVisible();
   await expectRing(page, drawer.getByRole("button", { name: "Close cell details" }));
   await expectRing(page, page.getByRole("button", { name: "Download XLSX" }));
+  const download = page.waitForEvent("download");
+  await page.keyboard.press("Enter");
+  expect((await download).suggestedFilename()).toBe("mixed-status.xlsx");
 });
 
 test("every status reads as text in the grid, the drawer and the batch rows", async ({ page }) => {

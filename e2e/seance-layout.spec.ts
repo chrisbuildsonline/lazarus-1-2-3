@@ -88,6 +88,12 @@ for (const vp of VIEWPORTS) {
         );
         expect(rowsAboveFold).toBeGreaterThanOrEqual(14);
       }
+      // The three downloads run without a console error either (requirement 76).
+      for (const name of ["Download XLSX", "Download report (HTML)", "JSON"]) {
+        const download = page.waitForEvent("download");
+        await page.getByRole("button", { name, exact: true }).click();
+        await download;
+      }
       expect(problems).toEqual([]);
     });
 
