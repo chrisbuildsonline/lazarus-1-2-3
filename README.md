@@ -6,7 +6,9 @@ Built for [Kiroween 2026](https://kiroween.devpost.com/). Submissions close 2026
 
 ## What it does
 
-You drop in a Lotus 1-2-3 worksheet or a dBase table. Lazarus 1-2-3 parses the binary records, rebuilds every formula as a modern expression, and writes a clean XLSX. Then it recalculates the whole sheet with its own engine and compares each result with the cached value stored inside the original file. Every cell is marked matched, mismatched or unverifiable. Old macros, such as the brace keystroke language and slash commands, are translated into a plain-English step list that a human must approve. The output is the workbook plus a provenance report listing what was proven and what was not. [fill in measured result] on our fixture corpus.
+You drop in a Lotus 1-2-3 worksheet or a dBase table. Lazarus 1-2-3 parses the binary records, rebuilds every formula as a modern expression, and writes a clean XLSX. Then it recalculates the whole sheet with its own engine and compares each result with the cached value stored inside the original file. Every cell is marked matched, mismatched or unverifiable. Old macros, such as the brace keystroke language and slash commands, are translated into a plain-English step list that a human must approve. The output is the workbook plus a provenance report listing what was proven and what was not.
+
+Built so far: the WK1/WKS parser, the formula translator and the verification engine (run it with `bun run lazarus <path> --verify`). The XLSX writer, the report UI and macro translation are not built yet. Measured on our fixture corpus: of the 174 formulas in the three real Lotus files, 173 recalculate to exactly the number the file stored (KSBASE.WK1 160 of 160, testLotus123.wks 10 of 10, gnome647171-1.wks 3 of 4), none is mismatched, and 1 is unverifiable: a formula that returns text ("Odd" or "Even"), whose stored text the parser does not read yet. All 27 synthetic test formulas match as well.
 
 ## Stack
 
@@ -31,7 +33,8 @@ Scripts (`bun run <script>`):
 - `test:watch`: Vitest in watch mode
 - `e2e`: Playwright specs under `e2e/` (builds and previews the app)
 - `oracle`: start the lotus-oracle MCP server (prints "not built yet" until it exists)
-- `lazarus <path> [--json]`: inventory a file or folder, one line per file with path, format (wk1, wks, dbf or unknown), size and sha256. It does not parse cells yet. Example: `bun run lazarus fixtures`
+- `lazarus <path> [--json] [--verify]`: inventory a file or folder, one line per file with path, format (wk1, wks, dbf or unknown), size and sha256. With `--verify` it also parses each WK1/WKS file, recalculates its formulas and adds the matched, mismatched and unverifiable counts (stored values are never changed). Example: `bun run lazarus fixtures --verify`
+- `verify:golden`: regenerate `tests/differential/verify/golden.json`, the measured verification counts of the real fixtures (keeps the human-written findings)
 
 ## License
 
