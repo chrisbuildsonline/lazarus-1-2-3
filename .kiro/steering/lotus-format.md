@@ -69,7 +69,7 @@ Cell references carry relative/absolute flags in the high bits of the column and
 
 ### Opcodes confirmed by fixtures
 
-The differential test `tests/differential/formula/fixtures.test.ts` decodes all 185 formulas in the wk1 and wks fixtures with status ok. The opcodes the real fixtures use, each also named by LibreOffice `lotform.cxx` and the Lotus WSFF5 file format note: 0x00 number, 0x01 cell reference, 0x02 range, 0x03 return, 0x04 parentheses, 0x05 integer, 0x06 string, 0x09 add, 0x0B multiply, 0x0E equals, 0x14 AND, 0x2F MOD (2 arguments), 0x33 FALSE (no arguments), 0x3B IF (3 arguments), and 0x50 SUM, 0x52 COUNT and 0x58 STD, these three followed by an argument count byte. Evidence per cell is in `.kiro/specs/formula-translator/evidence.md`. The source of every table entry is in `src/formula/opcodes.ts`. Every other opcode in the table stays candidate until a real fixture shows it.
+The differential test `tests/differential/formula/fixtures.test.ts` decodes all 201 formulas in the wk1 and wks fixtures with status ok. The opcodes the real fixtures use, each also named by LibreOffice `lotform.cxx` and the Lotus WSFF5 file format note: 0x00 number, 0x01 cell reference, 0x02 range, 0x03 return, 0x04 parentheses, 0x05 integer, 0x06 string, 0x09 add, 0x0B multiply, 0x0E equals, 0x14 AND, 0x2F MOD (2 arguments), 0x33 FALSE (no arguments), 0x3B IF (3 arguments), and 0x50 SUM, 0x52 COUNT and 0x58 STD, these three followed by an argument count byte. Evidence per cell is in `.kiro/specs/formula-translator/evidence.md`. The source of every table entry is in `src/formula/opcodes.ts`. Every other opcode in the table stays candidate until a real fixture shows it.
 
 - Relative column words differ between files. `testLotus123.wks` writes them without sign extension (0x80FE for minus 2), while `KSBASE.WK1` sign extends (0xBFFB for minus 5). Reading the low 8 bits as signed handles both. The decoder reports the first form as a reserved-bits-set warning.
 - `gnome647171-1.wks` C2 uses STD. Its cached value 0.75 for 10 and 11.5 is the population standard deviation, so STD maps to Excel STDEVP.
@@ -83,3 +83,9 @@ Volatile functions (@NOW, @TODAY, @RAND) are always `unverifiable`.
 ## Dates
 
 Lotus date serials count days from 1900-01-01 = 1 and wrongly treat 1900 as a leap year, so serial 60 is the nonexistent 1900-02-29. Excel's 1900 date system has the same quirk, so serials from 61 onward are the same number in both. Serials 1 to 59 are the same too. Serial 60 has no real date: keep the number, do not convert it, and flag it in the report. Never convert dates through JavaScript `Date` without handling this.
+
+Algorithm in one line: serial 1 = 1900-01-01, 1900 counts as a leap year, so serial 60 is the fictional 1900-02-29 and from serial 61 the serial is the days since 1899-12-30.
+
+## ERR and NA stored doubles (rule S27)
+
+A stored double with sign 0, exponent 0x7FF and fraction 0 is ERR (+Infinity). Sign 1 with the same exponent and fraction is NA (-Infinity). Exponent 0x7FF with a non-zero fraction is the STRING pattern: do not read it as a number. Finding in `docs/verify-evidence.md`: no fixture contradicts this. KSBASE.WK1 has six NUMBER cells holding `7ff0000000000000` (ERR), none read by a formula. No fixture holds the NA pattern, so that half is untested. gnome647171-1.wks A5 stores `7ff0ffffffffffff`, the STRING pattern, for a formula that returns text. The full rules are in `.kiro/specs/verification-engine/design.md`.

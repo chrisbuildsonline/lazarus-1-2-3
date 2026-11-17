@@ -31,7 +31,8 @@ Run everything with `bun run <script>`:
 - `test:watch`: Vitest watch
 - `e2e`: Playwright
 - `oracle`: start the lotus-oracle MCP server
-- `lazarus <path> [--json]`: inventory a file or folder (path, format, size, sha256). Inventory only, no cell parsing. Run as `bun run lazarus <path> [--json]`.
+- `lazarus <path> [--json] [--verify]`: inventory a file or folder (path, format, size, sha256). With `--verify` it also parses each WK1/WKS file and adds matched, mismatched and unverifiable counts. Run as `bun run lazarus <path> [--json] [--verify]`.
+- `verify:golden`: regenerate `tests/differential/verify/golden.json` (measured verification counts of the real fixtures).
 
 If a script does not exist yet, add it to package.json rather than calling the tool directly.
 

@@ -77,7 +77,9 @@ export type CellResult = {
   address: string; col: number; row: number;
   status: "matched" | "mismatched" | "unverifiable";
   cached: Value | null;               // null only for a cached NaN
-  recalculated: Value | null;         // null when the engine could not compute one
+  recalculated: Value | null;         // null for unknown-opcode, decode-error, volatile-function, unsupported-function,
+                                      // circular-reference, depends-on-unverifiable and undocumented-semantics;
+                                      // a bare label result (U02) keeps its value
   reason: Reason;
   formula: string | null;             // Excel text, for display
   candidateOpcodes: number[];
@@ -172,13 +174,13 @@ None of the sources above defines these. The engine does not guess. The cell is 
 `src/verify/tolerance.ts`:
 
 ```ts
-export const TOLERANCE = { relative: 1e-12, absolute: 1e-12 } as const;  // provisional: set in task 3, signed off in task 50
+export const TOLERANCE = { relative: 1e-12, absolute: 1e-12 } as const;  // measured in task 50: stays 1e-12 (see below)
 export function withinTolerance(a: number, b: number): boolean
 ```
 
 `withinTolerance` is true when `Object.is(a, b)` (also treating -0 as 0), or `|a - b| <= max(relative * max(|a|, |b|), absolute)`. It is false for any NaN or infinity unless the doubles are identical. The absolute floor exists so that a cancellation result such as `0.1 + 0.2 - 0.3` (about 5.6e-17) is not called different from a stored 0.
 
-Why these numbers, and why they are provisional: 1-2-3 ran on an 8087 with 80-bit intermediates and stored 64-bit results, so a chain of operations can differ from 64-bit arithmetic by a few units in the last place per step. A relative 1e-12 is about 4500 times the double rounding step, wide enough for tens of operations, narrow enough that a wrong rule shows as a mismatch. Task 50 sets the final digits from the largest difference measured on the real fixtures, and the review signs them off. The report prints `exact` and `withinTolerance` counts separately, so a reader can see how much the tolerance did.
+Why these numbers: 1-2-3 ran on an 8087 with 80-bit intermediates and stored 64-bit results, so a chain of operations can differ from 64-bit arithmetic by a few units in the last place per step. A relative 1e-12 is about 4500 times the double rounding step, wide enough for tens of operations, narrow enough that a wrong rule shows as a mismatch. Measured in task 50 (`docs/verify-evidence.md`): on every real fixture the largest difference is 0, and all matches are bit-exact. The corpus gives no difference to set the digits from, so the tolerance stays 1e-12. The earlier condition that the largest difference be "well above the rounding step for at least one real cell" is dropped, because it cannot hold when nothing differs. `golden.test.ts` pins the largest relative difference at 0, so a real file that needs the tolerance shows up as a test failure. The report prints `exact` and `withinTolerance` counts separately, so a reader can see how much the tolerance did.
 
 `tests/unit/verify/tolerance-single.test.ts` reads every `.ts` file under `src/verify`, `src/workers` and `src/cli` except `tolerance.ts` and fails on `Number.EPSILON`, the word `epsilon` and any `1e-` literal. Other code calls `withinTolerance`.
 
