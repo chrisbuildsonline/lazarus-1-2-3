@@ -9,7 +9,7 @@ inclusion: always
 - TypeScript (strict), React + Vite, runs fully in the browser.
 - Web Workers for parsing and recalculation. Keep the UI thread free.
 - bun is the package manager and runner. Do not use npm, yarn or pnpm.
-- XLSX writer library (SheetJS-compatible or exceljs). Wrap it in `src/xlsx` so it can be swapped.
+- XLSX writer: exceljs 4.4.0 (chosen). Only `src/xlsx` imports it, and only one adapter file (`src/xlsx/exceljs-adapter.ts`) does, so it can be swapped. It bundles for the browser through Vite's `browser` field in its package.json, with no alias.
 - Vitest for unit, differential and property-based tests (fast-check). Playwright for e2e.
 - `mcp/lotus-oracle`: small Node MCP server with tools for opcode lookup, verify a file, and diff two workbooks.
 - Static hosting only. No backend.
@@ -31,7 +31,7 @@ Run everything with `bun run <script>`:
 - `test:watch`: Vitest watch
 - `e2e`: Playwright
 - `oracle`: start the lotus-oracle MCP server
-- `lazarus <path> [--json] [--verify]`: inventory a file or folder (path, format, size, sha256). With `--verify` it also parses each WK1/WKS file and adds matched, mismatched and unverifiable counts. Run as `bun run lazarus <path> [--json] [--verify]`.
+- `lazarus <file> [--json] [--verify] [--xlsx out.xlsx] [--report out.json|out.html]`: inventory a file or folder (path, format, size, sha256). With `--verify` it also parses each WK1/WKS file and adds matched, mismatched and unverifiable counts. With `--xlsx` and/or `--report` (one WK1/WKS file) it writes the XLSX workbook and the provenance report (JSON or self-contained HTML, chosen by extension). Run as `bun run lazarus <file> [--json] [--verify] [--xlsx out.xlsx] [--report out.json|out.html]`.
 - `verify:golden`: regenerate `tests/differential/verify/golden.json` (measured verification counts of the real fixtures).
 
 If a script does not exist yet, add it to package.json rather than calling the tool directly.

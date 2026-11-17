@@ -9,9 +9,10 @@ src/
   parser/      WKS/WK1 reader implemented (parseWk1 in src/parser); DBF and WK3 later. Bytes in, typed records plus diagnostics out.
   formula/     RPN token decoder, Excel translator and printer implemented (translateFormula in src/formula, chaining decodeRpn, toExcelAst and printExcel); deterministic engine later.
   verify/      Implemented: tolerance, values, dates, ops, functions (lists, math, finance, lookup, decimal), evaluate, graph (Tarjan cycle detection), recalc, classify, report, index (verifySheet, verifyBytes). Provenance report UI and file output later.
-  xlsx/        Workbook model to XLSX. The only module that imports the writer library.
+  report/      Implemented: provenance report built from verification results (build, types, features, tokens), as JSON (json.ts) and as a self-contained HTML page (html.ts, escape.ts), plus sha256.ts. No network, no external assets.
+  xlsx/        Implemented: XLSX writer (writeXlsx in index.ts; plan.ts, labels.ts, zip-normalize.ts for byte-identical output). The only module that imports the writer library, and only exceljs-adapter.ts does.
   macro/       Brace keystroke and slash-command parser, plain-English step list, approval state.
-  cli/         The `lazarus` inventory CLI (lazarus.ts entry, inventory.ts logic). Lists path, format, size, sha256. With `--verify` it parses and verifies cells via verify-summary.ts.
+  cli/         The `lazarus` CLI (lazarus.ts entry, inventory.ts logic, args.ts flag parsing). Lists path, format, size, sha256. With `--verify` it parses and verifies cells via verify-summary.ts. With `--xlsx` / `--report`, export.ts parses, verifies, writes the workbook and the report.
   ui/          React components, design tokens, worker clients.
   workers/     Web Worker entry points: verify.worker.ts, with its message types and handler in verify-protocol.ts.
 mcp/
@@ -25,7 +26,7 @@ e2e/           Playwright specs.
 
 ## Rules
 
-- Dependencies point one way: `ui` -> `verify` -> `formula` -> `parser`, with `workers` -> `verify` and `cli` -> `verify`. `parser` and `formula` never import React, the DOM, or the writer library.
+- Dependencies point one way: `ui` -> `verify` -> `formula` -> `parser`, with `workers` -> `verify` and `cli` -> `verify`. `cli` may also import `xlsx`, `report`, `verify` and `parser`, and only through `src/cli/export.ts`. `parser` and `formula` never import React, the DOM, or the writer library.
 - Shared code between the app and `mcp/lotus-oracle` lives in `src/` and is imported, not copied.
 - Every fixture directory has a `LICENSE` note stating the source, author, license and whether it may be redistributed. No note, no commit.
 - Fixtures with real personal data are never committed. Use synthetic or openly licensed files.
