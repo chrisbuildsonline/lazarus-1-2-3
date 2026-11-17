@@ -11,6 +11,8 @@ inclusion: always
 - bun is the package manager and runner. Do not use npm, yarn or pnpm.
 - XLSX writer: exceljs 4.4.0 (chosen). Only `src/xlsx` imports it, and only one adapter file (`src/xlsx/exceljs-adapter.ts`) does, so it can be swapped. It bundles for the browser through Vite's `browser` field in its package.json, with no alias.
 - Vitest for unit, differential and property-based tests (fast-check). Playwright for e2e.
+- Component tests render React with react-dom/server (renderToStaticMarkup) in the Node environment of Vitest and check the markup, so no DOM library is needed. Focus, keyboard and drag and drop are tested in Playwright.
+- Accessibility: @axe-core/playwright 4.14.0 (exact) runs in e2e/seance-a11y.spec.ts with the tags wcag2a, wcag2aa, wcag21a, wcag21aa and best-practice. The bar is zero serious or critical findings, with no rule disabled.
 - `mcp/lotus-oracle`: small Node MCP server with tools for opcode lookup, verify a file, and diff two workbooks.
 - Static hosting only. No backend.
 
@@ -38,18 +40,19 @@ If a script does not exist yet, add it to package.json rather than calling the t
 
 ## Test gate
 
-A change is done only when all three hold:
+A change is done only when all of these hold:
 
 1. A failing test came first (red), then the code that makes it pass.
 2. The whole suite is green: `bun run test`.
 3. `bun run typecheck` is clean.
+4. For UI work, bun run build and CI=1 bun run e2e are green too.
 
 Test types:
 
 - Unit: record decoding, token decoding, serial dates.
 - Differential: recalculated value versus cached value from the fixture. A fixture mismatch is a bug in us, or a documented `mismatched` expectation.
 - Property-based (fast-check): parse/serialize round trips, RPN to Excel formula, engine arithmetic invariants, and "parser never throws on arbitrary bytes; it returns an error result".
-- e2e: drop a fixture, see the XLSX and the report, confirm no network request carried file data.
+- e2e: the app specs in e2e/: seance-sample, seance-files (drop, pickers, folder, unsupported and corrupt files), seance-drawer (grid keys, cell drawer), seance-states (statuses, filters, phone list), seance-downloads (XLSX and report read back), seance-batch, seance-worker-failure, seance-privacy (static same-origin requests only, CSP), seance-a11y (axe, focus ring, touch targets), seance-layout (1440x900 and 390x844 screenshots, no sideways scroll, no console error) and seance-responsive (no long main-thread task on a 5,000-formula sheet, under 2,000 grid cells in the DOM). Run them with CI=1 bun run e2e so Playwright builds and serves its own preview.
 
 ## Conventions
 
