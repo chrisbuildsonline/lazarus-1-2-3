@@ -14,6 +14,8 @@ export const FIXED: Record<number, [number, (...a: number[]) => number]> = {
   0x38: [3, (p, r, n) => (p * r) / (1 - (1 + r) ** -n)],
   0x39: [3, (pmt, r, n) => (pmt * (1 - (1 + r) ** -n)) / r],
   0x3a: [3, (pmt, r, n) => (pmt * ((1 + r) ** n - 1)) / r],
+  // @IF: both branches are evaluated (no ERR or NA here), a nonzero condition picks the first.
+  0x3b: [3, (c, a, b) => (c !== 0 ? a : b)],
   0x3f: [2, (x, d) => Math.round(x * 10 ** d) / 10 ** d],
 };
 export const VARIABLE: Record<number, (all: number[]) => number> = {
