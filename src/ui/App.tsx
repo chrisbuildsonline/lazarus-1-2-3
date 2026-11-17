@@ -30,6 +30,8 @@ export function App() {
   const [fromSample, setFromSample] = useState(false);
   const title = useRef<HTMLHeadingElement | null>(null);
   const firstView = useRef(true);
+  const preparing = useRef(false);
+  const [preparingKind, setPreparingKind] = useState<DownloadKind | null>(null);
 
   const selected = state.items.find((i) => i.id === state.selectedId);
   const file = state.view === "sheet" ? selected?.raised : undefined;
@@ -89,13 +91,33 @@ export function App() {
     };
   }, [summonDropped]);
 
+  // Requirement 56: "Preparing…" is painted before the work starts, then a toast says it started.
   const download = async (kind: DownloadKind) => {
-    if (!file) return;
-    const { buildDownload, saveBlob } = await import("./io/downloads.ts");
-    const result = await buildDownload(kind, file, __LAZARUS_VERSION__);
-    if (!result.ok) return dispatch({ type: "toast", kind: "error", text: result.reason });
-    const { name, data, mime } = result.download;
-    saveBlob<HTMLAnchorElement>(document, URL, name, data as BlobPart, mime);
+    if (!file || preparing.current) return;
+    preparing.current = true;
+    setPreparingKind(kind);
+    try {
+      await new Promise((done) => requestAnimationFrame(done));
+      const { buildDownload, saveBlob } = await import("./io/downloads.ts");
+      const result = await buildDownload(kind, file, __LAZARUS_VERSION__);
+      if (!result.ok) return dispatch({ type: "toast", kind: "error", text: result.reason });
+      const { name, data, mime } = result.download;
+      saveBlob<HTMLAnchorElement>(document, URL, name, data as BlobPart, mime);
+      dispatch({ type: "toast", kind: "info", text: COPY.downloadStarted(name) });
+    } catch (e) {
+      dispatch({ type: "toast", kind: "error", text: COPY.downloadFailed(e instanceof Error ? e.message : String(e)) });
+    } finally {
+      preparing.current = false;
+      setPreparingKind(null);
+    }
+  };
+  const downloadButton = (kind: DownloadKind, label: string, className: string, disabled = false) => {
+    const busy = preparingKind === kind;
+    return (
+      <button type="button" className={className} aria-disabled={busy || disabled || undefined} onClick={busy || disabled ? undefined : () => void download(kind)}>
+        {busy ? COPY.preparing : label}
+      </button>
+    );
   };
 
   const dismiss = useCallback((id: number) => dispatch({ type: "dismissToast", id }), [dispatch]);
@@ -103,11 +125,9 @@ export function App() {
   let body;
   let primary;
   if (file && selected) {
-    primary = (
-      <button type="button" className="btn-primary primary-sticky" onClick={() => void download("xlsx")}>
-        {COPY.downloadXlsx}
-      </button>
-    );
+    primary = downloadButton("xlsx", COPY.downloadXlsx, "btn-primary primary-sticky");
+    // Requirement 53: without a fingerprint the reports are off, with the reason in view.
+    const noHash = file.sha256 === null;
     body = (
       <SheetView
         key={selected.id}
@@ -124,13 +144,10 @@ export function App() {
         }}
         links={
           <>
-            <button type="button" className="btn-text" onClick={() => void download("report-html")}>
-              {COPY.downloadHtml}
-            </button>
+            {downloadButton("report-html", COPY.downloadHtml, "btn-text", noHash)}
             <span aria-hidden="true">·</span>
-            <button type="button" className="btn-text" onClick={() => void download("report-json")}>
-              {COPY.downloadJson}
-            </button>
+            {downloadButton("report-json", COPY.downloadJson, "btn-text", noHash)}
+            {noHash && <span className="sheet__reason">{COPY.noFingerprint}</span>}
           </>
         }
         onSelectFile={(id) => dispatch({ type: "selectFile", id })}

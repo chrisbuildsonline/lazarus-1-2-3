@@ -674,6 +674,10 @@ pre {
   color: var(--text-muted);
 }
 
+.sheet__reason {
+  font: var(--text-small);
+}
+
 .sheet__body {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
