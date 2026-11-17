@@ -63,5 +63,6 @@ describe("downloadName", () => {
       }),
       { numRuns: 2000 },
     );
-  });
+    // About 1 s alone; the full parallel suite has pushed it past the 5 s default.
+  }, 20_000);
 });
