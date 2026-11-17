@@ -11,8 +11,10 @@ import { buildSheet, type Spec } from "../../unit/helpers/build-sheet.ts";
 const STATUSES = new Set(["matched", "mismatched", "unverifiable"]);
 const MATCHED = new Set(["exact", "within-tolerance"]);
 // The outcome failed, so there is no recalculated value. The spec lists the first four; the other
-// three come from a failed outcome too (a cycle, a failed precedent, an undocumented case).
+// three come from a failed outcome too (a cycle, a failed precedent, an undocumented case), except
+// U02, which classify sets on a computed label result and so keeps its value.
 const NO_VALUE = new Set(["unknown-opcode", "decode-error", "volatile-function", "unsupported-function", "circular-reference", "depends-on-unverifiable", "undocumented-semantics"]);
+const noValue = (r: { code: string; rule?: string }) => NO_VALUE.has(r.code) && r.rule !== "U02";
 
 function expectWellFormed(v: SheetVerification): void {
   const t = v.totals;
@@ -24,7 +26,7 @@ function expectWellFormed(v: SheetVerification): void {
     expect((REASON_CODES as readonly string[]).includes(c.reason.code), c.reason.code).toBe(true);
     expect(c.status === "matched", c.address).toBe(MATCHED.has(c.reason.code));
     expect(c.status === "mismatched", c.address).toBe(c.reason.code === "value-differs");
-    expect(c.recalculated === null, `${c.address} ${c.reason.code}`).toBe(NO_VALUE.has(c.reason.code));
+    expect(c.recalculated === null, `${c.address} ${c.reason.code} ${c.reason.rule}`).toBe(noValue(c.reason));
     expect(c.reason.message.length, c.address).toBeGreaterThan(0);
     expect(c.reason.message).not.toContain("undefined");
     expect(c.candidateOpcodes).toEqual([...new Set(c.candidateOpcodes)].sort((a, b) => a - b));
