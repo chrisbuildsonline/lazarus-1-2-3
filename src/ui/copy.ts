@@ -50,6 +50,7 @@ export const COPY = {
   downloadXlsx: "Download XLSX",
   downloadHtml: "Download report (HTML)",
   downloadJson: "JSON",
+  rowHeader: "Row",
   totals: "Totals",
   verified: "Verified",
   honestLimits: "Unverifiable cells are not wrong; we could not prove them. The report lists each one and why.",
