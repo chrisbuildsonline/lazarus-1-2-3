@@ -3,4 +3,5 @@ export const COPY = {
   missingCached: "Not stored in the file",
   missingRecalculated: "Could not be calculated",
   noFormulas: "No formulas",
+  andMore: (n: number) => `and ${n} more`,
 } as const;
