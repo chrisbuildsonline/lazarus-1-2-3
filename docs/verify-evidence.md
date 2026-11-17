@@ -16,6 +16,20 @@ No finding contradicts rule S27, and no KSBASE comparison operand is a label, so
 
 **(c) gnome647171-1.wks A5.** The stored bits are `7ff0ffffffffffff`: sign 0, exponent 7FF, fraction non-zero. WSFF2 names this the STRING pattern, which fits the formula `IF(MOD(A4,2)=1,"Odd","Even")` returning text. The parser reads it as NaN. The engine will compute a string for it, so its reason is `string-result` (requirement 25), and the NaN cached value would also make it `cached-not-a-number` if the result were a number.
 
+## Final counts
+
+From `bun run lazarus fixtures --verify`, equal to `tests/differential/verify/golden.json` (tolerance relative 1e-12, absolute 1e-12):
+
+| Fixture | Formulas | Matched (exact / within tolerance) | Mismatched | Unverifiable |
+|---|---|---|---|---|
+| KSBASE.WK1 | 160 | 160 (160 / 0) | 0 | 0 |
+| testLotus123.wks | 10 | 10 (10 / 0) | 0 | 0 |
+| gnome647171-1.wks | 4 | 3 (3 / 0) | 0 | 1 (A5, `string-result`) |
+| Real, total | 174 | 173 | 0 | 1 |
+| Synthetic (formulas, dates, mixed, functions) | 27 | 27 (27 / 0) | 0 | 0 |
+
+No matched real cell uses a candidate opcode: every opcode in the real files was already confirmed, so the real files add no new evidence for any candidate entry in `src/formula/opcodes.ts`.
+
 ## Tolerance sign-off
 
 Measured with `bun run verify:golden` (`tests/differential/verify/golden.json`): on all three real fixtures with formulas, every matched cell is bit-identical to its cached double. The largest relative difference among matched cells is 0 on each file, and `withinTolerance` is 0 everywhere. That includes non-integer results built by real arithmetic, such as KSBASE O3, `0.5 * (J3 + J4)`, cached and recalculated as `3fd01931866a0d7e` (0.25153768659966846).
