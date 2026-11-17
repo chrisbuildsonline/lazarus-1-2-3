@@ -34,6 +34,8 @@ export function Grid({ model, label, focus, selected, rowsShown, empty, viewport
   const [scroll, setScroll] = useState({ top: 0, left: 0 });
   const [size, setSize] = useState(viewport ?? { width: 1200, height: 600 });
   const keyed = useRef(false);
+  // Values solidify once per file (DESIGN.md section 3); scrolling later mounts cells without the effect.
+  const [fresh, setFresh] = useState(true);
 
   const count = rowsShown ? rowsShown.length : model.rows;
   const rowAt = (i: number) => (rowsShown ? rowsShown[i]! : i);
@@ -110,7 +112,7 @@ export function Grid({ model, label, focus, selected, rowsShown, empty, viewport
     <div className="grid-frame">
       <div
         ref={ref}
-        className="grid"
+        className={fresh ? "grid is-fresh" : "grid"}
         role="grid"
         aria-label={label}
         aria-rowcount={model.rows + 1}
@@ -118,6 +120,7 @@ export function Grid({ model, label, focus, selected, rowsShown, empty, viewport
         onScroll={(e) => setScroll({ top: e.currentTarget.scrollTop, left: e.currentTarget.scrollLeft })}
         onKeyDown={onKeyDown}
         onClick={onClick}
+        onAnimationEnd={() => setFresh(false)}
       >
         <div className="grid__head" role="row" aria-rowindex={1} style={{ width }}>
           <div className="grid__corner" role="columnheader" aria-colindex={1}>
