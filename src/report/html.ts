@@ -62,10 +62,10 @@ td.reason { min-width: 260px; color: var(--text-muted); }
   .pill { white-space: normal; }
   #cells thead { display: none; }
   #cells table, #cells tbody { display: block; }
-  #cells tr { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "cell status" "lotus lotus" "excel excel" "stored recalc" "reason reason"; gap: var(--space-2) var(--space-4); padding: var(--space-4) 0; border-bottom: 1px solid var(--hairline); }
+  #cells tr { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "cell status" "lotus lotus" "excel excel" "stored recalc" "reason reason"; gap: var(--space-2) var(--space-4); padding: var(--space-4) 0; border-bottom: 1px solid var(--hairline); }
   #cells td { display: block; padding: 0; border: 0; min-width: 0; }
-  #cells td.num { text-align: left; white-space: normal; }
-  #cells td.c-cell { grid-area: cell; } #cells td.c-status { grid-area: status; }
+  #cells td.num { text-align: left; white-space: normal; overflow-wrap: anywhere; }
+  #cells td.c-cell { grid-area: cell; } #cells td.c-status { grid-area: status; justify-self: end; }
   #cells td.c-lotus { grid-area: lotus; } #cells td.c-excel { grid-area: excel; }
   #cells td.c-stored { grid-area: stored; } #cells td.c-recalc { grid-area: recalc; }
   #cells td.reason { grid-area: reason; min-width: 0; font: var(--text-small); }

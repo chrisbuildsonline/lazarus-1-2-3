@@ -46,3 +46,28 @@ test("on a phone each formula is a status list row: address and pill on top, det
   await expect(row.locator("td.c-lotus")).toHaveCSS("display", "block");
   expect(await row.locator("td.c-stored").evaluate((el) => getComputedStyle(el, "::before").content)).toBe('"Stored"');
 });
+
+test("on a phone every row puts the pill flush right and lines up Stored and Recalculated", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.setContent(ksbaseReport());
+  const rows = await page.locator("#cells tbody tr").evaluateAll((trs) =>
+    trs.slice(0, 5).map((tr) => {
+      const style = getComputedStyle(tr);
+      const box = tr.getBoundingClientRect();
+      const left = (sel: string) => tr.querySelector(sel)!.getBoundingClientRect().left;
+      return {
+        contentRight: box.right - parseFloat(style.paddingRight) - parseFloat(style.borderRightWidth),
+        pillRight: tr.querySelector("td.c-status .pill")!.getBoundingClientRect().right,
+        storedLeft: left("td.c-stored"),
+        recalcLeft: left("td.c-recalc"),
+      };
+    }),
+  );
+  expect(rows).toHaveLength(5);
+  for (const r of rows) {
+    expect(Math.abs(r.pillRight - r.contentRight)).toBeLessThanOrEqual(1);
+    expect(Math.abs(r.pillRight - rows[0]!.pillRight)).toBeLessThanOrEqual(1);
+    expect(Math.abs(r.storedLeft - rows[0]!.storedLeft)).toBeLessThanOrEqual(1);
+    expect(Math.abs(r.recalcLeft - rows[0]!.recalcLeft)).toBeLessThanOrEqual(1);
+  }
+});
