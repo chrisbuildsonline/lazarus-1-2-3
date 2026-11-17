@@ -55,10 +55,10 @@ Red first: write each test and watch it fail before the code that makes it pass.
 
 ## Dependencies and order
 
-- [ ] 34. Red: `tests/unit/verify/graph.test.ts`, `precedents(ast)`: refs, ranges, refs inside both branches of IF, refs inside CHOOSE arguments, duplicates removed, corners normalised. Green: `src/verify/graph.ts` extraction. (Req 30)
-- [ ] 35. Red: graph build: edges only to formula cells, a range reaching two formula cells and many value cells, a range over the full grid on a 20-cell sheet builds fast (assert the number of cell reads, not the clock), enumeration versus filtering both give the same edges. Green: graph build with the `A <= F` choice. (Req 32)
-- [ ] 36. Red: order: iterative Tarjan returns every formula after its precedents on a chain, a diamond and a wide fan-in; the result is identical when the Map insertion order is shuffled (a fixed set of 20 shuffles, then the property in task 53). Green: Tarjan with sorted roots and edges. (S26; Req 31)
-- [ ] 37. Red: cycles: a cell that refers to itself, two cells that refer to each other, a three-cell cycle with a fourth cell downstream, a cycle through the untaken branch of IF (still a cycle, S26 and requirement 30). The components report the right members. Green: cycle detection. (S26; Req 30, 33)
+- [x] 34. Red: `tests/unit/verify/graph.test.ts`, `precedents(ast)`: refs, ranges, refs inside both branches of IF, refs inside CHOOSE arguments, duplicates removed, corners normalised. Green: `src/verify/graph.ts` extraction. (Req 30)
+- [x] 35. Red: graph build: edges only to formula cells, a range reaching two formula cells and many value cells, a range over the full grid on a 20-cell sheet builds fast (assert the number of cell reads, not the clock), enumeration versus filtering both give the same edges. Green: graph build with the `A <= F` choice. (Req 32)
+- [x] 36. Red: order: iterative Tarjan returns every formula after its precedents on a chain, a diamond and a wide fan-in; the result is identical when the Map insertion order is shuffled (a fixed set of 20 shuffles, then the property in task 53). Green: Tarjan with sorted roots and edges. (S26; Req 31)
+- [x] 37. Red: cycles: a cell that refers to itself, two cells that refer to each other, a three-cell cycle with a fourth cell downstream, a cycle through the untaken branch of IF (still a cycle, S26 and requirement 30). The components report the right members. Green: cycle detection. (S26; Req 30, 33)
 - [ ] 38. Red: a chain of 100 000 formulas (`A1` = 1, then `A2 = A1 + 1`, and so on down 8192 rows and across columns, built directly as a `Sheet`) is ordered and evaluated without a stack overflow; a cycle of 50 000 cells too. Green: fix whatever fails (no recursion on the chain). (Req 6, 32)
 
 ## Recalculation and classification

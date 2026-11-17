@@ -3,6 +3,7 @@
 import { MAX_DEPTH, OPCODES, type Expr } from "../formula/index.ts";
 import { a1 } from "../parser/index.ts";
 import { FINANCE, npv } from "./finance.ts";
+import { corners, type Corner } from "./graph.ts";
 import { LISTS, type ListArg } from "./lists.ts";
 import { choose, hlookup, ifValue, vlookup } from "./lookup.ts";
 import { MATH } from "./math.ts";
@@ -28,7 +29,6 @@ import {
 /** One cell as a formula sees it: nothing there, a label, a stored double, or a formula's outcome. */
 export type CellRead = { t: "empty" } | { t: "label" } | { t: "number"; v: number } | { t: "formula"; o: Outcome<Value> };
 
-export type Corner = { col: number; row: number };
 export type RangeItem = { col: number; row: number; read: CellRead };
 
 export type EvalContext = {
@@ -93,14 +93,6 @@ const asValue = (r: Result): Outcome<Value> => (r.ok ? { ok: true, v: value(r.v)
 function rangeCell(item: RangeItem): RangeCell {
   const r = operand(item.col, item.row, item.read);
   return r.ok ? r.v : { t: "unverifiable", u: r.u };
-}
-
-/** Requirement 41: the two corners as min and max. */
-function corners(e: { from: Corner; to: Corner }): { from: Corner; to: Corner } {
-  return {
-    from: { col: Math.min(e.from.col, e.to.col), row: Math.min(e.from.row, e.to.row) },
-    to: { col: Math.max(e.from.col, e.to.col), row: Math.max(e.from.row, e.to.row) },
-  };
 }
 
 /** The table argument of NPV and the lookups: every cell of the rectangle, row-major; a single value is 1 x 1. */
