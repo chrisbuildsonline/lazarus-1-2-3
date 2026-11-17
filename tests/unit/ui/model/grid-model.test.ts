@@ -3,38 +3,9 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { parseWk1, type Cell } from "../../../../src/parser/index.ts";
 import { buildGridModel, cellLabel, columnLetters, type DisplayCell } from "../../../../src/ui/model/grid-model.ts";
-import { TOLERANCE, type CellResult, type Status } from "../../../../src/verify/index.ts";
-import type { RaisedFile } from "../../../../src/workers/verify-protocol.ts";
-import { raiseFixture } from "../../helpers/raised.ts";
+import { cellResult as result, handBuilt, raiseFixture } from "../../helpers/raised.ts";
 
 const KSBASE = "fixtures/ksbase/KSBASE.WK1";
-
-const result = (col: number, row: number, address: string, status: Status, cached: number | null): CellResult => ({
-  address,
-  col,
-  row,
-  status,
-  cached: cached === null ? null : { t: "num", v: cached },
-  recalculated: { t: "num", v: 5 },
-  reason: { code: status === "mismatched" ? "value-differs" : status === "matched" ? "exact" : "unknown-opcode", message: "m" },
-  formula: "A1+B1",
-  lotusFormula: "+A1+B1",
-  candidateOpcodes: [],
-});
-
-/** A sheet of hand-built cells with their results, shaped like the worker's answer. */
-function handBuilt(cells: Cell[], results: CellResult[]): RaisedFile {
-  const t = { formulas: results.length, matched: 0, mismatched: 0, unverifiable: 0, exact: 0, withinTolerance: 0, byReason: {} };
-  for (const r of results) t[r.status]++;
-  return {
-    name: "hand.wk1",
-    byteLength: 0,
-    sha256: null,
-    diagnostics: [],
-    sheet: { format: "wk1", version: 0x406, sawEof: true, declaredDimensions: null, cells },
-    verification: { name: "hand.wk1", format: "wk1", tolerance: { ...TOLERANCE }, cells: results, totals: t },
-  };
-}
 
 const formula = (col: number, row: number, cached: number): Cell => ({ kind: "formula", col, row, cached, rpn: new Uint8Array([3]) });
 const label = (col: number, row: number, prefix: string, text: string): Cell => ({ kind: "label", col, row, prefix, text });

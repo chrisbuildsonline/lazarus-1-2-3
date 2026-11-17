@@ -7,4 +7,5 @@ export const COPY = {
   status: { matched: "Matched", mismatched: "Mismatched", unverifiable: "Unverifiable" },
   emptyCell: "empty",
   noStoredValue: "no stored value",
+  noCellsWithStatus: (status: string) => `No ${status} cells on this sheet.`,
 } as const;
