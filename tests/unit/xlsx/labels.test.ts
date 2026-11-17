@@ -1,6 +1,6 @@
 // Label alignment, XML-safe text and stored values (requirements 8, 10, 12, 17).
 import { describe, expect, it } from "vitest";
-import { alignmentFor, sanitizeXmlText, storedValue } from "../../../src/xlsx/labels.ts";
+import { alignmentFor, escapeOoxmlText, sanitizeXmlText, storedValue } from "../../../src/xlsx/labels.ts";
 
 describe("alignmentFor", () => {
   it("maps the four aligning prefixes", () => {
@@ -29,6 +29,14 @@ describe("sanitizeXmlText", () => {
   it("replaces each character XML 1.0 cannot carry with U+FFFD and counts them", () => {
     expect(sanitizeXmlText("a\u0000b\u0001c\u000Bd￾e￿")).toEqual({ text: "a�b�c�d�e�", replaced: 5 });
     expect(sanitizeXmlText("x\uD800y\uDC00")).toEqual({ text: "x�y�", replaced: 2 });
+  });
+});
+
+describe("escapeOoxmlText", () => {
+  it("escapes the underscore of every _xHHHH_ sequence and nothing else", () => {
+    expect(escapeOoxmlText("_x0041_")).toBe("_x005F_x0041_");
+    expect(escapeOoxmlText("a_x00e9_b_x12_")).toBe("a_x005F_x00e9_b_x12_");
+    expect(escapeOoxmlText("plain_text")).toBe("plain_text");
   });
 });
 

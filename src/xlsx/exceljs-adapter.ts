@@ -1,14 +1,14 @@
 // The only exceljs import (requirement 2). Turns cell plans into workbook bytes. Section names
 // are from the exceljs README (https://github.com/exceljs/exceljs#readme).
 import ExcelJS from "exceljs";
-import type { PlannedValue } from "./labels.ts";
+import { escapeOoxmlText, type PlannedValue } from "./labels.ts";
 import type { CellPlan } from "./plan.ts";
 
 const FIXED_DATE = new Date(Date.UTC(1980, 0, 1));
 const AUTHOR = "Lazarus 1-2-3";
 
 const plain = (v: PlannedValue): ExcelJS.CellValue =>
-  v.kind === "number" || v.kind === "text" ? v.value : v.kind === "error" ? ({ error: v.code } as ExcelJS.CellErrorValue) : null;
+  v.kind === "number" ? v.value : v.kind === "text" ? escapeOoxmlText(v.value) : v.kind === "error" ? ({ error: v.code } as ExcelJS.CellErrorValue) : null;
 
 export async function buildWorkbookBytes(plans: readonly CellPlan[]): Promise<Uint8Array> {
   // "Create a Workbook"

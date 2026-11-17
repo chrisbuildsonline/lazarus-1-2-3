@@ -25,3 +25,7 @@ exceljs zips with JSZip, which stamps each entry with the current local time. Wi
 - `gnome647171-1.wks`: 4 formula cells. A5 holds the cached NaN pattern (`7ff0ffffffffffff`) and is written as a formula with no stored result and a note.
 - Label prefixes across all wk1/wks fixtures: `'` 285, `^` 32, `"` 12. No real file uses `\` or `|`, so the fill and non-printing mappings rest on hand-built tests.
 - The real data exposed no writer defect. Breaking the ERR mapping on purpose (`#NUM!`) fails the KSBASE case at G36.
+
+## Writer properties (`tests/property/xlsx/writer.property.test.ts`)
+
+- A label `_x0041_` read back as `A`: OOXML treats `_xHHHH_` in cell text as an escaped character. The adapter now escapes the underscore (`_x005F_`), so every label reads back as its sanitised text. The case is a fixed example in the property test because random strings rarely hit it.
