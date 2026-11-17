@@ -21,7 +21,7 @@ const CSS = `
 :root { ${Object.entries(TOKENS).map(([k, v]) => `--${k}: ${v};`).join(" ")} }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--canvas); color: var(--text); font: var(--text-body); font-variant-numeric: tabular-nums; }
-main { max-width: 1360px; margin: 0 auto; padding: var(--space-10) var(--space-8) var(--space-14); display: grid; gap: var(--space-6); }
+main { max-width: 1360px; margin: 0 auto; padding: var(--space-10) var(--space-8) var(--space-14); display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-6); }
 section, header { background: var(--surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-surface); padding: var(--space-8); }
 .brand { display: inline-block; background: var(--primary); color: var(--on-primary); font: var(--text-small); border-radius: var(--radius-pill); padding: var(--space-1) var(--space-3); }
 h1 { font: var(--text-title); letter-spacing: var(--tracking-display); margin: var(--space-4) 0 var(--space-5); overflow-wrap: anywhere; }
@@ -55,9 +55,23 @@ td.reason { min-width: 260px; color: var(--text-muted); }
 .inputs li { font: var(--text-small); }
 @media (max-width: 640px) {
   main { padding: var(--space-4) var(--space-3) var(--space-10); gap: var(--space-4); }
-  section, header { padding: var(--space-5); }
-  .summary { grid-template-columns: 1fr; gap: var(--space-4); }
+  section, header { padding: var(--space-4); }
+  .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
+  .summary, .features { grid-template-columns: minmax(0, 1fr); gap: var(--space-4); }
   .big { font: var(--text-display-sm); }
+  .pill { white-space: normal; }
+  #cells thead { display: none; }
+  #cells table, #cells tbody { display: block; }
+  #cells tr { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "cell status" "lotus lotus" "excel excel" "stored recalc" "reason reason"; gap: var(--space-2) var(--space-4); padding: var(--space-4) 0; border-bottom: 1px solid var(--hairline); }
+  #cells td { display: block; padding: 0; border: 0; min-width: 0; }
+  #cells td.num { text-align: left; white-space: normal; }
+  #cells td.c-cell { grid-area: cell; } #cells td.c-status { grid-area: status; }
+  #cells td.c-lotus { grid-area: lotus; } #cells td.c-excel { grid-area: excel; }
+  #cells td.c-stored { grid-area: stored; } #cells td.c-recalc { grid-area: recalc; }
+  #cells td.reason { grid-area: reason; min-width: 0; font: var(--text-small); }
+  #cells td.c-lotus::before, #cells td.c-excel::before, #cells td.c-stored::before, #cells td.c-recalc::before { display: block; margin-bottom: var(--space-1); font: var(--text-label); letter-spacing: var(--tracking-label); color: var(--text-muted); text-transform: uppercase; }
+  #cells td.c-lotus::before { content: "Lotus"; } #cells td.c-excel::before { content: "Excel"; }
+  #cells td.c-stored::before { content: "Stored"; } #cells td.c-recalc::before { content: "Recalculated"; }
 }
 `;
 
@@ -88,7 +102,7 @@ const inputRow = (i: InputRow) => `<li><code>${t(i.address)}</code> ${t(`${i.kin
 function row(r: ReportRow): string {
   const formula = (f: string | null) => (f === null ? '<span class="muted">none</span>' : `<code>${t(f)}</code>`);
   const inputs = r.inputs?.length ? `<ul class="inputs">${r.inputs.map(inputRow).join("")}${r.inputsOmitted ? `<li>${t(`and ${r.inputsOmitted} more`)}</li>` : ""}</ul>` : "";
-  return `<tr><td><code>${t(r.address)}</code></td><td>${formula(r.lotusFormula)}</td><td>${formula(r.excelFormula)}</td><td class="num">${showValue(r.cached)}</td><td class="num">${showValue(r.recalculated)}</td><td>${PILL[r.status]}</td><td class="reason">${t(r.reason.message)}${inputs}</td></tr>`;
+  return `<tr><td class="c-cell"><code>${t(r.address)}</code></td><td class="c-lotus">${formula(r.lotusFormula)}</td><td class="c-excel">${formula(r.excelFormula)}</td><td class="num c-stored">${showValue(r.cached)}</td><td class="num c-recalc">${showValue(r.recalculated)}</td><td class="c-status">${PILL[r.status]}</td><td class="reason">${t(r.reason.message)}${inputs}</td></tr>`;
 }
 
 export function renderReportHtml(r: ProvenanceReport): string {
