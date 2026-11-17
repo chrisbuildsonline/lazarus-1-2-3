@@ -94,6 +94,9 @@ export const cachedNotANumber = (): Unverifiable =>
 export const undocumented = (rule: string, what: string): Unverifiable =>
   unverifiable("undocumented-semantics", rule, `The 1-2-3 documentation does not say what ${what} gives, so this formula cannot be checked (rule ${rule}).`);
 
+/** U02: the whole result of a formula is a label, which Release 2 and later return as text. */
+export const labelResult = (): Unverifiable => undocumented("U02", "a formula whose whole result is a label");
+
 /** For a pair the caller has found equal within the tolerance. */
 export function matchedReason(cached: number, recalculated: number): Reason {
   if (cached === recalculated) return { code: "exact", message: "The recalculated value equals the stored value exactly." };
