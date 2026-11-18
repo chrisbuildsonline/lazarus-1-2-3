@@ -105,3 +105,21 @@ Differences from WK1: no format byte in cell records; the address is row u16, sh
 ## ERR and NA stored doubles (rule S27)
 
 A stored double with sign 0, exponent 0x7FF and fraction 0 is ERR (+Infinity). Sign 1 with the same exponent and fraction is NA (-Infinity). Exponent 0x7FF with a non-zero fraction is the STRING pattern: do not read it as a number. Finding in `docs/verify-evidence.md`: no fixture contradicts this. KSBASE.WK1 has six NUMBER cells holding `7ff0000000000000` (ERR), none read by a formula. No fixture holds the NA pattern, so that half is untested. gnome647171-1.wks A5 stores `7ff0ffffffffffff`, the STRING pattern, for a formula that returns text. The full rules are in `.kiro/specs/verification-engine/design.md`.
+
+## Macros
+
+Sources, status and gaps are in `.kiro/specs/macro-translator/evidence.md`. No Release 2 manual page could be read (the archive.org Release 2.2 Reference is access-restricted). The online sources are Release 3.1, Release 4 for Windows and the 123elf wiki, so nothing here is a confirmed Release 2 fact unless it says so.
+
+| Fact | Status |
+|---|---|
+| NAME record, opcode 0x0B, body 24 bytes: bytes 0-15 NUL-terminated ASCII name, then start column, start row, end column, end row as u16 little-endian. Example REVENUES = `00 00 00 00 01 00 03 00` (A1..B4). | Two sources: `design/refs/lotus/WSFF2-mettalogic.TXT` lines 301-350, and LibreOffice `OP_NamedRange` in `sc/source/filter/lotus/op.cxx`. Not yet checked against the real fixtures. |
+| Symphony names use a different record with a type byte after the four u16. | One source (LibreOffice `OP_SymphNamedRange`). |
+| A macro name is a backslash plus one letter. | One source each in Release 3.1 (sample macros `\G`, `\S`, `\D`, `\R`, `\C`, `\M`) and Release 4 (`\a`). Not Release 2. |
+| `\0` autoexec, and "a macro reads down the column and stops at a blank or non-label cell". | Not found. Do not rely on them. |
+| Release 2 menu tree, prompts per leaf, whether a menu stays open. | Not found. Release 3.1 contents list the same command names but say nothing on prompts. |
+| {BRANCH}, {MENUBRANCH}, {WAIT}: names and meaning. | Two sources (Release 3.1 Quick Reference p. 18-19, Release 4 docs). |
+| {IF}, {QUIT}, {RETURN}, {GETLABEL}, {GETNUMBER}, {FOR}, {GOTO}, {BEEP}. | One source each. Release 4 spells {GET-LABEL}. |
+| Other brace names of the macro-translator requirements (DOWN, UP, LEFT, RIGHT, EDIT, CALC, ?, HOME, END, ESC, BS, DEL, PGUP, PGDN, NAME, ABS, WINDOW, QUERY, TABLE, GRAPH, LET, BLANK). | Not found as brace spellings. |
+| A `/` after typed text is literal. | Not found. |
+
+Rule: a macro label, test or table entry may use only a fact marked two sources or one source above. Everything else is a generic `command` step or `unknown-key`.
