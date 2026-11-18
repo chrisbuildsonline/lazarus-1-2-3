@@ -3,7 +3,7 @@ import type { Status, Totals } from "../../verify/index.ts";
 import type { RaisedFile } from "../../workers/verify-protocol.ts";
 import { COPY } from "../copy.ts";
 import { formatNumber } from "./format-value.ts";
-import { headline, percentVerified } from "./totals.ts";
+import { headline, percentVerified, sumTotals } from "./totals.ts";
 
 export type Phase = "queued" | "reading" | "checking" | "raised" | "failed" | "unsupported";
 
@@ -41,7 +41,7 @@ export function batchRow(item: FileItem): BatchRow {
     case "unsupported":
       return row(COPY.couldNotRaise(item.failure?.reason ?? COPY.unsupportedTitle), "failed");
     case "raised": {
-      const t = item.raised!.sheets[0]!.verification.totals;
+      const t = sumTotals(item.raised!.sheets.map((s) => s.verification.totals));
       // No formulas: nothing was checked, so a neutral pill, never a green Matched.
       if (percentVerified(t).kind === "none") return row(COPY.noFormulas, "none");
       return row(COPY.verifiedLine(headline(t), t.mismatched > 0 ? formatNumber(t.mismatched) : null), worstStatus(t));

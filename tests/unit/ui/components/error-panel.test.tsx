@@ -43,9 +43,8 @@ describe("ErrorPanel unsupported", () => {
   const html = renderToStaticMarkup(<ErrorPanel kind="unsupported" lines={[]} />);
 
   it("names the accepted extensions and uses no danger colour", () => {
-    expect(/<h2[^>]*>([^<]*)<\/h2>/.exec(html)![1]).toBe("This is not a WK1 or WKS file this version can read.");
-    expect(html).toContain(">.wk1<");
-    expect(html).toContain(">.wks<");
+    expect(/<h2[^>]*>([^<]*)<\/h2>/.exec(html)![1]).toBe("This is not a Lotus or dBase file this version can read.");
+    for (const ext of [".wk1", ".wks", ".wk3", ".dbf"]) expect(html).toContain(`>${ext}<`);
     expect(html).not.toMatch(DANGER);
     expect(html).not.toContain('role="alert"');
   });

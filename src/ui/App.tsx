@@ -149,6 +149,8 @@ export function App() {
         selectedId={state.selectedId}
         phone={phone}
         filter={state.filter}
+        sheetIndex={state.sheetIndex}
+        onSelectSheet={(index) => dispatch({ type: "selectSheet", index })}
         cell={state.cell?.address ?? null}
         sample={fromSample && file.name === SAMPLE_NAME}
         titleRef={(el) => {

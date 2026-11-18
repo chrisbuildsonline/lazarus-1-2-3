@@ -65,7 +65,7 @@ export function SummonView({ mode, folderSupported, busy, panel, onSample, onFil
           </div>
         </div>
       )}
-      <input ref={files} type="file" accept=".wk1,.wks" multiple hidden onChange={picked("files")} />
+      <input ref={files} type="file" accept=".wk1,.wks,.wk3,.dbf" multiple hidden onChange={picked("files")} />
       {folderSupported && <input ref={folder} type="file" multiple hidden {...FOLDER_ATTRS} onChange={picked("folder")} />}
       <div className="summon__foot">
         <p className="summon__privacy">{COPY.privacy}</p>

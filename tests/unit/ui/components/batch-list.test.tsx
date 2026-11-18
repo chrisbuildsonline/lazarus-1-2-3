@@ -76,8 +76,8 @@ describe("BatchList", () => {
   });
 
   it("ends with the skipped line", () => {
-    expect(render()).toContain("3 files skipped: not WK1 or WKS.");
-    expect(render([{ path: "a.txt", why: "extension" }])).toContain("1 file skipped: not WK1 or WKS.");
+    expect(render()).toContain("3 files skipped: not a Lotus or dBase file.");
+    expect(render([{ path: "a.txt", why: "extension" }])).toContain("1 file skipped: not a Lotus or dBase file.");
     expect(render([])).not.toContain("skipped");
   });
 });

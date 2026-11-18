@@ -17,6 +17,7 @@ import { BatchList } from "./BatchList.tsx";
 import { Drawer } from "./Drawer.tsx";
 import { Filters } from "./Filters.tsx";
 import { Grid } from "./Grid.tsx";
+import { SheetTabs } from "./SheetTabs.tsx";
 import { StatusList } from "./StatusList.tsx";
 import { TotalsSurface } from "./TotalsSurface.tsx";
 
@@ -27,6 +28,9 @@ export type SheetViewProps = {
   selectedId: number | null;
   phone: boolean;
   filter: Filter;
+  /** The shown sheet of a multi-sheet workbook. */
+  sheetIndex?: number;
+  onSelectSheet?: (index: number) => void;
   /** The drawer's cell address. */
   cell: string | null;
   sample: boolean;
@@ -45,9 +49,9 @@ const address = (p: GridPos) => `${columnLetters(p.col)}${p.row + 1}`;
 
 export function SheetView(p: SheetViewProps) {
   const { file, phone, filter } = p;
-  const sheetIndex = 0;
+  const sheetIndex = Math.min(p.sheetIndex ?? 0, file.sheets.length - 1);
   const current = file.sheets[sheetIndex]!;
-  const model = useMemo(() => buildGridModel(file, sheetIndex), [file]);
+  const model = useMemo(() => buildGridModel(file, sheetIndex), [file, sheetIndex]);
   const counts = useMemo(() => statusCounts(current.verification.cells), [current]);
   const [focus, setFocus] = useState<GridPos>({ col: 0, row: 0 });
   const [expanded, setExpanded] = useState<ReadonlySet<Status>>(new Set());
@@ -58,7 +62,11 @@ export function SheetView(p: SheetViewProps) {
   const rowsShown = useMemo(() => (filter === "all" ? undefined : model.rowsWithStatus(filter)), [model, filter]);
   const empty = filterRows(current.verification.cells, filter).empty;
   const batch = p.items.length > 1;
-  const meta = [current.verification.format.toUpperCase(), `${formatNumber(current.verification.totals.formulas)} formulas`, `${formatNumber(file.byteLength)} bytes`].join(" · ");
+  const formulas = file.sheets.reduce((n, s) => n + s.verification.totals.formulas, 0);
+  const sheetCount = file.sheets.length > 1 ? [COPY.sheetCount(formatNumber(file.sheets.length))] : [];
+  const meta = [file.format.toUpperCase(), ...sheetCount, `${formatNumber(formulas)} formulas`, `${formatNumber(file.byteLength)} bytes`].join(" · ");
+  // A DBF sheet has no formulas: its values are shown as read (header row included).
+  const asRead = file.format === "dbf" ? current.sheet.cells.length : undefined;
   const filters = <Filters counts={counts} value={filter} onChange={p.onFilter} />;
   const toggle = (s: Status) =>
     setExpanded((old) => {
@@ -104,7 +112,8 @@ export function SheetView(p: SheetViewProps) {
       <div className="sheet__body">
         {batch && <BatchList items={p.items} skipped={p.skipped} selectedId={p.selectedId} onSelect={p.onSelectFile} />}
         <div className="sheet__main">
-          <TotalsSurface totals={current.verification.totals} />
+          <SheetTabs names={file.sheets.map((s) => s.name)} selected={sheetIndex} onSelect={(i) => p.onSelectSheet?.(i)} />
+          <TotalsSurface totals={current.verification.totals} asRead={asRead} />
           {phone ? (
             <>
               {filters}

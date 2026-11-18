@@ -7,22 +7,21 @@ const f = (path: string, size = 100): FoundFile<null> => ({ path, name: path.spl
 
 describe("acceptEntry", () => {
   it("accepts .wk1 and .wks in any case", () => {
-    for (const name of ["A.WK1", "b.wks", "c.Wk1", "d.WKS"]) expect(acceptEntry(name), name).toBe(true);
+    for (const name of ["A.WK1", "b.wks", "c.Wk1", "d.WKS", "e.wk3", "f.WK3", "g.dbf", "h.Dbf"]) expect(acceptEntry(name), name).toBe(true);
   });
 
   it("skips other extensions, a later suffix and a name with no dot", () => {
-    for (const name of ["a.wk3", "a.dbf", "a.txt", "a.wk1.bak", "wk1", "LICENSE", "a.wk"]) expect(acceptEntry(name), name).toBe(false);
+    for (const name of ["a.wk2", "a.txt", "a.wk1.bak", "a.dbf.bak", "wk1", "LICENSE", "a.wk"]) expect(acceptEntry(name), name).toBe(false);
   });
 });
 
 describe("planBatch", () => {
   it("filters by extension and counts the rest as skipped", () => {
-    const plan = planBatch([f("a.wk1"), f("b.txt"), f("c.WKS"), f("d.wk3"), f("e.dbf")]);
-    expect(plan.accepted.map((e) => e.path)).toEqual(["a.wk1", "c.WKS"]);
+    const plan = planBatch([f("a.wk1"), f("b.txt"), f("c.WKS"), f("d.wk3"), f("e.dbf"), f("f.wk2")]);
+    expect(plan.accepted.map((e) => e.path)).toEqual(["a.wk1", "c.WKS", "d.wk3", "e.dbf"]);
     expect(plan.skipped).toEqual([
       { path: "b.txt", why: "extension" },
-      { path: "d.wk3", why: "extension" },
-      { path: "e.dbf", why: "extension" },
+      { path: "f.wk2", why: "extension" },
     ]);
   });
 

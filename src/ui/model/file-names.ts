@@ -1,4 +1,4 @@
-// Download names (requirement 54): the entry's base name without its final .wk1/.wks, made safe
+// Download names (requirement 54): the entry's base name without its final .wk1/.wks/.wk3/.dbf, made safe
 // for Windows, macOS and Linux file systems, then the suffix of the download kind.
 export type DownloadKind = "xlsx" | "report-html" | "report-json";
 
@@ -11,7 +11,7 @@ const trimDotsAndSpaces = (s: string) => s.replace(/^[ .]+|[ .]+$/g, "");
 export function downloadName(entryName: string, kind: DownloadKind): string {
   const file = entryName.split(/[\\/]/).pop() ?? "";
   let base = file
-    .replace(/\.wk[1s]$/i, "")
+    .replace(/\.(wk1|wks|wk3|dbf)$/i, "")
     // Forbidden characters, control characters and lone surrogates become _.
     .replace(/[\\/:*?"<>|\u0000-\u001f\u007f]|\p{Cs}/gu, "_");
   base = trimDotsAndSpaces(base);

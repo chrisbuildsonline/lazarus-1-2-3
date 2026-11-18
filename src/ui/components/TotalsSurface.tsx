@@ -18,8 +18,24 @@ function CountTile({ status, count }: { status: Status; count: number }) {
   );
 }
 
-export function TotalsSurface({ totals }: { totals: Totals }) {
+/** `asRead` is set for a DBF sheet: no formulas to check, so the values read take the place of the counts. */
+export function TotalsSurface({ totals, asRead }: { totals: Totals; asRead?: number }) {
   const countsId = useId();
+  if (asRead !== undefined) {
+    return (
+      <section className="surface totals" aria-label={COPY.totals}>
+        <div className="totals__tiles">
+          <div className="tile tile--headline">
+            <span className="tile__label">{COPY.verified}</span>
+            <span className="tile__value tile__value--display tile__value--words">{COPY.noFormulas}</span>
+          </div>
+          <div className="tile tile--as-read">
+            <span className="tile__value">{COPY.asRead(formatNumber(asRead))}</span>
+          </div>
+        </div>
+      </section>
+    );
+  }
   return (
     <section className="surface totals" aria-label={COPY.totals}>
       <div className="totals__tiles" id={countsId}>

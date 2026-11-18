@@ -14,16 +14,23 @@ const MIME: Record<DownloadKind, string> = {
   "report-json": "application/json;charset=utf-8",
 };
 
+const oneSheet = (raised: RaisedFile) => raised.format !== "wk3" && raised.format !== "dbf";
+
 export async function buildDownload(kind: DownloadKind, raised: RaisedFile, version: string): Promise<DownloadResult> {
   const done = (data: Uint8Array | string): DownloadResult => ({ ok: true, download: { name: downloadName(raised.name, kind), data, mime: MIME[kind] } });
   if (kind === "xlsx") {
     const { writeXlsx } = await import("../../xlsx/index.ts");
-    const first = raised.sheets[0]!;
-    return done((await writeXlsx({ sheet: sheetFromWire(first.sheet), verification: first.verification })).bytes);
+    // The whole workbook (requirement 58); a WK1 or WKS file keeps the one-sheet input and its bytes.
+    const sheets = raised.sheets.map((s) => ({ name: s.name, sheet: sheetFromWire(s.sheet), verification: s.verification }));
+    return done((await writeXlsx(oneSheet(raised) ? sheets[0]! : { sheets })).bytes);
   }
   if (raised.sha256 === null) return { ok: false, reason: COPY.noFingerprint };
   const { buildReport, renderReportHtml, serializeReportJson } = await import("../../report/index.ts");
-  const report = buildReport({ fileName: raised.name, sha256: raised.sha256, byteLength: raised.byteLength, toolVersion: version, verification: raised.sheets[0]!.verification });
+  const scalars = { fileName: raised.name, sha256: raised.sha256, byteLength: raised.byteLength, toolVersion: version };
+  const fields = raised.table ? { fields: raised.table.fields.map((f) => f.name) } : {};
+  const report = oneSheet(raised)
+    ? buildReport({ ...scalars, verification: raised.sheets[0]!.verification })
+    : buildReport({ ...scalars, format: raised.format, sheets: raised.sheets.map((s) => ({ name: s.name, verification: s.verification, values: s.sheet.cells.length, ...fields })) });
   return done(kind === "report-html" ? renderReportHtml(report) : serializeReportJson(report));
 }
 

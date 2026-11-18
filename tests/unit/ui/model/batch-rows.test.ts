@@ -63,7 +63,7 @@ describe("batchRow", () => {
   it("an unsupported file in a batch is a failed row", () => {
     const row = batchRow(item({ phase: "unsupported", raised: withTotals(t(0, 0, 0, 0)) }));
     expect(row.pill).toBe("failed");
-    expect(row.line).toBe("Could not raise: This is not a WK1 or WKS file this version can read.");
+    expect(row.line).toBe("Could not raise: This is not a Lotus or dBase file this version can read.");
   });
 
   it("queued, reading and checking items show the raising pill", () => {

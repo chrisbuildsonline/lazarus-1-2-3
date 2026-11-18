@@ -5,7 +5,7 @@ import { DropZone } from "../../../../src/ui/components/DropZone.tsx";
 import { SummonView } from "../../../../src/ui/components/SummonView.tsx";
 
 const PRIVACY = "Files never leave this browser. No upload, no account.";
-const LIMITS = "This version reads WK1 and WKS worksheets only. dBase and WK3 files are not read yet, and macros are not translated yet.";
+const LIMITS = "This version reads WK1, WKS and WK3 worksheets and dBase tables. WK3 formulas are shown with their stored results and are not checked yet. Macros are not translated yet.";
 const noop = () => {};
 const view = (more: Partial<Parameters<typeof SummonView>[0]> = {}) =>
   renderToStaticMarkup(<SummonView mode="idle" folderSupported={true} onSample={noop} onFiles={noop} onDrop={noop} {...more} />);
@@ -21,10 +21,15 @@ describe("SummonView", () => {
     expect(/<h1[^>]*>([^<]*)<\/h1>/.exec(html)![1]).toBe("Raise a Lotus 1-2-3 file");
   });
 
-  it("the subtitle promises neither WK3 nor dBase", () => {
+  it("the subtitle names WK1, WKS, WK3 and dBase", () => {
     const sub = /<p[^>]*class="[^"]*\bsummon__subtitle\b[^"]*"[^>]*>([^<]*)<\/p>/.exec(view());
     expect(sub).not.toBeNull();
-    expect(sub![1]).not.toMatch(/WK3|dBase/i);
+    for (const name of ["WK1", "WKS", "WK3", "dBase"]) expect(sub![1]).toContain(name);
+  });
+
+  it("the drop zone hint lists the four extensions", () => {
+    const html = view();
+    for (const ext of [".wk1", ".wks", ".wk3", ".dbf"]) expect(html).toContain(ext);
   });
 
   it("the drop zone is one button with the DESIGN.md text", () => {
@@ -58,10 +63,10 @@ describe("SummonView", () => {
     expect(no).not.toMatch(/webkitdirectory/);
   });
 
-  it("the hidden file input accepts .wk1 and .wks and several files", () => {
+  it("the hidden file input accepts .wk1, .wks, .wk3 and .dbf and several files", () => {
     const input = /<input[^>]*accept="([^"]*)"[^>]*>/.exec(view());
     expect(input).not.toBeNull();
-    expect(input![1]).toBe(".wk1,.wks");
+    expect(input![1]).toBe(".wk1,.wks,.wk3,.dbf");
     expect(input![0]).toMatch(/\bmultiple=""/);
     expect(input![0]).toMatch(/type="file"/);
   });

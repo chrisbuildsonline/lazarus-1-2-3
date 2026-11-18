@@ -20,16 +20,17 @@ async function raised(bytes: Uint8Array, name: string): Promise<RaisedFile> {
 const fixture = (path: string) => raised(new Uint8Array(readFileSync(path)), path.split("/").pop()!);
 
 describe("classifyRaised", () => {
-  for (const f of manifest.fixtures.filter((x) => x.format === "wk1" || x.format === "wks")) {
+  // Every wk1, wks, wk3 and dbf fixture, the real DBF and the real WK3 included.
+  for (const f of manifest.fixtures.filter((x) => ["wk1", "wks", "wk3", "dbf"].includes(x.format))) {
     it(`${f.path} is raised`, async () => {
       expect(classifyRaised(await fixture(f.path))).toEqual({ kind: "raised" });
     });
   }
 
-  it("the DBF fixture is unsupported", async () => {
-    const dbf = manifest.fixtures.find((x) => x.path.endsWith("ne_110m_land.dbf"))!;
-    expect(dbf.path).toBe("fixtures/natural-earth-land/ne_110m_land.dbf");
-    expect(classifyRaised(await fixture(dbf.path))).toEqual({ kind: "unsupported" });
+  it("the DBF fixture is no longer unsupported", async () => {
+    const file = await fixture("fixtures/natural-earth-land/ne_110m_land.dbf");
+    expect(file.format).toBe("dbf");
+    expect(classifyRaised(file)).toEqual({ kind: "raised" });
   });
 
   it("200 bytes of noise are unsupported", async () => {

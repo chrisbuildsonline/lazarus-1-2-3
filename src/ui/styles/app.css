@@ -835,6 +835,30 @@ pre {
   font-variant-numeric: tabular-nums;
 }
 
+/* Sheet tabs of a multi-sheet workbook: the filter tab look, on a hairline so they read as a
+   level above the filters. Scrolls sideways in its own box on a phone. */
+.sheet-tabs {
+  max-width: 100%;
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.sheet-tab {
+  flex: none;
+  white-space: nowrap;
+}
+
+/* DBF totals: the as-read count in place of the status tiles, no pill and no proof bar. */
+.tile--as-read {
+  display: flex;
+  align-items: center;
+}
+
+.tile--as-read .tile__value {
+  font: var(--text-body);
+  color: var(--text-muted);
+}
+
 /* ---------- grid (DESIGN.md section 3 "Grid cell") ---------- */
 
 .grid-surface {

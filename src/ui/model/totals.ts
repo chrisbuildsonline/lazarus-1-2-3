@@ -4,6 +4,16 @@ import type { Status, Totals } from "../../verify/index.ts";
 import { COPY } from "../copy.ts";
 import { formatNumber } from "./format-value.ts";
 
+/** The totals of several sheets added up, for a batch row of a multi-sheet file. */
+export function sumTotals(list: readonly Totals[]): Totals {
+  const t: Totals = { formulas: 0, matched: 0, mismatched: 0, unverifiable: 0, exact: 0, withinTolerance: 0, byReason: {} };
+  for (const x of list) {
+    for (const k of ["formulas", "matched", "mismatched", "unverifiable", "exact", "withinTolerance"] as const) t[k] += x[k];
+    for (const [code, n] of Object.entries(x.byReason)) t.byReason[code as keyof Totals["byReason"]] = (t.byReason[code as keyof Totals["byReason"]] ?? 0) + n;
+  }
+  return t;
+}
+
 /** floor(matched / formulas * 1000) in integers, so 100.0% means every formula matched. */
 export function percentVerified(t: Totals): { kind: "none" } | { kind: "pct"; tenths: number } {
   if (t.formulas === 0) return { kind: "none" };

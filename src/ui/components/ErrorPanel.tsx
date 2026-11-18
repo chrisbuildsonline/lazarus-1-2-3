@@ -11,7 +11,7 @@ export type ErrorPanelProps = {
   onCopy?: (text: string) => void;
 };
 
-const EXTENSIONS = [".wk1", ".wks"];
+const EXTENSIONS = [".wk1", ".wks", ".wk3", ".dbf"];
 
 export function ErrorPanel({ kind, reason, lines, onCopy }: ErrorPanelProps) {
   // Skipped before reading (too large, unreadable): calm, and the lines say why, as in a batch.

@@ -29,6 +29,8 @@ export type AppState = {
   items: FileItem[];
   skipped: Skipped[];
   selectedId: number | null;
+  /** The shown sheet of the selected file; 0 when a file opens. */
+  sheetIndex: number;
   /** The person chose a file; stops the first raised file from opening on its own. */
   userPicked: boolean;
   filter: Filter;
@@ -47,6 +49,7 @@ export type AppAction =
   | { type: "fileFailed"; batchId: number; id: number; message: string }
   | { type: "workerFailed"; batchId: number; message: string }
   | { type: "selectFile"; id: number }
+  | { type: "selectSheet"; index: number }
   | { type: "setFilter"; filter: Filter }
   | { type: "openCell"; address: string }
   | { type: "closeCell" }
@@ -60,6 +63,7 @@ export const initialState: AppState = {
   items: [],
   skipped: [],
   selectedId: null,
+  sheetIndex: 0,
   userPicked: false,
   filter: "all",
   cell: null,
@@ -85,13 +89,18 @@ function raised(s: AppState, id: number, file: RaisedFile): AppState {
     return fail(s, id, "failed", { reason, lines: verdict.lines }, { kind: "failed", lines: verdict.lines }, file);
   }
   const items = update(s, id, (i) => ({ ...i, phase: "raised", raised: file }));
-  const selectedId = s.selectedId === null && !s.userPicked ? id : s.selectedId;
-  return { ...s, items, view: "sheet", selectedId, panel: null };
+  const first = s.selectedId === null && !s.userPicked;
+  return { ...s, items, view: "sheet", selectedId: first ? id : s.selectedId, sheetIndex: first ? 0 : s.sheetIndex, panel: null };
 }
 
 function cellStatus(s: AppState, address: string) {
   const item = s.items.find((i) => i.id === s.selectedId);
-  return item?.raised?.sheets[0]?.verification.cells.find((c) => c.address === address)?.status;
+  return item?.raised?.sheets[s.sheetIndex]?.verification.cells.find((c) => c.address === address)?.status;
+}
+
+function selectSheet(s: AppState, index: number): AppState {
+  const count = s.items.find((i) => i.id === s.selectedId)?.raised?.sheets.length ?? 1;
+  return { ...s, sheetIndex: Math.min(Math.max(0, Math.trunc(index)), Math.max(0, count - 1)), cell: null };
 }
 
 export function appReducer(s: AppState, a: AppAction): AppState {
@@ -116,7 +125,9 @@ export function appReducer(s: AppState, a: AppAction): AppState {
       return { ...s, items, panel: { kind: "worker", lines: [a.message] } };
     }
     case "selectFile":
-      return { ...s, selectedId: a.id, userPicked: true, cell: null };
+      return { ...s, selectedId: a.id, sheetIndex: 0, userPicked: true, cell: null };
+    case "selectSheet":
+      return selectSheet(s, a.index);
     case "setFilter": {
       const hidden = s.cell !== null && a.filter !== "all" && cellStatus(s, s.cell.address) !== a.filter;
       return { ...s, filter: a.filter, cell: hidden ? null : s.cell };

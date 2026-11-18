@@ -26,10 +26,12 @@ describe("downloadName", () => {
     expect(downloadName("", "xlsx")).toBe("workbook.xlsx");
   });
 
-  it("only the final .wk1 or .wks goes, any case", () => {
+  it("only the final .wk1, .wks, .wk3 or .dbf goes, any case", () => {
     expect(downloadName("book.wk1.wk1", "xlsx")).toBe("book.wk1.xlsx");
     expect(downloadName("book.Wk1", "xlsx")).toBe("book.xlsx");
-    expect(downloadName("book.wk3", "xlsx")).toBe("book.wk3.xlsx");
+    expect(downloadName("book.wk3", "xlsx")).toBe("book.xlsx");
+    expect(downloadName("table.DBF", "report-html")).toBe("table.report.html");
+    expect(downloadName("book.wk2", "xlsx")).toBe("book.wk2.xlsx");
   });
 
   it("control characters become _ and dots and spaces at the ends are trimmed", () => {

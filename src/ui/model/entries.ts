@@ -11,7 +11,7 @@ export type SkipReason = "extension" | "too-large" | "unreadable" | "over-limit"
 export type Skipped = { path: string; why: SkipReason };
 
 export function acceptEntry(name: string): boolean {
-  return /\.wk[1s]$/i.test(name);
+  return /\.(wk1|wks|wk3|dbf)$/i.test(name);
 }
 
 const byPath = (a: { path: string }, b: { path: string }) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0);

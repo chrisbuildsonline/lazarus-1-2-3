@@ -35,7 +35,7 @@ describe("appReducer", () => {
 
   it("only skipped entries of several kinds: one line per reason, as in the batch", () => {
     const s = run([summon([], 1, [{ path: "a.txt", why: "extension" }, { path: "BIG.WK1", why: "too-large" }, { path: "b.txt", why: "extension" }])]);
-    expect(s.panel).toEqual({ kind: "skipped", lines: ["2 files skipped: not WK1 or WKS.", "1 file skipped: larger than 32 MiB."] });
+    expect(s.panel).toEqual({ kind: "skipped", lines: ["2 files skipped: not a Lotus or dBase file.", "1 file skipped: larger than 32 MiB."] });
   });
 
   it("progress moves one item through reading and checking", () => {
