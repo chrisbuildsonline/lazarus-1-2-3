@@ -1,10 +1,12 @@
 // The app's state between the Summon and Sheet views (requirements 1, 15, 22, 24, 60, 61). Pure and
 // without timers; actions of an older batch are ignored by their batchId.
+import { approve, buildQueue, reject, setExplanation, undo, type Explanation, type MacroQueue } from "../../macro/index.ts";
 import type { RaisedFile } from "../../workers/verify-protocol.ts";
 import { COPY } from "../copy.ts";
 import type { FileItem, Phase } from "./batch-rows.ts";
 import { classifyRaised } from "./classify-file.ts";
 import { skippedCounts, type SkipReason, type Skipped } from "./entries.ts";
+import { nextWaiting } from "./queue-view.ts";
 import type { Filter } from "./status-groups.ts";
 
 export type Toast = { id: number; kind: "info" | "error"; text: string };
@@ -38,13 +40,19 @@ export type AppState = {
   cell: { address: string } | null;
   panel: Panel | null;
   toasts: Toast[];
+  /** The step of the selected file: its sheet or its macro queue. */
+  step: "sheet" | "macros";
+  /** One approval queue per raised file, by file id; decisions last until the page closes. */
+  queues: Record<number, MacroQueue>;
+  /** The queue option to focus after a decision or undo; the view clears it with focusDone. */
+  lastFocus: string | null;
 };
 
 export type AppAction =
   | { type: "summoned"; batchId: number; entries: { name: string; path: string; size: number }[]; skipped: Skipped[] }
   /** start: sent to the worker; read and check: the worker's two progress messages. */
   | { type: "progress"; batchId: number; id: number; step: "start" | "read" | "check" }
-  | { type: "raised"; batchId: number; id: number; file: RaisedFile }
+  | { type: "raised"; batchId: number; id: number; file: RaisedFile; at?: string }
   /** The worker answered this one request with an error. */
   | { type: "fileFailed"; batchId: number; id: number; message: string }
   | { type: "workerFailed"; batchId: number; message: string }
@@ -55,7 +63,13 @@ export type AppAction =
   | { type: "closeCell" }
   | { type: "toast"; kind: Toast["kind"]; text: string }
   | { type: "dismissToast"; id: number }
-  | { type: "reset" };
+  | { type: "reset" }
+  | { type: "setStep"; step: AppState["step"] }
+  | { type: "decide"; id: string; decision: "approve" | "reject"; at: string }
+  | { type: "undo" }
+  /** A late answer for another file or an older batch is dropped by the fileId and batchId checks. */
+  | { type: "explained"; batchId: number; fileId: number; itemId: string; explanation: Explanation }
+  | { type: "focusDone" };
 
 export const initialState: AppState = {
   view: "summon",
@@ -69,6 +83,9 @@ export const initialState: AppState = {
   cell: null,
   panel: null,
   toasts: [],
+  step: "sheet",
+  queues: {},
+  lastFocus: null,
 };
 
 const UNFINISHED: readonly Phase[] = ["queued", "reading", "checking"];
@@ -81,7 +98,7 @@ function fail(s: AppState, id: number, phase: "failed" | "unsupported", failure:
   return { ...s, items, panel: s.view === "sheet" ? s.panel : panel };
 }
 
-function raised(s: AppState, id: number, file: RaisedFile): AppState {
+function raised(s: AppState, id: number, file: RaisedFile, at: string | null): AppState {
   const verdict = classifyRaised(file);
   if (verdict.kind === "unsupported") return fail(s, id, "unsupported", { reason: COPY.unsupportedTitle, lines: [] }, { kind: "unsupported", lines: [] }, file);
   if (verdict.kind === "failed") {
@@ -90,7 +107,8 @@ function raised(s: AppState, id: number, file: RaisedFile): AppState {
   }
   const items = update(s, id, (i) => ({ ...i, phase: "raised", raised: file }));
   const first = s.selectedId === null && !s.userPicked;
-  return { ...s, items, view: "sheet", selectedId: first ? id : s.selectedId, sheetIndex: first ? 0 : s.sheetIndex, panel: null };
+  const queue = buildQueue({ macros: file.macros, sheets: file.sheets.map((sh) => ({ name: sh.name, cells: sh.verification.cells })) }, at);
+  return { ...s, items, view: "sheet", selectedId: first ? id : s.selectedId, sheetIndex: first ? 0 : s.sheetIndex, panel: null, queues: { ...s.queues, [id]: queue } };
 }
 
 function cellStatus(s: AppState, address: string) {
@@ -116,7 +134,7 @@ export function appReducer(s: AppState, a: AppAction): AppState {
       return { ...s, items: update(s, a.id, (i) => (UNFINISHED.includes(i.phase) ? { ...i, phase } : i)) };
     }
     case "raised":
-      return raised(s, a.id, a.file);
+      return raised(s, a.id, a.file, a.at ?? null);
     case "fileFailed":
       return fail(s, a.id, "failed", { reason: a.message, lines: [a.message] }, { kind: "failed", lines: [a.message] });
     case "workerFailed": {
@@ -125,7 +143,7 @@ export function appReducer(s: AppState, a: AppAction): AppState {
       return { ...s, items, panel: { kind: "worker", lines: [a.message] } };
     }
     case "selectFile":
-      return { ...s, selectedId: a.id, sheetIndex: 0, userPicked: true, cell: null };
+      return { ...s, selectedId: a.id, sheetIndex: 0, userPicked: true, cell: null, step: "sheet", lastFocus: null };
     case "selectSheet":
       return selectSheet(s, a.index);
     case "setFilter": {
@@ -144,5 +162,28 @@ export function appReducer(s: AppState, a: AppAction): AppState {
       return { ...s, toasts: s.toasts.filter((t) => t.id !== a.id) };
     case "reset":
       return initialState;
+    case "setStep":
+      return { ...s, step: a.step, cell: null, lastFocus: null };
+    case "decide": {
+      const q = s.selectedId === null ? undefined : s.queues[s.selectedId];
+      if (!q) return s;
+      const next = (a.decision === "approve" ? approve : reject)(q, a.id, a.at);
+      if (next === q) return s;
+      return { ...s, queues: { ...s.queues, [s.selectedId!]: next }, lastFocus: nextWaiting(next, a.id) ?? a.id };
+    }
+    case "undo": {
+      const q = s.selectedId === null ? undefined : s.queues[s.selectedId];
+      if (!q) return s;
+      const { queue, restored } = undo(q);
+      if (restored === null) return s;
+      return { ...s, queues: { ...s.queues, [s.selectedId!]: queue }, lastFocus: restored };
+    }
+    case "explained": {
+      const q = s.queues[a.fileId];
+      if (!q || !q.items.some((i) => i.id === a.itemId)) return s;
+      return { ...s, queues: { ...s.queues, [a.fileId]: setExplanation(q, a.itemId, a.explanation) } };
+    }
+    case "focusDone":
+      return s.lastFocus === null ? s : { ...s, lastFocus: null };
   }
 }

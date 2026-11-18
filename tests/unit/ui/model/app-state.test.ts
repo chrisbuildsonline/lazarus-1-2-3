@@ -155,6 +155,77 @@ describe("appReducer", () => {
     expect(appReducer(s, { type: "dismissToast", id: 1 }).toasts.map((t) => t.id)).toEqual([2]);
   });
 
+  it("starts on the Sheet step with no queues", () => {
+    expect(initialState.step).toBe("sheet");
+    expect(initialState.queues).toEqual({});
+    expect(initialState.lastFocus).toBeNull();
+  });
+
+  it("raised builds the file's queue with the given time, or null without one", async () => {
+    const file = await raiseFixture("fixtures/macros/macros.wk1");
+    const at = "2026-11-18T14:03:00.000Z";
+    const s = run([summon(["macros.wk1", "b.wk1"]), { type: "raised", batchId: 1, id: 0, file, at }, { type: "raised", batchId: 1, id: 1, file }]);
+    expect(s.queues[0]!.items).toHaveLength(4);
+    expect(s.queues[0]!.items.every((i) => i.status === "pending" && i.queuedAt === at)).toBe(true);
+    expect(s.queues[1]!.items.every((i) => i.queuedAt === null)).toBe(true);
+  });
+
+  it("a failed file gets no queue", async () => {
+    const broken = await raiseBytes(BROKEN, "a.wk1");
+    expect(run([summon(["a.wk1"]), { type: "raised", batchId: 1, id: 0, file: broken }]).queues).toEqual({});
+  });
+
+  it("decide and undo act on the selected file's queue and set the focus target", async () => {
+    const file = await raiseFixture("fixtures/macros/macros.wk1");
+    const base = run([summon(["macros.wk1"]), { type: "raised", batchId: 1, id: 0, file }, { type: "setStep", step: "macros" }]);
+    expect(base.step).toBe("macros");
+    const ids = base.queues[0]!.items.map((i) => i.id);
+    const a = appReducer(base, { type: "decide", id: ids[0]!, decision: "approve", at: "T1" });
+    expect(a.queues[0]!.items[0]).toMatchObject({ status: "approved", decidedAt: "T1" });
+    expect(a.lastFocus).toBe(ids[1]);
+    const r = appReducer(a, { type: "decide", id: ids[1]!, decision: "reject", at: "T2" });
+    expect(r.queues[0]!.items[1]).toMatchObject({ status: "rejected", decidedAt: "T2" });
+    expect(r.lastFocus).toBe(ids[2]);
+    const u = appReducer(r, { type: "undo" });
+    expect(u.queues[0]!.items[1]).toMatchObject({ status: "pending", decidedAt: null });
+    expect(u.lastFocus).toBe(ids[1]);
+    expect(appReducer(u, { type: "focusDone" }).lastFocus).toBeNull();
+    // Undo with no history changes nothing.
+    expect(appReducer(base, { type: "undo" })).toBe(base);
+    // Decide on an unknown id changes nothing.
+    expect(appReducer(base, { type: "decide", id: "nope", decision: "approve", at: "T" })).toBe(base);
+  });
+
+  it("a decision with no other item waiting keeps focus on the decided item", async () => {
+    const file = await raiseFixture("fixtures/macros/macros.wk1");
+    let s = run([summon(["macros.wk1"]), { type: "raised", batchId: 1, id: 0, file }]);
+    const ids = s.queues[0]!.items.map((i) => i.id);
+    for (const id of ids.slice(1)) s = appReducer(s, { type: "decide", id, decision: "approve", at: "T" });
+    s = appReducer(s, { type: "decide", id: ids[0]!, decision: "reject", at: "T" });
+    expect(s.lastFocus).toBe(ids[0]);
+  });
+
+  it("explained sets the asking file's explanation; a stale file or batch changes nothing", async () => {
+    const file = await raiseFixture("fixtures/macros/macros.wk1");
+    const base = run([summon(["macros.wk1"]), { type: "raised", batchId: 1, id: 0, file }]);
+    const itemId = base.queues[0]!.items[0]!.id;
+    const explanation = { suggestion: "Goes to A1.", rationale: null, confidence: null, model: "recorded fixture" };
+    const s = appReducer(base, { type: "explained", batchId: 1, fileId: 0, itemId, explanation });
+    expect(s.queues[0]!.items[0]).toMatchObject({ suggestion: "Goes to A1.", model: "recorded fixture", status: "pending" });
+    expect(appReducer(base, { type: "explained", batchId: 1, fileId: 7, itemId, explanation })).toBe(base);
+    expect(appReducer(base, { type: "explained", batchId: 0, fileId: 0, itemId, explanation })).toBe(base);
+  });
+
+  it("selectFile returns to the Sheet step; summoned resets the queues", async () => {
+    const file = await raiseFixture("fixtures/macros/macros.wk1");
+    const s = run([summon(["macros.wk1", "b.wk1"]), { type: "raised", batchId: 1, id: 0, file }, { type: "setStep", step: "macros" }]);
+    expect(appReducer(s, { type: "selectFile", id: 1 }).step).toBe("sheet");
+    const again = appReducer(s, summon(["c.wk1"], 2));
+    expect(again.queues).toEqual({});
+    expect(again.step).toBe("sheet");
+    expect(again.lastFocus).toBeNull();
+  });
+
   it("reset returns to the initial state", async () => {
     const file = await raiseFixture("fixtures/ksbase/KSBASE.WK1");
     const s = run([summon(["KSBASE.WK1"]), { type: "raised", batchId: 1, id: 0, file }, { type: "openCell", address: "O3" }, { type: "reset" }]);

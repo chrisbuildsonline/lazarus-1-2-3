@@ -44,7 +44,7 @@ export function useRaise() {
       dispatch({ type: "progress", batchId, id, step: "start" });
       await mine.raise({ name: entry.name, bytes }, (m) => {
         if (m.type === "progress") dispatch({ type: "progress", batchId, id, step: m.step });
-        else if (m.type === "raised") dispatch({ type: "raised", batchId, id, file: m.file });
+        else if (m.type === "raised") dispatch({ type: "raised", batchId, id, file: m.file, at: new Date().toISOString() });
         else if (ENGINE.some((text) => m.message.startsWith(text))) {
           engineDown = true;
           dispatch({ type: "workerFailed", batchId, message: m.message });

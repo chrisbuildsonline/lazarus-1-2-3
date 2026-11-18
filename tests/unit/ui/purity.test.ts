@@ -33,6 +33,8 @@ const DOM_IN_MODEL: [string, RegExp][] = [
 
 const SAMPLE = "src/ui/io/sample.ts";
 const DOWNLOADS = "src/ui/io/downloads.ts";
+/** The app's explainer: the one fetch is handed to createOllamaExplainer (localhost:11434 only). */
+const EXPLAINER = "src/ui/io/explainer.ts";
 
 /** Strips line and block comments, so a comment that names a forbidden call does not count. */
 const code = (src: string) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:"'`])\/\/.*$/gm, "$1");
@@ -62,7 +64,7 @@ export function violations(path: string, raw: string): string[] {
   if (inUi) for (const name of ENGINE_CALLS) if (new RegExp(`\\b${name}\\b`).test(src)) out.push(`uses ${name}`);
   for (const [name, re] of NETWORK) {
     const count = src.match(re)?.length ?? 0;
-    const allowed = path === SAMPLE && name === "fetch" ? 1 : 0;
+    const allowed = (path === SAMPLE || path === EXPLAINER) && name === "fetch" ? 1 : 0;
     if (count > allowed) out.push(`uses ${name}`);
   }
   for (const [name, re] of STORAGE) if (re.test(src)) out.push(`uses ${name}`);
@@ -111,6 +113,19 @@ describe("ui and workers purity guard", () => {
     expect(violations("src/ui/components/A.tsx", 'import { useState } from "react"; document.title = "x";')).toEqual([]);
     expect(violations("src/ui/a.ts", "// the one fetch(url) lives in sample.ts")).toEqual([]);
     expect(violations("src/ui/a.ts", 'import type { Sheet } from "../parser/index.ts"; import { a1 } from "../parser/index.ts";')).toEqual([]);
+  });
+
+  it("the local model client may call fetch once, nowhere else gains one", () => {
+    expect(violations("src/ui/io/explainer.ts", "fetch(url, init)")).toEqual([]);
+    expect(violations("src/ui/io/explainer.ts", "fetch(a); fetch(b)")).toEqual(["uses fetch"]);
+    expect(violations("src/ui/io/explainer.ts", "localStorage.getItem(k)")).toEqual(["uses localStorage"]);
+  });
+
+  it("the queue view model is pure: no React, no DOM", () => {
+    expect(existsSync("src/ui/model/queue-view.ts")).toBe(true);
+    expect(violations("src/ui/model/queue-view.ts", readFileSync("src/ui/model/queue-view.ts", "utf8"))).toEqual([]);
+    expect(violations("src/ui/model/queue-view.ts", 'import { useState } from "react";')).toEqual(["imports react"]);
+    for (const s of ["document.activeElement", "window.innerWidth", "navigator.language"]) expect(violations("src/ui/model/queue-view.ts", s), s).toHaveLength(1);
   });
 
   it("the app entry points exist, so the scan below is not vacuous", () => {

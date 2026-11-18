@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 
 export const PHONE = "(max-width: 640px)";
+/** Below 1024px the Macros view shows the queue alone and the detail as a dialog. */
+export const NARROW = "(max-width: 1023.98px)";
 
 export function useMatchMedia(query: string): boolean {
   const [matches, setMatches] = useState(() => window.matchMedia(query).matches);
