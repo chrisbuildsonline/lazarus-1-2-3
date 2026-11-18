@@ -75,6 +75,18 @@ export function formula(col: number, row: number, cached: number, rpn: readonly 
   return record(0x0010, body);
 }
 
+export type NameSpec = { name: string; startCol: number; startRow: number; endCol: number; endRow: number };
+
+/** NAME (0x0B, 24 bytes): name NUL-padded to 16 bytes, then start col, start row, end col, end row. */
+export function name(text: string, startCol: number, startRow: number, endCol: number, endRow: number): Uint8Array {
+  if (!/^[\x20-\x7e]{1,15}$/.test(text)) throw new RangeError(`range name must be 1 to 15 printable ASCII characters: ${text}`);
+  const body = new Uint8Array(24);
+  const view = new DataView(body.buffer);
+  body.set(Array.from(text, (c) => c.charCodeAt(0)), 0);
+  [startCol, startRow, endCol, endRow].forEach((v, i) => view.setUint16(16 + i * 2, v, true));
+  return record(0x000b, body);
+}
+
 function encode(c: CellSpec): Uint8Array {
   switch (c.kind) {
     case "integer":
@@ -88,14 +100,15 @@ function encode(c: CellSpec): Uint8Array {
   }
 }
 
-/** BOF, DIMENSIONS of the used range, cells in row-major order, EOF. */
-export function writeWk1(version: number, cells: readonly CellSpec[]): Uint8Array {
+/** BOF, DIMENSIONS of the used range, NAME records if any, cells in row-major order, EOF. */
+export function writeWk1(version: number, cells: readonly CellSpec[], names: readonly NameSpec[] = []): Uint8Array {
   const sorted = [...cells].sort((a, b) => a.row - b.row || a.col - b.col);
   const cols = sorted.map((c) => c.col);
   const rows = sorted.map((c) => c.row);
   const parts = [
     bof(version),
     dimensions(Math.min(...cols), Math.min(...rows), Math.max(...cols), Math.max(...rows)),
+    ...names.map((n) => name(n.name, n.startCol, n.startRow, n.endCol, n.endRow)),
     ...sorted.map(encode),
     eof(),
   ];
