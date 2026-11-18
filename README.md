@@ -46,6 +46,7 @@ Scripts (`bun run <script>`):
 - `lazarus <path> [--json] [--verify]`: inventory a file or folder, one line per file with path, format (wk1, wks, wk3, dbf or unknown), size and sha256. With `--verify` it also parses each WK1/WKS file, recalculates its formulas and adds the matched, mismatched and unverifiable counts (stored values are never changed). Example: `bun run lazarus fixtures --verify`
 - `lazarus <file> [--xlsx <out.xlsx>] [--report <out.json|out.html>]`: for one WK1/WKS file, write the XLSX workbook and/or the provenance report (JSON or a self-contained HTML page, chosen by the extension). Both outputs are built in memory and written only when all succeed; a non-Lotus input exits 1, a bad flag or an output that is the input exits 2. Example: `bun run lazarus fixtures/ksbase/KSBASE.WK1 --xlsx /tmp/ksbase.xlsx --report /tmp/ksbase.html`
 - `verify:golden`: regenerate `tests/differential/verify/golden.json`, the measured verification counts of the real fixtures (keeps the human-written findings)
+- `check:diff`, `check:manifest`, `check:opcodes`, `check:pii`: run one slice of the test suite each (see Kiro hooks below)
 
 ## lotus-oracle MCP server
 
@@ -58,6 +59,17 @@ A small stdio MCP server (`mcp/lotus-oracle/server.ts`) for developer tools. Its
 A missing, unreadable or larger than 32 MiB file, or one that is not a Lotus or dBase file, gives an error result, and the server keeps running. Only JSON-RPC goes to stdout; logs go to stderr.
 
 Run it with `bun run oracle:mcp` (or `bun mcp/lotus-oracle/server.ts`). Kiro picks it up from `.kiro/settings/mcp.json`, which starts `bun mcp/lotus-oracle/server.ts` from the project root; give an absolute path there if your Kiro starts elsewhere. The integration test `tests/unit/mcp/lotus-oracle.test.ts` spawns the server through the SDK's stdio client and calls every tool.
+
+## Kiro hooks
+
+Four agent hooks in `.kiro/hooks/`, made with kiro-cli. Each runs one `bun run` script, which you can also run by hand:
+
+- `parser-differential-tests.kiro.hook`: when a file under `src/parser/` is saved, `bun run check:diff` runs the differential tests in `tests/differential`.
+- `fixture-manifest-check.kiro.hook`: when a file is created under `fixtures/`, `bun run check:manifest` checks that every WK1, WKS, WK3 and DBF file is listed in `fixtures/manifest.json` with matching sha256 and counts and a `LICENSE.txt` next to it, and that the generated fixtures still match their generator.
+- `opcode-coverage-check.kiro.hook`: when a file under `src/formula/` or `src/verify/` is saved, `bun run check:opcodes` checks that every opcode in the table decodes and translates to Excel (only `@ERR` has no Excel form), that no translator rule names a function the table lacks, and that the evaluator covers exactly the table's functions.
+- `fixture-pii-scan.kiro.hook`: when a file under `fixtures/` is saved, `bun run check:pii` scans every fixture for personal data, with a reviewed allowlist.
+
+`tests/unit/kiro/hooks.test.ts` checks that every hook parses and only runs scripts that `package.json` has.
 
 ## License
 
