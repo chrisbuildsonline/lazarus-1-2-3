@@ -21,6 +21,7 @@ inclusion: always
 - User files are read with the File API and never sent anywhere. No network calls that carry file contents or derived data.
 - No analytics, no remote fonts or scripts at runtime. Bundle everything.
 - LLM calls (macro explanation, unknown-opcode suggestions) go to local Ollama at `http://localhost:11434/v1` (OpenAI-compatible) or to a recorded fixture. Never a paid API. See ai-boundaries.md.
+- The one allowed request that is not a same-origin GET is the optional local model at http://localhost:11434 (POST to /v1/chat/completions), sent only from the Macros view for the shown item, and allowed by the CSP connect-src 'self' http://localhost:11434.
 
 ## Commands
 
@@ -52,7 +53,7 @@ Test types:
 - Unit: record decoding, token decoding, serial dates.
 - Differential: recalculated value versus cached value from the fixture. A fixture mismatch is a bug in us, or a documented `mismatched` expectation.
 - Property-based (fast-check): parse/serialize round trips, RPN to Excel formula, engine arithmetic invariants, and "parser never throws on arbitrary bytes; it returns an error result".
-- e2e: the app specs in e2e/: seance-sample, seance-files (drop, pickers, folder, unsupported and corrupt files), seance-drawer (grid keys, cell drawer), seance-states (statuses, filters, phone list), seance-downloads (XLSX and report read back), seance-batch, seance-worker-failure, seance-privacy (static same-origin requests only, CSP), seance-a11y (axe, focus ring, touch targets), seance-layout (1440x900 and 390x844 screenshots, no sideways scroll, no console error) and seance-responsive (no long main-thread task on a 5,000-formula sheet, under 2,000 grid cells in the DOM), seance-wk3-dbf (a WK3 drop with sheet tabs and an unverifiable formula, a DBF drop with the as-read totals, axe and screenshots at 1440 and 390 in e2e/screenshots). Run them with CI=1 bun run e2e so Playwright builds and serves its own preview.
+- e2e: the app specs in e2e/: seance-sample, seance-files (drop, pickers, folder, unsupported and corrupt files), seance-drawer (grid keys, cell drawer), seance-states (statuses, filters, phone list), seance-downloads (XLSX and report read back), seance-batch, seance-worker-failure, seance-privacy (static same-origin requests only, CSP), seance-a11y (axe, focus ring, touch targets), seance-layout (1440x900 and 390x844 screenshots, no sideways scroll, no console error) and seance-responsive (no long main-thread task on a 5,000-formula sheet, under 2,000 grid cells in the DOM), seance-wk3-dbf (a WK3 drop with sheet tabs and an unverifiable formula, a DBF drop with the as-read totals, axe and screenshots at 1440 and 390 in e2e/screenshots), seance-macros (the Macros step: approve, reject and undo by mouse and keys, the JSON report read back, the phone dialog, an offline local model, axe, screenshots macros-1440.png and macros-390.png). Run them with CI=1 bun run e2e so Playwright builds and serves its own preview.
 
 ## Conventions
 

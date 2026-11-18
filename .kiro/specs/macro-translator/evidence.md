@@ -101,3 +101,13 @@ Q31 p. 1-2 gives the function keys: ABS (F4), CALC (F9), EDIT (F2), GOTO (F5), G
 - Brace names (task 3): the command steps for {BRANCH}, {MENUBRANCH}, {IF}, {WAIT} may carry a source. {GOTO} is one source. All other names from the requirement 20 list are generic `command` steps.
 - Literal slash (requirement 25): not sourced. Treat as an open question for the owner.
 - To unblock: a readable Release 2 / 2.01 / 2.2 Reference or Quick Reference, or a way to read archive.org full text beyond 8,000 characters (menu trees are in Q31 pp. 35-40 and the macro chapter in R31 chapter 4).
+
+## Measured counts (task 14)
+
+- `fixtures/macros/macros.wk1` has 2 NAME records (`\0` over F1, `\P` over H1).
+- It has 3 detected macros: `\0` with 3 lines and 3 steps, `\P` with 1 line and 11 steps (every menu letter is an unknown-key step), and the unnamed block at J1 with 2 lines and 3 steps.
+- It has 0 macro notes. Its queue holds 4 pending items: 3 macros and opcode 0x61 on A10.
+- `KSBASE.WK1` has 9 NAME records (DATE, DEPTH, LSF, OBSERV, R_, SOIL, TEXT, X, Y) and no macro.
+- basic-values, 92stlde, dates, formulas, functions, labels and mixed (WK1), and gnome647171-1 and testLotus123 (WKS), have 0 NAME records and no macro.
+- Every queue for a real fixture is empty.
+- Measured by running readNames, the raise worker handler and buildQueue on each file.

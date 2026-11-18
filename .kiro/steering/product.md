@@ -32,7 +32,7 @@ Rules that follow from this:
 - WKS/WK1 and WK3 parsing and DBF tables. DBF values are shown and written as read (a table has no formulas). WK3 formulas keep their stored result and are unverifiable until a WK3 formula decoder exists.
 - Formula rebuild (RPN to Excel syntax) and a deterministic recalculation engine.
 - XLSX output, provenance report (in-app and downloadable).
-- Macros (brace keystroke language, slash commands) translated into a plain-English step list that a human approves. Macros are never executed.
+- Macros: brace keys are translated into a plain-English step list and slash commands are listed key by key, for a human to approve. Macros are never executed.
 - Local-only operation: files never leave the machine.
 - lotus-oracle MCP server for developer tooling.
 
