@@ -10,7 +10,7 @@ import { ProgressSurface, type ProgressPhase } from "./components/ProgressSurfac
 import { SheetView } from "./components/SheetView.tsx";
 import { SummonView, type SummonMode } from "./components/SummonView.tsx";
 import { Toasts } from "./components/Toast.tsx";
-import { STEP_PANEL, StepTabs, stepTabId } from "./components/StepTabs.tsx";
+import { StepTabs } from "./components/StepTabs.tsx";
 import { TopBar } from "./components/TopBar.tsx";
 import { NARROW, PHONE, useMatchMedia } from "./hooks/useMatchMedia.ts";
 import { useRaise } from "./hooks/useRaise.ts";
@@ -241,13 +241,7 @@ export function App() {
   return (
     <div className="page">
       <TopBar view={macros ? COPY.macrosTitle : file ? COPY.viewSheet : COPY.viewSummon} primary={primary} steps={phone ? undefined : steps} />
-      {steps ? (
-        <div id={STEP_PANEL} role="tabpanel" aria-labelledby={stepTabId(state.step)}>
-          {body}
-        </div>
-      ) : (
-        body
-      )}
+      {body}
       <Toasts toasts={state.toasts} onDismiss={dismiss} />
     </div>
   );

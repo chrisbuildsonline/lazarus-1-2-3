@@ -5,6 +5,7 @@ import { useMemo, useState, type ReactNode } from "react";
 import type { Status } from "../../verify/index.ts";
 import type { RaisedFile } from "../../workers/verify-protocol.ts";
 import { COPY } from "../copy.ts";
+import { STEP_PANEL } from "./StepTabs.tsx";
 import type { FileItem } from "../model/batch-rows.ts";
 import type { Skipped } from "../model/entries.ts";
 import { formatNumber } from "../model/format-value.ts";
@@ -95,7 +96,7 @@ export function SheetView(p: SheetViewProps) {
   const classes = ["sheet", batch && "sheet--batch", details && !phone && "has-drawer"].filter(Boolean).join(" ");
 
   return (
-    <main className={classes}>
+    <main id={STEP_PANEL} className={classes}>
       {/* Two rows so the grid starts high enough for 14 rows above the fold at 1440x900:
           the title with the filters, then the meta line with the report links. */}
       <div className="sheet__top">

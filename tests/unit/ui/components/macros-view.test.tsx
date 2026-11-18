@@ -26,6 +26,8 @@ describe("MacrosView", () => {
   it("one h1 Macros, the status line and the AI line", () => {
     const html = view();
     expect(count(html, /<h1/g)).toBe(1);
+    // The step tabs' aria-controls target.
+    expect(html).toMatch(/<main id="step-panel"/);
     expect(html).toMatch(/<h1[^>]*>Macros<\/h1>/);
     expect(html).toContain(">4 waiting<");
     expect(html).toContain(COPY.aiLine);

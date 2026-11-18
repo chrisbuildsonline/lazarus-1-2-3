@@ -8,6 +8,7 @@ import { useExplain } from "../hooks/useExplain.ts";
 import { detailModel, keyToAction, queueRows, statusLine, type DetailModel, type ExplainState } from "../model/queue-view.ts";
 import { QueuePill } from "./QueuePill.tsx";
 import { StatusPill } from "./StatusPill.tsx";
+import { STEP_PANEL } from "./StepTabs.tsx";
 
 export type Decide = (id: string, decision: "approve" | "reject") => void;
 
@@ -198,7 +199,7 @@ export function MacrosView(p: MacrosViewProps) {
 
   const c = counts(queue);
   return (
-    <main className="macros">
+    <main id={STEP_PANEL} className="macros">
       <div className="macros__head">
         <h1 ref={p.titleRef} className="title" tabIndex={-1}>
           {COPY.macrosTitle}
