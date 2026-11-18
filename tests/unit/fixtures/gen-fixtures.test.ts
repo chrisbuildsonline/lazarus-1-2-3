@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { LICENSE_TEXT, buildAll } from "../../../scripts/gen-fixtures.ts";
+import { LICENSE_TEXT, buildAll, buildRecorded, unknownOpcode } from "../../../scripts/gen-fixtures.ts";
 import { bof, dimensions, eof, formula, integer, label, number, writeWk1 } from "../../../scripts/lib/wk1-writer.ts";
 import { evalRpn } from "../helpers/rpn-eval.ts";
 import { a1, scanWk1 } from "../helpers/wk1-scan.ts";
@@ -85,12 +85,33 @@ describe("buildAll", () => {
         if (!c || typeof c.value !== "number") throw new Error(`${f.path}: no number at ${a1(col, row)}`);
         return c.value;
       };
+      // macros.wk1 A10 holds a token byte the tool does not know on purpose; macros.test.ts checks it.
+      if (f.path === "fixtures/macros/macros.wk1") continue;
       for (const { col, row, cached, rpn } of formulaRecords(f.bytes)) {
         expect(evalRpn(rpn, col, row, valueAt), `${f.path} ${a1(col, row)}`).toBe(cached);
         checked++;
       }
     }
     expect(checked).toBe(27); // formulas 6, dates 1, mixed 4, functions 16
+  });
+
+  it("writes macros.wk1 with two NAME records and an unknown token in A10", () => {
+    const f = first.find((x) => x.path === "fixtures/macros/macros.wk1");
+    expect(f).toBeDefined();
+    // 4 header labels + 28 integers in A1..D8, 6 macro labels, 1 formula (design.md "Fixture").
+    expect(f!.manifestEntry.counts).toEqual({ cells: 39, formulas: 1, labels: 10, numbers: 28 });
+    expect(f!.manifestEntry.expectedValues).toContainEqual({ cell: "A10", kind: "formula", cached: 42 });
+    expect(f!.manifestEntry.expectedValues).toContainEqual({ cell: "H1", kind: "label", cached: "/PPRA1..D8~GQ" });
+    const formula = formulaRecords(f!.bytes);
+    expect(formula.map((r) => [r.col, r.row, r.cached, [...r.rpn]])).toEqual([[0, 9, 42, [unknownOpcode(), 0x03]]]);
+    expect(unknownOpcode()).toBe(0x61);
+  });
+
+  it("writes recorded-explanations.json the same on every run, as committed", () => {
+    const a = buildRecorded();
+    expect(buildRecorded()).toEqual(a);
+    expect(a.path).toBe("fixtures/macros/recorded-explanations.json");
+    expect(readFileSync(a.path, "utf8")).toBe(a.text);
   });
 
   it("writes the committed LICENSE.txt next to every synthetic file", () => {

@@ -103,7 +103,8 @@ describe("parseWk1 against fixtures/manifest.json", () => {
       });
 
       // A real file added later has no recorded list yet: its skips are printed above for a human to record.
-      const recorded = entry.origin === "real" ? REAL_SKIPPED[entry.path] : {};
+      // macros.wk1 holds two NAME records (\0 and \P, design.md "Fixture"); the parser skips them.
+      const recorded = entry.origin === "real" ? REAL_SKIPPED[entry.path] : entry.path === "fixtures/macros/macros.wk1" ? { 11: 2 } : {};
       if (recorded) {
         it("skips the recorded opcodes and raises no warnings", () => {
           expect(stats.skippedByOpcode).toEqual(recorded);

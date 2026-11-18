@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "model": "recorded fixture",
+  "note": "Text written by the developer to stand in for a model.",
+  "entries": {
+    "39853311116591d096eba3d94411085f6c6b19bc758d73eb4f56d320231c51b6": {
+      "suggestion": "Moves the cell pointer to A1, recalculates the worksheet, and ends the macro.",
+      "rationale": null,
+      "confidence": null
+    },
+    "6af072608c7e8ded2ec10b6d92617931563f1e791f18281d30f1960de627ab73": {
+      "suggestion": "Prints the range A1..D8 on the printer, then leaves the print menu.",
+      "rationale": null,
+      "confidence": null
+    },
+    "92a62beb281605e635e7ca9b266a350933dee743be66a23c81f01b21e985e79f": {
+      "suggestion": "Moves the cell pointer to D8, goes down three rows, and opens that cell for editing.",
+      "rationale": null,
+      "confidence": null
+    },
+    "63c30c6acef291e381bdb866e92bd2011f41675007392aac5643b45eb4b82af9": {
+      "suggestion": "Perhaps an @function this tool does not list yet.",
+      "rationale": "The byte comes after the last function code the tool knows, and nothing in this file shows what it computes.",
+      "confidence": "Low"
+    }
+  }
+}

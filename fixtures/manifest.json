@@ -170,8 +170,16 @@
         }
       ],
       "expectedValues": [
-        { "cell": "A!A1", "kind": "label", "cached": "NO" },
-        { "cell": "A!A2", "kind": "number", "cached": 5 }
+        {
+          "cell": "A!A1",
+          "kind": "label",
+          "cached": "NO"
+        },
+        {
+          "cell": "A!A2",
+          "kind": "number",
+          "cached": 5
+        }
       ]
     },
     {
@@ -382,6 +390,52 @@
           "cell": "C6",
           "kind": "formula",
           "cached": 30
+        }
+      ]
+    },
+    {
+      "path": "fixtures/macros/macros.wk1",
+      "format": "wk1",
+      "origin": "synthetic",
+      "sourceUrl": null,
+      "license": "MIT",
+      "sha256": "75982ae2d050750b5d27d158fdde71d027d68f3d1fba8012f13309bcdd71cbc0",
+      "counts": {
+        "cells": 39,
+        "formulas": 1,
+        "labels": 10,
+        "numbers": 28
+      },
+      "expectedValues": [
+        {
+          "cell": "A1",
+          "kind": "label",
+          "cached": "Month"
+        },
+        {
+          "cell": "B2",
+          "kind": "integer",
+          "cached": 4113
+        },
+        {
+          "cell": "D8",
+          "kind": "integer",
+          "cached": 1014
+        },
+        {
+          "cell": "F1",
+          "kind": "label",
+          "cached": "{GOTO}A1~"
+        },
+        {
+          "cell": "H1",
+          "kind": "label",
+          "cached": "/PPRA1..D8~GQ"
+        },
+        {
+          "cell": "A10",
+          "kind": "formula",
+          "cached": 42
         }
       ]
     },

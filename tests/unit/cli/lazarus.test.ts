@@ -172,6 +172,9 @@ describe("lazarus cli", () => {
       if (g) {
         const { formulas, matched, mismatched, unverifiable, exact, withinTolerance, byReason } = g;
         expect(v, e.path).toEqual({ formulas, matched, mismatched, unverifiable, exact, withinTolerance, byReason });
+      } else if (e.path === "fixtures/macros/macros.wk1") {
+        // A10 holds an unknown token on purpose (macro-translator design.md "Fixture").
+        expect(v, e.path).toEqual({ formulas: 1, matched: 0, mismatched: 0, unverifiable: 1, exact: 0, withinTolerance: 0, byReason: { "unknown-opcode": 1 } });
       } else if (e.origin === "synthetic") {
         const n = e.counts.formulas;
         expect(v, e.path).toEqual({ formulas: n, matched: n, mismatched: 0, unverifiable: 0, exact: n, withinTolerance: 0, byReason: n > 0 ? { exact: n } : {} });

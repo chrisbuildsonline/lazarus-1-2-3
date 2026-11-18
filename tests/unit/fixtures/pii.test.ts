@@ -4,7 +4,13 @@ import { describe, expect, it } from "vitest";
 import { scanBytes, luhn, type AllowEntry } from "../helpers/pii-scan.ts";
 
 // Reviewed false positives. Each entry needs the file path, the exact matched text and a reason.
-const ALLOWLIST: AllowEntry[] = [];
+const ALLOWLIST: AllowEntry[] = [
+  {
+    path: "fixtures/macros/recorded-explanations.json",
+    text: "39853311116591",
+    reason: "digits inside the SHA-256 hex key of the \\0 macro's request text, not a card number",
+  },
+];
 
 function fixtureFiles(dir = "fixtures"): string[] {
   return readdirSync(dir, { withFileTypes: true })

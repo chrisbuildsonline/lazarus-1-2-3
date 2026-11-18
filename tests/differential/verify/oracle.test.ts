@@ -11,7 +11,8 @@ import { evalRpn } from "../../unit/helpers/rpn-eval.ts";
 type Entry = { path: string; format: string; origin: "real" | "synthetic" };
 
 const manifest = JSON.parse(readFileSync("fixtures/manifest.json", "utf8")) as { fixtures: Entry[] };
-const synthetic = manifest.fixtures.filter((e) => e.origin === "synthetic" && (e.format === "wk1" || e.format === "wks"));
+// macros.wk1 is left out: its one formula holds an unknown token on purpose (macros.test.ts).
+const synthetic = manifest.fixtures.filter((e) => e.origin === "synthetic" && (e.format === "wk1" || e.format === "wks") && e.path !== "fixtures/macros/macros.wk1");
 
 describe("engine against the rpn-eval oracle on synthetic formulas", () => {
   let checked = 0;

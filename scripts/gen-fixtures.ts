@@ -5,7 +5,11 @@ import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { writeDbf } from "./lib/dbf-writer.ts";
-import { DBF_SPEC, SPECS, WK3_SPEC, type Wk3CellSpec } from "./lib/fixture-specs.ts";
+import { OPCODE_TABLE } from "../src/formula/opcodes.ts";
+import { buildQueue, detectMacros, explainRequest, readNames, requestText, type RecordedEntry } from "../src/macro/index.ts";
+import { parseWorkbook } from "../src/parser/index.ts";
+import { verifyWorkbook } from "../src/verify/index.ts";
+import { DBF_SPEC, MACROS_SPEC, SPECS, WK3_SPEC, type Wk3CellSpec } from "./lib/fixture-specs.ts";
 import { writeWk1, type CellSpec } from "./lib/wk1-writer.ts";
 import * as wk3 from "./lib/wk3-writer.ts";
 
@@ -65,7 +69,64 @@ export function buildAll(): { path: string; bytes: Uint8Array; manifestEntry: Ma
       expectedValues: spec.expect.map((address) => expectedValue(spec.cells, address)),
     };
     return { path, bytes, manifestEntry };
-  }).concat([buildWk3(), buildDbf()]);
+  }).concat([buildMacros(), buildWk3(), buildDbf()]);
+}
+
+/** The lowest token byte above 0x60 that src/formula/opcodes.ts does not list. */
+export function unknownOpcode(): number {
+  let b = 0x61;
+  while (OPCODE_TABLE.has(b)) b++;
+  return b;
+}
+
+function macrosCells(): CellSpec[] {
+  const { col, row, cached } = MACROS_SPEC.unknownFormula;
+  return [...MACROS_SPEC.cells, { kind: "formula", col, row, cached, rpn: [unknownOpcode(), 0x03] }];
+}
+
+function buildMacros(): { path: string; bytes: Uint8Array; manifestEntry: ManifestEntry } {
+  const cells = macrosCells();
+  const path = `fixtures/${MACROS_SPEC.name}/${MACROS_SPEC.name}.wk1`;
+  const bytes = writeWk1(MACROS_SPEC.version, cells, MACROS_SPEC.names);
+  return {
+    path,
+    bytes,
+    manifestEntry: {
+      path,
+      format: "wk1",
+      origin: "synthetic",
+      sourceUrl: null,
+      license: "MIT",
+      sha256: sha(bytes),
+      counts: counts(cells),
+      expectedValues: MACROS_SPEC.expect.map((address) => expectedValue(cells, address)),
+    },
+  };
+}
+
+export const RECORDED_PATH = "fixtures/macros/recorded-explanations.json";
+
+/**
+ * recorded-explanations.json: the queue of macros.wk1 is built from its bytes with the app's own
+ * readers, and each item's recorded text from the spec is keyed by the SHA-256 of its request text.
+ */
+export function buildRecorded(): { path: string; text: string } {
+  const { bytes } = buildMacros();
+  const { workbook } = parseWorkbook(bytes);
+  const first = workbook.sheets[0]!;
+  const verifications = verifyWorkbook(workbook, "macros.wk1");
+  const { macros } = detectMacros(first.sheet, readNames(bytes).names, first.name);
+  const queue = buildQueue({ macros, sheets: workbook.sheets.map((s, i) => ({ name: s.name, cells: verifications[i]!.cells })) }, null);
+  const entries: Record<string, RecordedEntry> = {};
+  for (const item of queue.items) {
+    const key = item.kind === "macro" ? item.cells[0]! : "opcode";
+    const entry = MACROS_SPEC.recorded[key];
+    if (!entry) throw new Error(`no recorded text for ${item.id}`);
+    entries[sha(new TextEncoder().encode(requestText(explainRequest(item))))] = entry;
+  }
+  if (Object.keys(entries).length !== Object.keys(MACROS_SPEC.recorded).length) throw new Error("recorded texts and queue items differ");
+  const file = { schemaVersion: 1, model: "recorded fixture", note: "Text written by the developer to stand in for a model.", entries };
+  return { path: RECORDED_PATH, text: `${JSON.stringify(file, null, 2)}\n` };
 }
 
 const sha = (bytes: Uint8Array) => createHash("sha256").update(bytes).digest("hex");
@@ -157,6 +218,8 @@ function main(): void {
     writeFileSync(path, bytes);
     writeFileSync(`${dirname(path)}/LICENSE.txt`, LICENSE_TEXT);
   }
+  const recorded = buildRecorded();
+  writeFileSync(recorded.path, recorded.text);
   const old = JSON.parse(readFileSync(MANIFEST, "utf8")) as { fixtures: ManifestEntry[] };
   const fixtures = [...old.fixtures.filter((e) => e.origin === "real"), ...built.map((b) => b.manifestEntry)].sort((a, b) =>
     a.path < b.path ? -1 : a.path > b.path ? 1 : 0,

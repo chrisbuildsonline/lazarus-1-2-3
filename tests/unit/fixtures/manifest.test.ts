@@ -60,6 +60,16 @@ describe("fixtures/manifest.json wk3 entries", () => {
   });
 });
 
+describe("fixtures/manifest.json macros entry", () => {
+  it("lists macros.wk1 as a synthetic wk1 with its counts and stored values", () => {
+    const e = entries.find((x) => x.path === "fixtures/macros/macros.wk1");
+    expect(e).toMatchObject({ format: "wk1", origin: "synthetic", license: "MIT", sourceUrl: null });
+    // design.md "Fixture": A1..D8 (4 labels, 28 integers), F1..F3, H1, J1..J2 (6 labels), A10.
+    expect(e!.counts).toEqual({ cells: 39, formulas: 1, labels: 10, numbers: 28 });
+    expect(e!.expectedValues).toContainEqual({ cell: "A10", kind: "formula", cached: 42 });
+  });
+});
+
 describe("fixtures/manifest.json", () => {
   it("is version 1", () => {
     expect(manifest.version).toBe(1);

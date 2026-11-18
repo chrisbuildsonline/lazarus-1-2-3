@@ -42,7 +42,8 @@ describe("verifyBytes on every wk1/wks fixture", () => {
         expect(Object.values(t.byReason).reduce((s, n) => s + n, 0)).toBe(t.formulas);
       });
 
-      if (entry.origin === "synthetic") {
+      // macros.wk1 A10 holds an unknown token on purpose; tests/unit/fixtures/macros.test.ts checks it.
+      if (entry.origin === "synthetic" && entry.path !== "fixtures/macros/macros.wk1") {
         it("every synthetic cell is matched", () => {
           for (const c of v.cells) expect(c.status, `${c.address} ${c.formula} ${c.reason.message}`).toBe("matched");
         });

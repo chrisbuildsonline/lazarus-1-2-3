@@ -214,6 +214,56 @@ export const SPECS: FixtureSpec[] = [
   },
 ];
 
+// Macros (macro-translator design.md "Fixture"): a print range A1..D8, a \0 macro in F1..F3, a \P
+// macro in H1, an unnamed block in J1..J2, and A10, a formula whose one token byte the tool does not
+// know, stored value 42. The generator picks that byte (the lowest above 0x60 missing from
+// src/formula/opcodes.ts) and writes the recorded explanations below, keyed by their request text.
+// The recorded texts were written by the developer to stand in for a model; no model wrote them.
+const DATA_ROWS = [
+  [1, 4113, 2207, 918],
+  [2, 4126, 2231, 934],
+  [3, 4139, 2255, 950],
+  [4, 4152, 2279, 966],
+  [5, 4165, 2303, 982],
+  [6, 4178, 2327, 998],
+  [7, 4191, 2351, 1014],
+];
+export const MACROS_SPEC = {
+  name: "macros",
+  version: WK1_VERSION,
+  cells: [
+    lbl(0, 0, "'", "Month"),
+    lbl(1, 0, "^", "Coal"),
+    lbl(2, 0, "^", "Gas"),
+    lbl(3, 0, "^", "Oil"),
+    ...DATA_ROWS.flatMap((values, r) => values.map((v, c) => int(c, r + 1, v))),
+    lbl(5, 0, "'", "{GOTO}A1~"),
+    lbl(5, 1, "'", "{CALC}"),
+    lbl(5, 2, "'", "{QUIT}"),
+    lbl(7, 0, "'", "/PPRA1..D8~GQ"),
+    lbl(9, 0, "'", "{GOTO}D8~"),
+    lbl(9, 1, "'", "{DOWN 3}{EDIT}"),
+  ] as CellSpec[],
+  /** A10: the formula with the unknown token byte, then the return token. */
+  unknownFormula: { col: 0, row: 9, cached: 42 },
+  names: [
+    { name: "\\0", startCol: 5, startRow: 0, endCol: 5, endRow: 0 },
+    { name: "\\P", startCol: 7, startRow: 0, endCol: 7, endRow: 0 },
+  ],
+  expect: ["A1", "B2", "D8", "F1", "H1", "A10"],
+  /** Recorded explanations by item: macro start address, or "opcode". */
+  recorded: {
+    F1: { suggestion: "Moves the cell pointer to A1, recalculates the worksheet, and ends the macro.", rationale: null, confidence: null },
+    H1: { suggestion: "Prints the range A1..D8 on the printer, then leaves the print menu.", rationale: null, confidence: null },
+    J1: { suggestion: "Moves the cell pointer to D8, goes down three rows, and opens that cell for editing.", rationale: null, confidence: null },
+    opcode: {
+      suggestion: "Perhaps an @function this tool does not list yet.",
+      rationale: "The byte comes after the last function code the tool knows, and nothing in this file shows what it computes.",
+      confidence: "Low",
+    },
+  } as Record<string, { suggestion: string; rationale: string | null; confidence: "Low" | "Medium" | "High" | null }>,
+};
+
 // WK3: three sheets (wk3-dbf-readers design.md "Fixtures"). Values are what the file stores.
 export type Wk3CellSpec =
   | { kind: "label"; sheet: number; col: number; row: number; prefix: string; text: string }
