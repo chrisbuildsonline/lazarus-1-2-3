@@ -38,8 +38,8 @@ describe("buildGridModel on KSBASE", () => {
     const model = buildGridModel(file);
     let withStatus = 0;
     for (let row = 0; row < model.rows; row++) for (let col = 0; col < model.cols; col++) if (model.at(col, row).kind === "formula" && model.at(col, row).status !== null) withStatus++;
-    expect(withStatus).toBe(file.verification.totals.formulas);
-    expect(model.formulaCells).toBe(file.verification.cells);
+    expect(withStatus).toBe(file.sheets[0]!.verification.totals.formulas);
+    expect(model.formulaCells).toBe(file.sheets[0]!.verification.cells);
   });
 
   it("names cells for assistive technology", async () => {

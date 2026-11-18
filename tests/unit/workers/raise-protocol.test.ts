@@ -50,20 +50,22 @@ describe("handleRaiseRequest over the manifest fixtures", () => {
       const file = last.file;
       const expected = verifyBytes(new Uint8Array(bytes), name);
       expect(file.name).toBe(name);
-      expect(file.verification.totals).toEqual(expected.verification.totals);
-      expect(file.verification).toEqual(expected.verification);
+      expect(file.format).toBe(fixture.format);
+      expect(file.sheets.map((s) => s.name)).toEqual(["Sheet1"]);
+      expect(file.sheets[0]!.verification.totals).toEqual(expected.verification.totals);
+      expect(file.sheets[0]!.verification).toEqual(expected.verification);
       expect(file.diagnostics).toEqual(expected.diagnostics);
       expect(file.byteLength).toBe(readFileSync(fixture.path).byteLength);
       expect(file.sha256).toBe(fixture.sha256);
-      expect(sheetFromWire(file.sheet)).toEqual(parseWk1(new Uint8Array(bytes)).sheet);
+      expect(sheetFromWire(file.sheets[0]!.sheet)).toEqual(parseWk1(new Uint8Array(bytes)).sheet);
       // Row-major order of the wire cells.
-      const order = file.sheet.cells.map((c) => [c.row, c.col]);
+      const order = file.sheets[0]!.sheet.cells.map((c) => [c.row, c.col]);
       expect(order).toEqual([...order].sort((a, b) => a[0]! - b[0]! || a[1]! - b[1]!));
       // Structured-clone data only, no Map anywhere.
       expect(maps(last)).toEqual([]);
       const cloned = structuredClone(last);
       expect(cloned).toEqual(last);
-      if (cloned.type === "raised") expect(sheetFromWire(cloned.file.sheet)).toEqual(parseWk1(new Uint8Array(bytes)).sheet);
+      if (cloned.type === "raised") expect(sheetFromWire(cloned.file.sheets[0]!.sheet)).toEqual(parseWk1(new Uint8Array(bytes)).sheet);
     });
   }
 });

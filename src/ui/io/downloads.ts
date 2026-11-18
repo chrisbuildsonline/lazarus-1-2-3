@@ -18,11 +18,12 @@ export async function buildDownload(kind: DownloadKind, raised: RaisedFile, vers
   const done = (data: Uint8Array | string): DownloadResult => ({ ok: true, download: { name: downloadName(raised.name, kind), data, mime: MIME[kind] } });
   if (kind === "xlsx") {
     const { writeXlsx } = await import("../../xlsx/index.ts");
-    return done((await writeXlsx({ sheet: sheetFromWire(raised.sheet), verification: raised.verification })).bytes);
+    const first = raised.sheets[0]!;
+    return done((await writeXlsx({ sheet: sheetFromWire(first.sheet), verification: first.verification })).bytes);
   }
   if (raised.sha256 === null) return { ok: false, reason: COPY.noFingerprint };
   const { buildReport, renderReportHtml, serializeReportJson } = await import("../../report/index.ts");
-  const report = buildReport({ fileName: raised.name, sha256: raised.sha256, byteLength: raised.byteLength, toolVersion: version, verification: raised.verification });
+  const report = buildReport({ fileName: raised.name, sha256: raised.sha256, byteLength: raised.byteLength, toolVersion: version, verification: raised.sheets[0]!.verification });
   return done(kind === "report-html" ? renderReportHtml(report) : serializeReportJson(report));
 }
 

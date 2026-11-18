@@ -91,7 +91,7 @@ function raised(s: AppState, id: number, file: RaisedFile): AppState {
 
 function cellStatus(s: AppState, address: string) {
   const item = s.items.find((i) => i.id === s.selectedId);
-  return item?.raised?.verification.cells.find((c) => c.address === address)?.status;
+  return item?.raised?.sheets[0]?.verification.cells.find((c) => c.address === address)?.status;
 }
 
 export function appReducer(s: AppState, a: AppAction): AppState {

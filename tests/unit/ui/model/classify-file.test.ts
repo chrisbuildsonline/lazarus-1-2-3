@@ -41,7 +41,7 @@ describe("classifyRaised", () => {
     // BOF 0x0406, then a NUMBER record header that claims 13 body bytes with 3 left.
     const bytes = new Uint8Array([0, 0, 2, 0, 6, 4, 0x0e, 0, 13, 0, 1, 2, 3]);
     const file = await raised(bytes, "broken.wk1");
-    expect(file.verification.format).toBe("wk1");
+    expect(file.format).toBe("wk1");
     const result = classifyRaised(file);
     expect(result.kind).toBe("failed");
     if (result.kind !== "failed") return;

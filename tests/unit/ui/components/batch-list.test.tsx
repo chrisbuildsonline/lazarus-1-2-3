@@ -53,7 +53,9 @@ describe("BatchList", () => {
   });
 
   it("a raised row with no formulas shows a neutral No formulas pill, never Matched", () => {
-    const empty = { ...items[0]!.raised!, verification: { ...items[0]!.raised!.verification, totals: { formulas: 0, matched: 0, mismatched: 0, unverifiable: 0, exact: 0, withinTolerance: 0, byReason: {} } } };
+    const first = items[0]!.raised!.sheets[0]!;
+    const zero = { formulas: 0, matched: 0, mismatched: 0, unverifiable: 0, exact: 0, withinTolerance: 0, byReason: {} };
+    const empty = { ...items[0]!.raised!, sheets: [{ ...first, verification: { ...first.verification, totals: zero } }] };
     const html = renderToStaticMarkup(<BatchList items={[item(0, "labels.wk1", { phase: "raised", raised: empty }), items[1]!]} skipped={[]} selectedId={0} onSelect={() => {}} />);
     const row = options(html)[0]!.inner;
     expect(row).toMatch(/<span class="pill pill--neutral">No formulas<\/span>/);

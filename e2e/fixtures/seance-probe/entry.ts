@@ -40,7 +40,7 @@ function askWorker(): Promise<{ steps: string[]; type: string; id: unknown; tota
     worker.onmessage = (e: MessageEvent) => {
       if (e.data.type === "progress") return void steps.push(e.data.step);
       worker.terminate();
-      resolve({ steps, type: e.data.type, id: e.data.id, totals: e.data.file?.verification?.totals ?? null, sha256: e.data.file?.sha256 ?? null, transferred });
+      resolve({ steps, type: e.data.type, id: e.data.id, totals: e.data.file?.sheets?.[0]?.verification?.totals ?? null, sha256: e.data.file?.sha256 ?? null, transferred });
     };
     worker.onerror = (e) => reject(new Error(`worker error: ${e.message}`));
     fetch(ksbaseUrl)

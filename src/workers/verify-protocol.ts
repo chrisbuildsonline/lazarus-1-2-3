@@ -2,8 +2,20 @@
 // function, so it runs in Node without a worker; installVerifyWorker wires it to a worker scope.
 // The raise protocol below (Seance UI requirements 16 to 18) is the same idea for the browser app:
 // it also returns the parsed sheet, as a plain cell list, and the file's SHA-256.
-import { cellKey, cellsInRowMajorOrder, parseWk1, type Cell, type Diagnostic, type Sheet, type Wk1ParseResult } from "../parser/index.ts";
-import { verifyBytes, verifySheet, type SheetVerification, type VerifyBytesResult } from "../verify/index.ts";
+import {
+  cellKey,
+  cellsInRowMajorOrder,
+  parseWorkbook,
+  type Cell,
+  type DbfTable,
+  type Diagnostic,
+  type Sheet,
+  type SheetFormat,
+  type Workbook,
+  type WorkbookParseResult,
+  type WorkbookStats,
+} from "../parser/index.ts";
+import { verifyBytes, verifyWorkbook, type SheetVerification, type VerifyBytesResult } from "../verify/index.ts";
 import { sha256Hex } from "./hash.ts";
 
 export type VerifyRequest = { type: "verify"; id: number; name?: string; bytes: ArrayBuffer };
@@ -50,22 +62,30 @@ export type RaiseProgress = { type: "progress"; id: number; step: "read" | "chec
 /** A Sheet with its cells as an array in row-major order: structured-clone data, no Map. */
 export type WireSheet = Omit<Sheet, "cells"> & { cells: Cell[] };
 
+/** One sheet of a raised file: `name` is the sheet name, `verification.name` the file name. */
+export type RaisedSheet = { name: string; sheet: WireSheet; verification: SheetVerification };
+
 export type RaisedFile = {
   name: string;
   byteLength: number;
   /** Lowercase hex, or null when Web Crypto is missing (http on a host other than localhost). */
   sha256: string | null;
+  /** The workbook format. */
+  format: SheetFormat;
   diagnostics: Diagnostic[];
-  sheet: WireSheet;
-  verification: SheetVerification;
+  /** At least one for wk1, wks and unknown input. */
+  sheets: RaisedSheet[];
+  /** DBF only: the table header, for the meta line and the report. */
+  table?: DbfTable;
+  stats: WorkbookStats;
 };
 
 export type RaiseResponse = RaiseProgress | { type: "raised"; id: number; file: RaisedFile } | { type: "error"; id: number | null; message: string };
 
 /** The real parser, engine and hash by default; a test passes a throwing one. */
 export type RaiseDeps = {
-  parse?: (bytes: Uint8Array) => Wk1ParseResult;
-  verify?: (sheet: Sheet, name: string) => SheetVerification;
+  parse?: (bytes: Uint8Array) => WorkbookParseResult;
+  verify?: (workbook: Workbook, name: string) => SheetVerification[];
   hash?: (bytes: Uint8Array) => Promise<string>;
 };
 
@@ -87,7 +107,7 @@ export function installRaiseWorker(scope: RaiseScopeLike): void {
 
 /** Validates the shape, parses (posts read), verifies (posts check), hashes, posts raised. Never throws. */
 export async function handleRaiseRequest(request: unknown, post: (m: RaiseResponse) => void, deps: RaiseDeps = {}): Promise<void> {
-  const { parse = parseWk1, verify = verifySheet, hash = sha256Hex } = deps;
+  const { parse = parseWorkbook, verify = verifyWorkbook, hash = sha256Hex } = deps;
   const rawId = field(request, "id");
   const id = typeof rawId === "number" && Number.isInteger(rawId) ? rawId : null;
   const error = (text: string) => post({ type: "error", id, message: text });
@@ -99,9 +119,11 @@ export async function handleRaiseRequest(request: unknown, post: (m: RaiseRespon
   if (typeof name !== "string") return error("The request name is not text.");
   try {
     const bytes = new Uint8Array(buffer);
-    const { sheet, diagnostics } = parse(bytes);
+    const parsed = parse(bytes);
+    const { workbook, diagnostics, stats } = parsed;
     post({ type: "progress", id, step: "read" });
-    const verification = verify(sheet, name);
+    const verifications = verify(workbook, name);
+    const sheets = workbook.sheets.map((s, i) => ({ name: s.name, sheet: sheetToWire(s.sheet), verification: verifications[i]! }));
     post({ type: "progress", id, step: "check" });
     let sha256: string | null;
     try {
@@ -109,7 +131,9 @@ export async function handleRaiseRequest(request: unknown, post: (m: RaiseRespon
     } catch {
       sha256 = null;
     }
-    post({ type: "raised", id, file: { name, byteLength: bytes.byteLength, sha256, diagnostics, sheet: sheetToWire(sheet), verification } });
+    const file: RaisedFile = { name, byteLength: bytes.byteLength, sha256, format: workbook.format, diagnostics, sheets, stats };
+    if (parsed.kind === "dbf") file.table = parsed.table;
+    post({ type: "raised", id, file });
   } catch (e) {
     error(`Raising failed unexpectedly: ${e instanceof Error ? e.message : String(e)}`);
   }

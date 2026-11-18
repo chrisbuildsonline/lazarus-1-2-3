@@ -10,9 +10,10 @@ export function diagnosticLine(d: Diagnostic): string {
 }
 
 export function classifyRaised(file: RaisedFile): { kind: "raised" } | { kind: "unsupported" } | { kind: "failed"; lines: string[] } {
-  if (file.verification.format === "unknown") return { kind: "unsupported" };
+  // The app does not show WK3 or DBF yet; they stay unsupported until the views handle them.
+  if (file.format !== "wk1" && file.format !== "wks") return { kind: "unsupported" };
   const errors = file.diagnostics.filter((d) => d.severity === "error");
-  if (file.sheet.cells.length > 0 || errors.length === 0) return { kind: "raised" };
+  if (file.sheets.some((s) => s.sheet.cells.length > 0) || errors.length === 0) return { kind: "raised" };
   const lines = errors.slice(0, MAX_LINES).map(diagnosticLine);
   if (errors.length > MAX_LINES) lines.push(COPY.andMore(errors.length - MAX_LINES));
   return { kind: "failed", lines };

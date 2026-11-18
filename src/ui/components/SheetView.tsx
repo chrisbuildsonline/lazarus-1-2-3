@@ -45,8 +45,10 @@ const address = (p: GridPos) => `${columnLetters(p.col)}${p.row + 1}`;
 
 export function SheetView(p: SheetViewProps) {
   const { file, phone, filter } = p;
-  const model = useMemo(() => buildGridModel(file), [file]);
-  const counts = useMemo(() => statusCounts(file.verification.cells), [file]);
+  const sheetIndex = 0;
+  const current = file.sheets[sheetIndex]!;
+  const model = useMemo(() => buildGridModel(file, sheetIndex), [file]);
+  const counts = useMemo(() => statusCounts(current.verification.cells), [current]);
   const [focus, setFocus] = useState<GridPos>({ col: 0, row: 0 });
   const [expanded, setExpanded] = useState<ReadonlySet<Status>>(new Set());
   const selected = useMemo(() => {
@@ -54,9 +56,9 @@ export function SheetView(p: SheetViewProps) {
     return r ? { col: r.col, row: r.row } : null;
   }, [model, p.cell]);
   const rowsShown = useMemo(() => (filter === "all" ? undefined : model.rowsWithStatus(filter)), [model, filter]);
-  const empty = filterRows(file.verification.cells, filter).empty;
+  const empty = filterRows(current.verification.cells, filter).empty;
   const batch = p.items.length > 1;
-  const meta = [file.verification.format.toUpperCase(), `${formatNumber(file.verification.totals.formulas)} formulas`, `${formatNumber(file.byteLength)} bytes`].join(" · ");
+  const meta = [current.verification.format.toUpperCase(), `${formatNumber(current.verification.totals.formulas)} formulas`, `${formatNumber(file.byteLength)} bytes`].join(" · ");
   const filters = <Filters counts={counts} value={filter} onChange={p.onFilter} />;
   const toggle = (s: Status) =>
     setExpanded((old) => {
@@ -65,8 +67,8 @@ export function SheetView(p: SheetViewProps) {
       return next;
     });
 
-  const result = p.cell === null ? undefined : file.verification.cells.find((c) => c.address === p.cell);
-  const details = useMemo(() => (result ? drawerModel(result, file.verification.tolerance) : null), [result, file]);
+  const result = p.cell === null ? undefined : current.verification.cells.find((c) => c.address === p.cell);
+  const details = useMemo(() => (result ? drawerModel(result, current.verification.tolerance) : null), [result, current]);
   useFocusReturn(details?.address ?? null, (a) => {
     if (phone) return document.querySelector<HTMLElement>(`.status-row[data-address="${a}"]`);
     const r = model.formulaCells.find((c) => c.address === a);
@@ -102,12 +104,12 @@ export function SheetView(p: SheetViewProps) {
       <div className="sheet__body">
         {batch && <BatchList items={p.items} skipped={p.skipped} selectedId={p.selectedId} onSelect={p.onSelectFile} />}
         <div className="sheet__main">
-          <TotalsSurface totals={file.verification.totals} />
+          <TotalsSurface totals={current.verification.totals} />
           {phone ? (
             <>
               {filters}
               <section className="surface">
-                <StatusList cells={file.verification.cells} expanded={expanded} filter={filter} selected={p.cell} onToggle={toggle} onOpen={p.onOpenCell} />
+                <StatusList cells={current.verification.cells} expanded={expanded} filter={filter} selected={p.cell} onToggle={toggle} onOpen={p.onOpenCell} />
               </section>
             </>
           ) : (

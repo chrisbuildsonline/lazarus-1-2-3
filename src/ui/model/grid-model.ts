@@ -35,7 +35,8 @@ export function columnLetters(col: number): string {
   return a1(col, 0).slice(0, -1);
 }
 
-export function buildGridModel(file: RaisedFile): GridModel {
+export function buildGridModel(raised: RaisedFile, sheetIndex = 0): GridModel {
+  const file = raised.sheets[sheetIndex]!;
   const results = new Map(file.verification.cells.map((r) => [cellKey(r.col, r.row), r]));
   const display = new Map<number, DisplayCell>();
   let rows = 0;

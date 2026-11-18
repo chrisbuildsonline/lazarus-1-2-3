@@ -42,8 +42,15 @@ export function handBuilt(cells: Cell[], results: CellResult[], name = "hand.wk1
     name,
     byteLength: 0,
     sha256: null,
+    format: "wk1",
     diagnostics: [],
-    sheet: { format: "wk1", version: 0x406, sawEof: true, declaredDimensions: null, cells },
-    verification: { name, format: "wk1", tolerance: { ...TOLERANCE }, cells: results, totals: totals(results) },
+    sheets: [
+      {
+        name: "Sheet1",
+        sheet: { format: "wk1", version: 0x406, sawEof: true, declaredDimensions: null, cells },
+        verification: { name, format: "wk1", tolerance: { ...TOLERANCE }, cells: results, totals: totals(results) },
+      },
+    ],
+    stats: { records: 0, cells: cells.length, formulas: 0, labels: 0, numbers: 0, skippedRecords: 0, skippedByOpcode: {}, bytesRead: 0 },
   };
 }

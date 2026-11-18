@@ -17,7 +17,8 @@ const t = (formulas: number, matched: number, mismatched: number, unverifiable: 
 
 const withTotals = (totals: Totals, format: "wk1" | "wks" = "wk1"): RaisedFile => {
   const file = handBuilt([], []);
-  return { ...file, verification: { ...file.verification, format, totals } };
+  const first = file.sheets[0]!;
+  return { ...file, format, sheets: [{ ...first, verification: { ...first.verification, format, totals } }] };
 };
 
 const item = (more: Partial<FileItem>): FileItem => ({ id: 1, name: "LEDGER.WK1", path: "LEDGER.WK1", size: 100, phase: "raised", ...more });
@@ -42,7 +43,7 @@ describe("batchRow", () => {
     expect(row).toEqual({ name: "KSBASE.WK1", kind: "WK1", line: "100.0% verified", pill: "matched" });
   });
 
-  it("a WKS file reads WKS from verification.format", async () => {
+  it("a WKS file reads WKS from the file format", async () => {
     const row = batchRow(item({ name: "gnome647171-1.wks", raised: await raiseFixture("fixtures/libreoffice-wks-functions/gnome647171-1.wks") }));
     expect(row.kind).toBe("WKS");
     expect(row.pill).toBe("unverifiable");

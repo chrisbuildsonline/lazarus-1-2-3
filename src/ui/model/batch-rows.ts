@@ -28,7 +28,7 @@ export function worstStatus(t: Totals): Status {
 const KIND = { wk1: "WK1", wks: "WKS", wk3: "WK3", dbf: "DBF", unknown: "-" } as const;
 
 export function batchRow(item: FileItem): BatchRow {
-  const kind = item.raised ? KIND[item.raised.verification.format] : "-";
+  const kind = item.raised ? KIND[item.raised.format] : "-";
   const row = (line: string, pill: BatchRow["pill"]): BatchRow => ({ name: item.name, kind, line, pill });
   switch (item.phase) {
     case "queued":
@@ -41,7 +41,7 @@ export function batchRow(item: FileItem): BatchRow {
     case "unsupported":
       return row(COPY.couldNotRaise(item.failure?.reason ?? COPY.unsupportedTitle), "failed");
     case "raised": {
-      const t = item.raised!.verification.totals;
+      const t = item.raised!.sheets[0]!.verification.totals;
       // No formulas: nothing was checked, so a neutral pill, never a green Matched.
       if (percentVerified(t).kind === "none") return row(COPY.noFormulas, "none");
       return row(COPY.verifiedLine(headline(t), t.mismatched > 0 ? formatNumber(t.mismatched) : null), worstStatus(t));

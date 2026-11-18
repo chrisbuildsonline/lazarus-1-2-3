@@ -8,6 +8,7 @@ export type { CellResult, InputRow, Status } from "./classify.ts";
 export type { SheetVerification, Totals } from "./report.ts";
 export { TOLERANCE, type Tolerance } from "./tolerance.ts";
 export type { Reason, ReasonCode, Value } from "./value.ts";
+export { verifyWorkbook, verifyWorkbookBytes, type VerifyWorkbookResult } from "./workbook.ts";
 
 export type VerifyBytesResult = { diagnostics: Diagnostic[]; verification: SheetVerification };
 

@@ -32,7 +32,7 @@ describe("buildDownload", () => {
     const back = await readXlsx(d.data as Uint8Array);
     expect(back.cells.size).toBe(KSBASE.counts.cells);
     expect(back.cells.size).toBe(1250);
-    for (const r of raised.verification.cells) {
+    for (const r of raised.sheets[0]!.verification.cells) {
       const got = back.cells.get(r.address)!;
       expect(got.formula, r.address).toBe(r.formula);
       if (r.formula !== null && r.cached?.t === "num") expect(got.result === r.cached.v || (r.cached.v === 0 && got.result === 0), r.address).toBe(true);
@@ -50,7 +50,7 @@ describe("buildDownload", () => {
     expect(report.source.sha256).toBe(KSBASE.sha256);
     expect(report.source.fileName).toBe("KSBASE.WK1");
     expect(report.source.byteLength).toBe(24291);
-    expect(report.totals).toEqual(raised.verification.totals);
+    expect(report.totals).toEqual(raised.sheets[0]!.verification.totals);
     expect(report.tool.version).toBe("0.0.0");
   });
 
