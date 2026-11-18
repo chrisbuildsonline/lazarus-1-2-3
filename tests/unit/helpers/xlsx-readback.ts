@@ -28,6 +28,7 @@ export type ReadCell = {
 
 export type ReadBack = {
   sheetNames: string[];
+  sheets: { name: string; values: Map<string, { value: ExcelJS.CellValue; formula: string | null }> }[];
   cells: Map<string, ReadCell>;
   creator: string;
   lastModifiedBy: string;
@@ -63,8 +64,15 @@ export async function readXlsx(bytes: Uint8Array): Promise<ReadBack> {
     return Number(row) * 20000 + [...col!].reduce((n, c) => n * 26 + c.charCodeAt(0) - 64, 0);
   };
   const cells = new Map([...found].sort(([a], [b]) => key(a) - key(b)));
+  // Every worksheet's values (notes only for the first, which is all the one-sheet tests need).
+  const sheets = wb.worksheets.map((w) => {
+    const values = new Map<string, { value: ExcelJS.CellValue; formula: string | null }>();
+    w.eachRow((row) => row.eachCell((cell) => values.set(cell.address, cell.type === ExcelJS.ValueType.Formula ? { value: cell.result as ExcelJS.CellValue, formula: cell.formula } : { value: cell.value, formula: null })));
+    return { name: w.name, values };
+  });
   return {
     sheetNames: wb.worksheets.map((w) => w.name),
+    sheets,
     cells,
     creator: wb.creator,
     lastModifiedBy: wb.lastModifiedBy,

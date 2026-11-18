@@ -25,11 +25,16 @@ export type WriterNoteCode =
   | "no-stored-result"
   | "no-verification-result"
   | "outside-excel-grid"
+  | "wk3-formula-not-translated"
+  | "sheet-name-changed"
   | "zip-not-normalised";
 
-export type WriterNote = { address: string; code: WriterNoteCode; message: string };
+/** `sheet` is the worksheet name, set for workbook input only. */
+export type WriterNote = { sheet?: string; address: string; code: WriterNoteCode; message: string };
 
 export type XlsxInput = { sheet: Sheet; verification: SheetVerification };
+export type XlsxSheetInput = { name: string; sheet: Sheet; verification: SheetVerification };
+export type XlsxWorkbookInput = { sheets: XlsxSheetInput[] };
 
 const EXCEL_COLS = 16384;
 const EXCEL_ROWS = 1048576;
@@ -82,6 +87,10 @@ function planCell(cell: Cell, result: CellResult | undefined, notes: [WriterNote
         return { value: fromDouble(cell.cached).value, formula: null, alignment: null };
       }
       const value = storedValue(result.cached);
+      if (result.reason.code === "wk3-formula-not-decoded") {
+        notes.push(["wk3-formula-not-translated", "This WK3 formula is not read yet, so it has no Excel formula. The stored value is written as a plain value."]);
+        return { value, formula: null, alignment: null };
+      }
       if (result.formula === null) {
         const lotus = result.lotusFormula === null ? "The Lotus formula could not be read." : `Lotus formula ${result.lotusFormula} has no Excel translation.`;
         notes.push(["untranslatable-formula", `${lotus} ${result.reason.message} The stored value is written as a plain value.`]);
