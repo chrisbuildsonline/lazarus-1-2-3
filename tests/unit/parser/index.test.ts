@@ -7,7 +7,7 @@ import { concat } from "../helpers/bytes.ts";
 describe("src/parser public exports", () => {
   it("exports the parser and helpers", () => {
     expect(Object.keys(parser).sort()).toEqual(
-      ["ByteReader", "MAX_DIAGNOSTICS", "a1", "cellKey", "cellsInRowMajorOrder", "getCell", "parseA1", "parseWk1"].sort(),
+      ["ByteReader", "MAX_DIAGNOSTICS", "WK3_VERSIONS", "a1", "cellKey", "cellsInRowMajorOrder", "detectKind", "getCell", "isDbfHeader", "parseA1", "parseWk1"].sort(),
     );
   });
 

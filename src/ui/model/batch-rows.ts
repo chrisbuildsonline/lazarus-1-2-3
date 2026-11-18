@@ -18,14 +18,14 @@ export type FileItem = {
   failure?: { reason: string; lines: string[] };
 };
 
-export type BatchRow = { name: string; kind: "WK1" | "WKS" | "-"; line: string; pill: Status | "failed" | "raising" | "none" };
+export type BatchRow = { name: string; kind: "WK1" | "WKS" | "WK3" | "DBF" | "-"; line: string; pill: Status | "failed" | "raising" | "none" };
 
 /** The worst status present: mismatched, then unverifiable, then matched. */
 export function worstStatus(t: Totals): Status {
   return t.mismatched > 0 ? "mismatched" : t.unverifiable > 0 ? "unverifiable" : "matched";
 }
 
-const KIND = { wk1: "WK1", wks: "WKS", unknown: "-" } as const;
+const KIND = { wk1: "WK1", wks: "WKS", wk3: "WK3", dbf: "DBF", unknown: "-" } as const;
 
 export function batchRow(item: FileItem): BatchRow {
   const kind = item.raised ? KIND[item.raised.verification.format] : "-";

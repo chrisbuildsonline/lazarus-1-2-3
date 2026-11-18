@@ -7,6 +7,7 @@ import { afterAll, describe, expect, it } from "vitest";
 import { buildAll } from "../../../scripts/gen-fixtures.ts";
 import { writeWk1 } from "../../../scripts/lib/wk1-writer.ts";
 import { detectFormat, formatLine, inventoryFile, walk } from "../../../src/cli/inventory.ts";
+import { WK3_VERSIONS } from "../../../src/parser/detect.ts";
 import { SAMPLE_DBF } from "../helpers/dbf-sample.ts";
 
 const WK1 = buildAll().find((f) => f.path.endsWith("mixed.wk1"))!.bytes;
@@ -147,7 +148,10 @@ describe("lazarus cli", () => {
             ? /^(\.\.\/(verify|parser)\/index\.ts|\.\/[\w-]+\.ts)$/
             : name === "export.ts"
               ? /^(node:(fs\/promises|path)|\.\.\/(verify|parser|xlsx|report)\/index\.ts|\.\/[\w-]+\.ts)$/
-              : /^(node:(crypto|fs|fs\/promises|path)|\.\/[\w-]+\.ts)$/;
+              : name === "inventory.ts"
+                ? // wk3-dbf-readers requirement 12: one definition of "this is a DBF" and "this is a WK3", from src/parser.
+                  /^(node:(crypto|fs|fs\/promises|path)|\.\.\/parser\/index\.ts|\.\/[\w-]+\.ts)$/
+                : /^(node:(crypto|fs|fs\/promises|path)|\.\/[\w-]+\.ts)$/;
         expect(spec, `${name} imports ${spec}`).toMatch(allowed);
       }
     }
@@ -274,6 +278,16 @@ describe("detectFormat", () => {
     expect(detectFormat(new Uint8Array(0), "")).toEqual({ format: "unknown" });
     expect(detectFormat(WK1.subarray(0, 5), "")).toEqual({ format: "unknown" });
     expect(detectFormat(SAMPLE_DBF.subarray(0, 31), "")).toEqual({ format: "unknown" });
+  });
+
+  it("detects WK3 from a BOF whose version is in the sourced WK3 table", () => {
+    const wk3 = new Uint8Array(4 + 26);
+    const v = new DataView(wk3.buffer);
+    v.setUint16(2, 26, true);
+    v.setUint16(4, [...WK3_VERSIONS][0]!, true);
+    expect(detectFormat(wk3, ".wk3")).toEqual({ format: "wk3" });
+    expect(detectFormat(wk3, ".wk1")).toEqual({ format: "wk3", note: "extension says wk1" });
+    expect(detectFormat(WK1, ".wk3")).toEqual({ format: "wk1", note: "extension says wk3" });
   });
 
   it("reports unknown for a BOF version outside the table", () => {

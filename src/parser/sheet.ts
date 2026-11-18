@@ -1,6 +1,8 @@
-// The sheet model the WK1/WKS parser produces. Columns and rows are 0-based.
+// The sheet model every reader (WK1/WKS, WK3, DBF) produces. Columns and rows are 0-based.
 
-export type Wk1Format = "wk1" | "wks" | "unknown";
+export type SheetFormat = "wk1" | "wks" | "wk3" | "dbf" | "unknown";
+/** Kept so existing imports do not change. */
+export type Wk1Format = SheetFormat;
 
 /** The five label prefixes Lotus defines. A parsed label may carry another byte (see Cell). */
 export type LabelPrefix = "'" | '"' | "^" | "\\" | "|";
@@ -20,6 +22,9 @@ export type Sheet = {
   /** Keyed by cellKey(col, row). */
   cells: Map<number, Cell>;
 };
+
+export type NamedSheet = { name: string; sheet: Sheet };
+export type Workbook = { format: SheetFormat; sheets: NamedSheet[] };
 
 /** Unique, safe-integer key for a u16 column and row. */
 export function cellKey(col: number, row: number): number {

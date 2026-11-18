@@ -13,7 +13,19 @@ export type DiagnosticCode =
   | "duplicate-cell"
   | "address-out-of-range"
   | "skipped-opcode"
-  | "diagnostics-truncated";
+  | "diagnostics-truncated"
+  | "unknown-format"
+  | "duplicate-sheet-name"
+  | "value-rounded"
+  | "bad-header"
+  | "bad-field"
+  | "unsupported-field-type"
+  | "invalid-number"
+  | "deleted-record"
+  | "truncated-table"
+  | "row-limit"
+  | "memo-not-read"
+  | "code-page-not-decoded";
 
 export type Diagnostic = { severity: Severity; code: DiagnosticCode; offset: number; message: string; opcode?: number };
 

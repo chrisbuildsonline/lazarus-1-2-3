@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { cellKey, cellsInRowMajorOrder, getCell, type Cell, type Sheet } from "../../../src/parser/sheet.ts";
+import { cellKey, cellsInRowMajorOrder, getCell, type Cell, type NamedSheet, type Sheet, type SheetFormat, type Workbook } from "../../../src/parser/sheet.ts";
+import type { Wk1Format } from "../../../src/parser/index.ts";
 
 function sheetWith(cells: Cell[]): Sheet {
   return {
@@ -54,5 +55,20 @@ describe("cellsInRowMajorOrder", () => {
 
   it("returns an empty list for an empty sheet", () => {
     expect(cellsInRowMajorOrder(sheetWith([]))).toEqual([]);
+  });
+});
+
+describe("workbook model types", () => {
+  it("SheetFormat covers four formats and unknown; Wk1Format is the same type", () => {
+    const formats: SheetFormat[] = ["wk1", "wks", "wk3", "dbf", "unknown"];
+    const alias: Wk1Format[] = formats;
+    expect(alias).toHaveLength(5);
+  });
+
+  it("a Workbook holds named sheets, and a WK3 or DBF sheet uses the same Sheet shape", () => {
+    const sheet: Sheet = { ...sheetWith([]), format: "dbf" };
+    const named: NamedSheet = { name: "Table", sheet };
+    const wb: Workbook = { format: "dbf", sheets: [named] };
+    expect(wb.sheets[0]!.name).toBe("Table");
   });
 });
