@@ -50,6 +50,10 @@ const RULES: Record<string, Rule> = {
 /** Functions with no Excel form. */
 const NO_EQUIVALENT: Record<string, string> = { ERR: "Lotus @ERR has no Excel equivalent" };
 
+/** Lotus function names with a translation rule, and those with no Excel form (for the coverage check). */
+export const RULE_NAMES: ReadonlySet<string> = new Set(Object.keys(RULES));
+export const NO_EQUIVALENT_NAMES: ReadonlySet<string> = new Set(Object.keys(NO_EQUIVALENT));
+
 /** Argument count per Lotus function, from the opcode table; "variable" needs at least one. */
 const ARITY = new Map(OPCODES.flatMap((e) => (e.kind === "function" ? [[e.name, e.arity] as const] : [])));
 
