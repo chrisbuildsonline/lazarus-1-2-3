@@ -39,6 +39,7 @@ export const REASON_CODES = [
   "string-result",
   "cached-not-a-number",
   "undocumented-semantics",
+  "wk3-formula-not-decoded",
 ] as const;
 
 export type ReasonCode = (typeof REASON_CODES)[number];
@@ -90,6 +91,10 @@ export const stringResult = (): Unverifiable =>
 
 export const cachedNotANumber = (): Unverifiable =>
   unverifiable("cached-not-a-number", undefined, "The value stored for this formula is a special marker, not a number, so there is nothing to compare the recalculated value with.");
+
+/** A WK3 formula: its RPN uses a table this program does not have, so only the stored result is kept. */
+export const wk3FormulaNotDecoded = (): Unverifiable =>
+  unverifiable("wk3-formula-not-decoded", undefined, "Formulas in WK3 files are not read yet. The stored result is kept as the file remembers it.");
 
 export const undocumented = (rule: string, what: string): Unverifiable =>
   unverifiable("undocumented-semantics", rule, `The 1-2-3 documentation does not say what ${what} gives, so this formula cannot be checked (rule ${rule}).`);

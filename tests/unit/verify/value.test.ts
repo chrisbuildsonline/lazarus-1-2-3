@@ -18,6 +18,7 @@ import {
   unverifiable,
   valueFromDouble,
   volatileFunction,
+  wk3FormulaNotDecoded,
   type Unverifiable,
   type UnverifiableCode,
 } from "../../../src/verify/value.ts";
@@ -77,6 +78,7 @@ describe("reason codes", () => {
       "string-result",
       "cached-not-a-number",
       "undocumented-semantics",
+      "wk3-formula-not-decoded",
     ]);
   });
 
@@ -91,6 +93,7 @@ describe("reason codes", () => {
     "string-result": stringResult(),
     "cached-not-a-number": cachedNotANumber(),
     "undocumented-semantics": undocumented("U04", "0 raised to the power 0"),
+    "wk3-formula-not-decoded": wk3FormulaNotDecoded(),
   };
 
   it("each unverifiable code has a sample, so a new code fails until it gets one", () => {

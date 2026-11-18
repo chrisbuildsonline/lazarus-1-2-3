@@ -6,7 +6,7 @@ import type { ReportRow, UnknownOpcodeEntry, UnsupportedFeatureEntry } from "./t
 const OPCODE = /opcode (0x[0-9A-F]{2}) at offset \d+/;
 const FUNCTION = /uses @([^\s,]+)/;
 const MAX_ADDRESSES = 50;
-const FEATURE_CODES: ReadonlySet<ReasonCode> = new Set(["unsupported-function", "volatile-function", "undocumented-semantics", "decode-error", "string-result", "circular-reference"]);
+const FEATURE_CODES: ReadonlySet<ReasonCode> = new Set(["unsupported-function", "volatile-function", "undocumented-semantics", "decode-error", "string-result", "circular-reference", "wk3-formula-not-decoded"]);
 
 const cmp = (a: string | null, b: string | null) => (a ?? "").localeCompare(b ?? "", "en");
 
