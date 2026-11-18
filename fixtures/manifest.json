@@ -100,6 +100,81 @@
       ]
     },
     {
+      "path": "fixtures/dbf-table/dbf-table.dbf",
+      "format": "dbf",
+      "origin": "synthetic",
+      "sourceUrl": null,
+      "license": "MIT",
+      "sha256": "0832609a03ff51342ff861ee4741f50913af71144b08a99b36050172c68bf2de",
+      "counts": {
+        "cells": 42,
+        "formulas": 0,
+        "labels": 7,
+        "numbers": 14
+      },
+      "expectedValues": [
+        {
+          "cell": "1:NAME",
+          "kind": "label",
+          "cached": "Lamp"
+        },
+        {
+          "cell": "1:PRICE",
+          "kind": "number",
+          "cached": 12.5
+        },
+        {
+          "cell": "2:ADDED",
+          "kind": "other",
+          "cached": "20261102"
+        },
+        {
+          "cell": "5:NAME",
+          "kind": "label",
+          "cached": "  Café"
+        },
+        {
+          "cell": "6:PRICE",
+          "kind": "number",
+          "cached": -4.25
+        },
+        {
+          "cell": "7:PRICE",
+          "kind": "number",
+          "cached": 150
+        }
+      ]
+    },
+    {
+      "path": "fixtures/format-corpus-peytrend/PEYTREND.WK3",
+      "format": "wk3",
+      "origin": "real",
+      "sourceUrl": "https://raw.githubusercontent.com/openpreserve/format-corpus/master/office/spreadsheet/wk3/PEYTREND.WK3",
+      "license": "CC0-1.0",
+      "sha256": "9741c1393cf98ff660d7faf50f12143608c5a5d662280163bdd1d82c03b7c6a0",
+      "counts": {
+        "cells": 1034,
+        "formulas": 0,
+        "labels": 5,
+        "numbers": 1029
+      },
+      "sheets": [
+        {
+          "name": "A",
+          "counts": {
+            "cells": 1034,
+            "formulas": 0,
+            "labels": 5,
+            "numbers": 1029
+          }
+        }
+      ],
+      "expectedValues": [
+        { "cell": "A!A1", "kind": "label", "cached": "NO" },
+        { "cell": "A!A2", "kind": "number", "cached": 5 }
+      ]
+    },
+    {
       "path": "fixtures/formulas/formulas.wk1",
       "format": "wk1",
       "origin": "synthetic",
@@ -379,6 +454,81 @@
           "cell": "10:min_zoom",
           "kind": "number",
           "cached": 0.5
+        }
+      ]
+    },
+    {
+      "path": "fixtures/wk3-sheets/wk3-sheets.wk3",
+      "format": "wk3",
+      "origin": "synthetic",
+      "sourceUrl": null,
+      "license": "MIT",
+      "sha256": "e1dc3f08099624e331f5c1c6bd6ae8fc2e9b02bc510f6f72afd2ceb121fa9b2b",
+      "counts": {
+        "cells": 16,
+        "formulas": 1,
+        "labels": 4,
+        "numbers": 11
+      },
+      "sheets": [
+        {
+          "name": "A",
+          "counts": {
+            "cells": 4,
+            "formulas": 0,
+            "labels": 4,
+            "numbers": 0
+          }
+        },
+        {
+          "name": "B",
+          "counts": {
+            "cells": 8,
+            "formulas": 0,
+            "labels": 0,
+            "numbers": 8
+          }
+        },
+        {
+          "name": "Totals",
+          "counts": {
+            "cells": 4,
+            "formulas": 1,
+            "labels": 0,
+            "numbers": 3
+          }
+        }
+      ],
+      "expectedValues": [
+        {
+          "cell": "A!A1",
+          "kind": "label",
+          "cached": "Item"
+        },
+        {
+          "cell": "A!B1",
+          "kind": "label",
+          "cached": "Amount"
+        },
+        {
+          "cell": "B!D1",
+          "kind": "integer",
+          "cached": 16383
+        },
+        {
+          "cell": "B!A2",
+          "kind": "number",
+          "cached": 0.1
+        },
+        {
+          "cell": "B!D2",
+          "kind": "number",
+          "cached": 1.0000000000000004
+        },
+        {
+          "cell": "Totals!C2",
+          "kind": "formula",
+          "cached": 60.5
         }
       ]
     }

@@ -82,10 +82,12 @@ const read = (f: ManifestEntry) => {
 describe("round trip of every manifest fixture", () => {
   it("skips exactly the fixtures verifyBytes cannot read as wk1 or wks", () => {
     const skipped = manifest.fixtures.filter((f) => verifyBytes(read(f)).verification.format === "unknown").map((f) => f.path);
-    expect(skipped).toEqual(["fixtures/natural-earth-land/ne_110m_land.dbf"]);
+    // verifyBytes reads WK1/WKS only; the WK3 and DBF entries go through verifyWorkbook (wk3-dbf-readers).
+    expect(skipped).toEqual(manifest.fixtures.filter((f) => !/\.(wk1|wks)$/i.test(f.path)).map((f) => f.path));
+    expect(skipped).toContain("fixtures/natural-earth-land/ne_110m_land.dbf");
   });
 
-  for (const f of manifest.fixtures.filter((x) => !x.path.endsWith(".dbf"))) {
+  for (const f of manifest.fixtures.filter((x) => /\.(wk1|wks)$/i.test(x.path))) {
     it(f.path, async () => {
       const checked = await roundTrip(read(f));
       expect(checked.cells).toBe(f.counts.cells);

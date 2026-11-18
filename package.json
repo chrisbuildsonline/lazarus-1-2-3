@@ -13,7 +13,8 @@
     "e2e": "playwright test",
     "oracle": "bun scripts/oracle.ts",
     "lazarus": "bun src/cli/lazarus.ts",
-    "verify:golden": "bun scripts/verify-golden.ts"
+    "verify:golden": "bun scripts/verify-golden.ts",
+    "gen:fixtures": "bun scripts/gen-fixtures.ts"
   },
   "dependencies": {
     "exceljs": "4.4.0",

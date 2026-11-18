@@ -1,0 +1,11 @@
+Source: https://raw.githubusercontent.com/openpreserve/format-corpus/master/office/spreadsheet/wk3/PEYTREND.WK3
+Author: Johan van der Knijff (openpreserve/format-corpus)
+License: CC0-1.0
+Redistribution: allowed
+Notes: Real Lotus 1-2-3 release 3 worksheet (BOF version 0x1000), committed unchanged, 18,635 bytes,
+  sha256 9741c1393cf98ff660d7faf50f12143608c5a5d662280163bdd1d82c03b7c6a0.
+  License wording from office/spreadsheet/wk3/readme.md in openpreserve/format-corpus:
+  "Sample Lotus 1-2-3 version 3 file. Files most likely created in Quattro Pro."
+  "All files in this folder: Creative Commons CC0: Public Domain Dedication. To the extent possible
+  under law, Johan van der Knijff has waived all copyright and related or neighboring rights to this work."
+  The same bytes ship in Apache Tika's test documents as testLotus123.wk3.

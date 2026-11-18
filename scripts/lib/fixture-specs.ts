@@ -213,3 +213,59 @@ export const SPECS: FixtureSpec[] = [
     expect: ["A10", "A14", "A19", "A23", "A24"],
   },
 ];
+
+// WK3: three sheets (wk3-dbf-readers design.md "Fixtures"). Values are what the file stores.
+export type Wk3CellSpec =
+  | { kind: "label"; sheet: number; col: number; row: number; prefix: string; text: string }
+  | { kind: "small"; sheet: number; col: number; row: number; word: number; value: number }
+  | { kind: "number"; sheet: number; col: number; row: number; value: number; raw?: { sig: bigint; signExp: number } }
+  | { kind: "formula"; sheet: number; col: number; row: number; cached: number; rpn: number[] };
+
+export const WK3_SPEC = {
+  name: "wk3-sheets",
+  names: [[2, "Totals"]] as [number, string][],
+  cells: [
+    { kind: "label", sheet: 0, col: 0, row: 0, prefix: "'", text: "Item" },
+    { kind: "label", sheet: 0, col: 1, row: 0, prefix: '"', text: "Amount" },
+    { kind: "label", sheet: 0, col: 2, row: 0, prefix: "^", text: "Note" },
+    { kind: "label", sheet: 0, col: 0, row: 1, prefix: "'", text: "" },
+    { kind: "small", sheet: 1, col: 0, row: 0, word: 0 << 1, value: 0 },
+    { kind: "small", sheet: 1, col: 1, row: 0, word: 1 << 1, value: 1 },
+    { kind: "small", sheet: 1, col: 2, row: 0, word: (-1 << 1) & 0xffff, value: -1 },
+    { kind: "small", sheet: 1, col: 3, row: 0, word: 16383 << 1, value: 16383 },
+    { kind: "number", sheet: 1, col: 0, row: 1, value: 0.1 },
+    { kind: "number", sheet: 1, col: 1, row: 1, value: -2.5 },
+    { kind: "number", sheet: 1, col: 2, row: 1, value: 1234.5 },
+    // 1 + 3 x 2^-53 needs 54 bits; the nearest double (ties to even) is 1 + 2^-51.
+    { kind: "number", sheet: 1, col: 3, row: 1, value: 1 + 2 ** -51, raw: { sig: (1n << 63n) | (3n << 10n), signExp: 16383 } },
+    { kind: "number", sheet: 2, col: 0, row: 0, value: 10 },
+    { kind: "number", sheet: 2, col: 1, row: 0, value: 20.5 },
+    { kind: "number", sheet: 2, col: 2, row: 0, value: 30 },
+    // Stored result 60.5; the RPN bytes are kept as written and never decoded.
+    { kind: "formula", sheet: 2, col: 2, row: 1, cached: 60.5, rpn: [0x01, 0x00, 0x00, 0x00, 0x03] },
+  ] as Wk3CellSpec[],
+  expect: ["A!A1", "A!B1", "B!D1", "B!A2", "B!D2", "Totals!C2"],
+};
+
+// DBF: dBase III, six field types, a deleted record, blank numbers, leading spaces and a high byte.
+export const DBF_SPEC = {
+  name: "dbf-table",
+  fields: [
+    { name: "NAME", type: "C", length: 10 },
+    { name: "PRICE", type: "N", length: 8, decimals: 2 },
+    { name: "QTY", type: "N", length: 4 },
+    { name: "ADDED", type: "D", length: 8 },
+    { name: "PAID", type: "L", length: 1 },
+    { name: "NOTE", type: "M", length: 10 },
+  ],
+  records: [
+    { values: ["Lamp", "12.50", "3", "20261101", "T", ""] },
+    { values: ["Kettle", "30.00", "1", "20261102", "F", "1"] },
+    { deleted: true, values: ["Old desk", "99.00", "1", "20200101", "T", ""] },
+    { values: ["Mug", "", "", "20261103", "?", ""] },
+    { values: ["  Café", "4.25", "12", "20261104", "Y", "2"] },
+    { values: ["Chair", "-4.25", "2", "20261105", "N", ""] },
+    { values: ["Desk", "1.5e2", "1", "", "T", ""] },
+  ],
+  expect: ["1:NAME", "1:PRICE", "2:ADDED", "5:NAME", "6:PRICE", "7:PRICE"],
+};

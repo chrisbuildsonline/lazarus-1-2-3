@@ -3,12 +3,14 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { dirname, extname, join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { scanDbf } from "../helpers/dbf-scan.ts";
+import { scanWk3 } from "../helpers/wk3-scan.ts";
 import { scanWk1, type Counts } from "../helpers/wk1-scan.ts";
 
 // The manifest is the claim, the bytes are the evidence.
 type Entry = {
   path: string;
-  format: "wk1" | "wks" | "dbf";
+  format: "wk1" | "wks" | "wk3" | "dbf";
+  sheets?: { name: string; counts: Counts }[];
   origin: "real" | "synthetic";
   sourceUrl: string | null;
   license: string;
@@ -19,7 +21,7 @@ type Entry = {
 
 const manifest = JSON.parse(readFileSync("fixtures/manifest.json", "utf8")) as { version: number; fixtures: Entry[] };
 const entries = manifest.fixtures;
-const CORPUS_EXT = new Set([".wk1", ".wks", ".dbf"]);
+const CORPUS_EXT = new Set([".wk1", ".wks", ".wk3", ".dbf"]);
 
 function corpusFiles(dir = "fixtures"): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
@@ -30,8 +32,24 @@ function corpusFiles(dir = "fixtures"): string[] {
 }
 
 function scan(entry: Entry, bytes: Uint8Array) {
-  return entry.format === "dbf" ? scanDbf(bytes) : scanWk1(bytes);
+  return entry.format === "dbf" ? scanDbf(bytes) : entry.format === "wk3" ? scanWk3(bytes) : scanWk1(bytes);
 }
+
+describe("fixtures/manifest.json wk3 entries", () => {
+  const wk3 = entries.filter((e) => e.format === "wk3");
+
+  it("has a synthetic and a real WK3 entry", () => {
+    expect(wk3.map((e) => e.origin).sort()).toEqual(["real", "synthetic"]);
+  });
+
+  it("lists each sheet's name and counts as the independent walker reads them", () => {
+    for (const e of wk3) expect(scanWk3(readFileSync(e.path)).sheets, e.path).toEqual(e.sheets);
+  });
+
+  it("uses Sheet!A1 references in expectedValues", () => {
+    for (const e of wk3) for (const v of e.expectedValues) expect(v.cell, e.path).toMatch(/^[^!]+![A-Z]+[0-9]+$/);
+  });
+});
 
 describe("fixtures/manifest.json", () => {
   it("is version 1", () => {

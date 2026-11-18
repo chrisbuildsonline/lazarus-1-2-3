@@ -4,14 +4,18 @@
 import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
-import { SPECS } from "./lib/fixture-specs.ts";
+import { writeDbf } from "./lib/dbf-writer.ts";
+import { DBF_SPEC, SPECS, WK3_SPEC, type Wk3CellSpec } from "./lib/fixture-specs.ts";
 import { writeWk1, type CellSpec } from "./lib/wk1-writer.ts";
+import * as wk3 from "./lib/wk3-writer.ts";
 
 export type Counts = { cells: number; formulas: number; labels: number; numbers: number };
 export type ExpectedValue = { cell: string; kind: CellSpec["kind"] | "other"; cached: number | string };
 export type ManifestEntry = {
   path: string;
-  format: "wk1" | "wks" | "dbf";
+  format: "wk1" | "wks" | "wk3" | "dbf";
+  /** WK3 only: each sheet's name and counts. */
+  sheets?: { name: string; counts: Counts }[];
   origin: "real" | "synthetic";
   sourceUrl: string | null;
   license: string;
@@ -61,7 +65,89 @@ export function buildAll(): { path: string; bytes: Uint8Array; manifestEntry: Ma
       expectedValues: spec.expect.map((address) => expectedValue(spec.cells, address)),
     };
     return { path, bytes, manifestEntry };
+  }).concat([buildWk3(), buildDbf()]);
+}
+
+const sha = (bytes: Uint8Array) => createHash("sha256").update(bytes).digest("hex");
+
+function buildWk3(): { path: string; bytes: Uint8Array; manifestEntry: ManifestEntry } {
+  const spec = WK3_SPEC;
+  const nameOf = (sheet: number) => spec.names.find(([i]) => i === sheet)?.[1] ?? a1(sheet, 0).slice(0, -1);
+  const records = [
+    ...spec.names.map(([i, n]) => wk3.sheetName(i, n)),
+    ...spec.cells.map((c) =>
+      c.kind === "label"
+        ? wk3.label(c.sheet, c.col, c.row, c.prefix, c.text)
+        : c.kind === "small"
+          ? wk3.small(c.sheet, c.col, c.row, c.word)
+          : c.kind === "number"
+            ? wk3.number80(c.sheet, c.col, c.row, c.raw ? wk3.raw80(c.raw.sig, c.raw.signExp) : c.value)
+            : wk3.formula80(c.sheet, c.col, c.row, c.cached, c.rpn),
+    ),
+  ];
+  const bytes = wk3.writeWk3(records);
+  const countOf = (cells: readonly Wk3CellSpec[]): Counts => ({
+    cells: cells.length,
+    formulas: cells.filter((c) => c.kind === "formula").length,
+    labels: cells.filter((c) => c.kind === "label").length,
+    numbers: cells.filter((c) => c.kind === "small" || c.kind === "number").length,
   });
+  const sheetIndexes = [...new Set([...spec.cells.map((c) => c.sheet), ...spec.names.map(([i]) => i)])].sort((a, b) => a - b);
+  const expectedValues = spec.expect.map((ref): ExpectedValue => {
+    const c = spec.cells.find((x) => `${nameOf(x.sheet)}!${a1(x.col, x.row)}` === ref);
+    if (!c) throw new Error(`spec has no cell ${ref}`);
+    if (c.kind === "label") return { cell: ref, kind: "label", cached: c.text };
+    if (c.kind === "formula") return { cell: ref, kind: "formula", cached: c.cached };
+    return { cell: ref, kind: c.kind === "small" ? "integer" : "number", cached: c.value };
+  });
+  const path = `fixtures/${spec.name}/${spec.name}.wk3`;
+  return {
+    path,
+    bytes,
+    manifestEntry: {
+      path,
+      format: "wk3",
+      origin: "synthetic",
+      sourceUrl: null,
+      license: "MIT",
+      sha256: sha(bytes),
+      counts: countOf(spec.cells),
+      sheets: sheetIndexes.map((i) => ({ name: nameOf(i), counts: countOf(spec.cells.filter((c) => c.sheet === i)) })),
+      expectedValues,
+    },
+  };
+}
+
+function buildDbf(): { path: string; bytes: Uint8Array; manifestEntry: ManifestEntry } {
+  const spec = DBF_SPEC;
+  const bytes = writeDbf({ fields: spec.fields, records: spec.records });
+  const n = spec.records.length;
+  const ofType = (...types: string[]) => spec.fields.filter((f) => types.includes(f.type)).length;
+  const expectedValues = spec.expect.map((ref): ExpectedValue => {
+    const [rec, name] = ref.split(":") as [string, string];
+    const field = spec.fields.findIndex((f) => f.name === name);
+    const value = spec.records[Number(rec) - 1]!.values[field]!;
+    const type = spec.fields[field]!.type;
+    if (type === "C") return { cell: ref, kind: "label", cached: value.trimEnd() };
+    if (type === "N" || type === "F") return { cell: ref, kind: "number", cached: Number(value.trim()) };
+    return { cell: ref, kind: "other", cached: value.trim() };
+  });
+  const path = `fixtures/${spec.name}/${spec.name}.dbf`;
+  return {
+    path,
+    bytes,
+    manifestEntry: {
+      path,
+      format: "dbf",
+      origin: "synthetic",
+      sourceUrl: null,
+      license: "MIT",
+      sha256: sha(bytes),
+      // Positions over all declared records, as tests/unit/helpers/dbf-scan.ts counts them.
+      counts: { cells: n * spec.fields.length, formulas: 0, labels: n * ofType("C"), numbers: n * ofType("N", "F") },
+      expectedValues,
+    },
+  };
 }
 
 function main(): void {

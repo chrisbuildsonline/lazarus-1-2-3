@@ -27,7 +27,7 @@ describe("classifyRaised", () => {
   }
 
   it("the DBF fixture is unsupported", async () => {
-    const dbf = manifest.fixtures.find((x) => x.format === "dbf")!;
+    const dbf = manifest.fixtures.find((x) => x.path.endsWith("ne_110m_land.dbf"))!;
     expect(dbf.path).toBe("fixtures/natural-earth-land/ne_110m_land.dbf");
     expect(classifyRaised(await fixture(dbf.path))).toEqual({ kind: "unsupported" });
   });
