@@ -5,7 +5,7 @@ import { classifySheet } from "./classify.ts";
 import { sheetVerification, type SheetVerification } from "./report.ts";
 
 export type { CellResult, InputRow, Status } from "./classify.ts";
-export type { SheetVerification, Totals } from "./report.ts";
+export { sumTotals, type SheetVerification, type Totals } from "./report.ts";
 export { TOLERANCE, type Tolerance } from "./tolerance.ts";
 export type { Reason, ReasonCode, Value } from "./value.ts";
 export { verifyWorkbook, verifyWorkbookBytes, type VerifyWorkbookResult } from "./workbook.ts";

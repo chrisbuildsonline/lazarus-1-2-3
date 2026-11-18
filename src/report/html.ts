@@ -93,6 +93,17 @@ const feature = (f: UnsupportedFeatureEntry) =>
 const opcode = (o: UnknownOpcodeEntry) => `<li><code>${t(o.opcode ?? "unknown")}</code> ${t(`${o.count} ${o.count === 1 ? "cell" : "cells"}: ${o.addresses.join(", ")}`)}</li>`;
 const list = (items: string[]) => (items.length === 0 ? '<p class="muted">None</p>' : `<ul>${items.join("")}</ul>`);
 
+/** One line per sheet, for a report built from sheets: name, format, counts and the wording. */
+function sheetList(r: ProvenanceReport): string {
+  if (!r.sheets) return "";
+  const item = (s: NonNullable<ProvenanceReport["sheets"]>[number]) => {
+    const counts = `${s.format.toUpperCase()}, ${s.totals.formulas} formulas, ${s.totals.matched} matched, ${s.totals.mismatched} mismatched, ${s.totals.unverifiable} unverifiable`;
+    const fields = s.fields?.length ? `<p class="muted">${t(`Fields: ${s.fields.join(", ")}`)}</p>` : "";
+    return `<li><code>${t(s.name)}</code> ${t(counts)}${s.wording ? `<p>${t(s.wording)}</p>` : ""}${fields}</li>`;
+  };
+  return `<section id="sheets" class="features"><div><h2>Sheets</h2><ul>${r.sheets.map(item).join("")}</ul></div></section>`;
+}
+
 function features(r: ProvenanceReport): string {
   return `<section id="features" class="features"><div><h2>Unsupported features</h2>${list(r.unsupportedFeatures.map(feature))}</div><div><h2>Unknown opcodes</h2>${list(r.unknownOpcodes.map(opcode))}</div></section>`;
 }
@@ -113,6 +124,7 @@ export function renderReportHtml(r: ProvenanceReport): string {
     `<title>${t(`${r.source.fileName}: provenance report`)}</title><style>${CSS}</style></head><body><main>`,
     `<header><span class="brand">Lazarus 1-2-3</span><h1>${t(r.source.fileName)}</h1>${facts(r)}</header>`,
     summary(r),
+    sheetList(r),
     features(r),
     '<section id="cells"><h2>Every formula</h2><div class="scroll"><table><thead><tr><th>Cell</th><th>Lotus formula</th><th>Excel formula</th><th>Stored</th><th>Recalculated</th><th>Status</th><th>Reason</th></tr></thead><tbody>',
   ];

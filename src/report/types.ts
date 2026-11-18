@@ -1,6 +1,15 @@
 // The provenance report model (design "Report model"). Values reuse the verify Value type.
 import type { InputRow, Reason, ReasonCode, SheetVerification, Status, Tolerance, Totals, Value } from "../verify/index.ts";
 
+export type ReportSheetInput = {
+  name: string;
+  verification: SheetVerification;
+  /** Cells read on the sheet, for the DBF as-read line. */
+  values: number;
+  /** DBF only: the field names. */
+  fields?: string[];
+};
+
 export type ReportInput = {
   /** May include a path; buildReport keeps the base name. */
   fileName: string;
@@ -8,7 +17,17 @@ export type ReportInput = {
   sha256: string;
   byteLength: number;
   toolVersion: string;
-  verification: SheetVerification;
+} & ({ verification: SheetVerification } | { format: SheetVerification["format"]; sheets: ReportSheetInput[] });
+
+export type ReportSheet = {
+  name: string;
+  format: SheetVerification["format"];
+  totals: Totals;
+  /** DBF only: values shown as read. */
+  asRead?: number;
+  fields?: string[];
+  /** A plain line on what was and was not checked, for WK3 and DBF. */
+  wording?: string;
 };
 
 export type ReportRow = {
@@ -34,6 +53,8 @@ export type ProvenanceReport = {
   source: { fileName: string; sha256: string; byteLength: number; format: SheetVerification["format"] };
   tolerance: Tolerance;
   totals: Totals;
+  /** Only for a report built from sheets; totals is their sum. */
+  sheets?: ReportSheet[];
   unsupportedFeatures: UnsupportedFeatureEntry[];
   unknownOpcodes: UnknownOpcodeEntry[];
   rows: ReportRow[];

@@ -1,14 +1,16 @@
 // buildReport: the provenance report from a verification result and five scalars (requirement 27).
-// Pure; copies every value, so later changes to the input do not reach the report.
-import type { CellResult } from "../verify/index.ts";
+// Pure; copies every value, so later changes to the input do not reach the report. A report built
+// from sheets also lists each sheet; its totals are their sum and, with more than one sheet,
+// each row's address carries the sheet name.
+import { sumTotals, TOLERANCE, type CellResult } from "../verify/index.ts";
 import { unknownOpcodes, unsupportedFeatures } from "./features.ts";
-import type { ProvenanceReport, ReportInput, ReportRow } from "./types.ts";
+import type { ProvenanceReport, ReportInput, ReportRow, ReportSheet, ReportSheetInput } from "./types.ts";
 
 const hex = (n: number) => `0x${n.toString(16).toUpperCase().padStart(2, "0")}`;
 
-function row(c: CellResult): ReportRow {
+function row(c: CellResult, sheet: string | null): ReportRow {
   const r: ReportRow = {
-    address: c.address,
+    address: sheet === null ? c.address : `${sheet}!${c.address}`,
     lotusFormula: c.lotusFormula,
     excelFormula: c.formula,
     cached: structuredClone(c.cached),
@@ -22,15 +24,30 @@ function row(c: CellResult): ReportRow {
   return r;
 }
 
+function reportSheet(s: ReportSheetInput): ReportSheet {
+  const out: ReportSheet = { name: s.name, format: s.verification.format, totals: structuredClone(s.verification.totals) };
+  if (s.verification.format === "dbf") {
+    out.asRead = s.values;
+    out.wording = `A dBase table has no formulas. ${s.values} values shown as read.`;
+  }
+  if (s.verification.format === "wk3") out.wording = "Formulas in WK3 files are not read yet. The stored results are kept as the file remembers them.";
+  if (s.fields) out.fields = [...s.fields];
+  return out;
+}
+
 export function buildReport(input: ReportInput): ProvenanceReport {
-  const v = input.verification;
-  const rows = v.cells.map(row);
+  const sheets = "sheets" in input ? input.sheets : null;
+  const verifications = "sheets" in input ? input.sheets.map((s) => s.verification) : [input.verification];
+  const qualify = sheets !== null && sheets.length > 1;
+  const rows = verifications.flatMap((v, i) => v.cells.map((c) => row(c, qualify ? sheets![i]!.name : null)));
+  const format = "sheets" in input ? input.format : input.verification.format;
   return {
     schemaVersion: 1,
     tool: { name: "lazarus-1-2-3", version: input.toolVersion },
-    source: { fileName: input.fileName.split(/[\\/]/).pop()!, sha256: input.sha256, byteLength: input.byteLength, format: v.format },
-    tolerance: { ...v.tolerance },
-    totals: structuredClone(v.totals),
+    source: { fileName: input.fileName.split(/[\\/]/).pop()!, sha256: input.sha256, byteLength: input.byteLength, format },
+    tolerance: { ...(verifications[0]?.tolerance ?? TOLERANCE) },
+    totals: sheets ? sumTotals(verifications.map((v) => v.totals)) : structuredClone(verifications[0]!.totals),
+    ...(sheets ? { sheets: sheets.map(reportSheet) } : {}),
     unsupportedFeatures: unsupportedFeatures(rows),
     unknownOpcodes: unknownOpcodes(rows),
     rows,

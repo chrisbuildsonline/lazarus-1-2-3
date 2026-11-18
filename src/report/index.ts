@@ -4,4 +4,4 @@ export { escapeHtml } from "./escape.ts";
 export { renderReportHtml } from "./html.ts";
 export { serializeReportJson } from "./json.ts";
 export { sha256Hex } from "./sha256.ts";
-export type { ProvenanceReport, ReportInput, ReportRow, UnknownOpcodeEntry, UnsupportedFeatureEntry } from "./types.ts";
+export type { ProvenanceReport, ReportInput, ReportRow, ReportSheet, ReportSheetInput, UnknownOpcodeEntry, UnsupportedFeatureEntry } from "./types.ts";

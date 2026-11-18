@@ -16,6 +16,21 @@ export type Totals = {
 
 export type SheetVerification = { name: string; format: Wk1Format; tolerance: Tolerance; cells: CellResult[]; totals: Totals };
 
+/** The sum of several sheets' totals; for one sheet, a copy of its totals. */
+export function sumTotals(list: readonly Totals[]): Totals {
+  const t: Totals = { formulas: 0, matched: 0, mismatched: 0, unverifiable: 0, exact: 0, withinTolerance: 0, byReason: {} };
+  for (const x of list) {
+    t.formulas += x.formulas;
+    t.matched += x.matched;
+    t.mismatched += x.mismatched;
+    t.unverifiable += x.unverifiable;
+    t.exact += x.exact;
+    t.withinTolerance += x.withinTolerance;
+    for (const [code, n] of Object.entries(x.byReason) as [ReasonCode, number][]) t.byReason[code] = (t.byReason[code] ?? 0) + n;
+  }
+  return t;
+}
+
 export function totals(cells: readonly CellResult[]): Totals {
   const t: Totals = { formulas: cells.length, matched: 0, mismatched: 0, unverifiable: 0, exact: 0, withinTolerance: 0, byReason: {} };
   for (const c of cells) {
