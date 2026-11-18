@@ -33,7 +33,7 @@ test("rows, pills, the skipped line, choosing a row and downloads of the chosen 
   const c = row(page, "corrupt.wk1");
   await expect(c.locator(".pill.pill--danger")).toHaveText("Failed");
   await expect(c.locator(".batch-row__line")).toHaveText(`Could not raise: ${corruptReason}`);
-  await expect(page.locator(".batch__skipped")).toHaveText("1 file skipped: not WK1 or WKS.");
+  await expect(page.locator(".batch__skipped")).toHaveText("1 file skipped: not a Lotus or dBase file.");
 
   // Open a drawer on KSBASE, then choose the mismatch row: its sheet opens and the drawer closes.
   const grid = page.getByRole("grid");
@@ -74,7 +74,7 @@ test("a single file over 32 MiB names the size limit, not the extensions", async
   await page.goto("/");
   await page.locator('input[type="file"][accept]').setInputFiles({ name: "BIG.WK1", mimeType: "application/octet-stream", buffer: Buffer.alloc(32 * 1024 * 1024 + 1) });
   await expect(page.getByRole("heading", { level: 2, name: "1 file skipped: larger than 32 MiB." })).toBeVisible();
-  await expect(page.getByText("not a WK1 or WKS")).toHaveCount(0);
+  await expect(page.getByText("not a Lotus or dBase file")).toHaveCount(0);
 });
 
 test("at 390 the batch list is its own block above the totals and Back to files returns to it", async ({ page }) => {

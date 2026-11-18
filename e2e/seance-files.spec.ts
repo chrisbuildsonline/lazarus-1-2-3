@@ -7,7 +7,7 @@ import { parseWk1 } from "../src/parser/index.ts";
 import { corruptWk1, files, payload, type Payload } from "./fixtures/seance-files.ts";
 
 const manifest = JSON.parse(readFileSync("fixtures/manifest.json", "utf8")) as { fixtures: { path: string }[] };
-const LOTUS = /\.wk[1s]$/i;
+const LOTUS = /\.(wk1|wks|wk3|dbf)$/i;
 const base = (path: string) => path.slice(path.lastIndexOf("/") + 1);
 const fixture = (path: string) => payload(base(path), readFileSync(path));
 
@@ -51,25 +51,26 @@ test("(b) three picked files show the batch list in path order", async ({ page }
   await expect(page.getByRole("heading", { level: 1, name: "dates.wk1" })).toBeVisible();
 });
 
-test("(c) the fixtures folder gives one row per WK1 and WKS file and a skipped line", async ({ page }) => {
+test("(c) the fixtures folder gives one row per WK1, WKS, WK3 and DBF file and a skipped line", async ({ page }) => {
   const expected = manifest.fixtures.map((f) => f.path).filter((p) => LOTUS.test(p)).sort();
   const all = readdirSync("fixtures", { recursive: true, withFileTypes: true }).filter((d) => d.isFile());
   const skipped = all.filter((d) => !LOTUS.test(d.name));
-  // The DBF and every LICENSE.txt are among the skipped ones.
-  expect(skipped.map((d) => d.name)).toEqual(expect.arrayContaining(["ne_110m_land.dbf", "LICENSE.txt"]));
+  // Every LICENSE.txt is skipped; the DBF and WK3 files are rows now.
+  expect(skipped.map((d) => d.name)).toContain("LICENSE.txt");
+  expect(skipped.map((d) => d.name)).not.toContain("ne_110m_land.dbf");
+  expect(expected).toEqual(expect.arrayContaining(["fixtures/natural-earth-land/ne_110m_land.dbf", "fixtures/wk3-sheets/wk3-sheets.wk3"]));
   expect(all.length - skipped.length).toBe(expected.length);
 
   await folderInput(page).setInputFiles("fixtures");
   await expect(page.getByRole("heading", { level: 2, name: `${expected.length} files` })).toBeVisible();
   await expect(rowNames(page)).toHaveText(expected.map(base));
-  await expect(page.locator(".batch__skipped")).toHaveText(`${skipped.length} files skipped: not WK1 or WKS.`);
+  await expect(page.locator(".batch__skipped")).toHaveText(`${skipped.length} files skipped: not a Lotus or dBase file.`);
 });
 
 test("(d) a text file alone shows the calm unsupported panel", async ({ page }) => {
   await pickerInput(page).setInputFiles(files.notLotus());
-  await expect(page.getByRole("heading", { level: 2, name: "This is not a WK1 or WKS file this version can read." })).toBeVisible();
-  await expect(page.locator(".panel")).toContainText(".wk1");
-  await expect(page.locator(".panel")).toContainText(".wks");
+  await expect(page.getByRole("heading", { level: 2, name: "This is not a Lotus or dBase file this version can read." })).toBeVisible();
+  for (const ext of [".wk1", ".wks", ".wk3", ".dbf"]) await expect(page.locator(".panel")).toContainText(ext);
   await expect(page.locator(".btn-primary")).toHaveText("Choose another file");
   await expect(page.locator(".btn-primary")).toHaveCount(1);
   await expect(page.locator(".pill--danger, .panel--danger")).toHaveCount(0);
