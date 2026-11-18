@@ -67,7 +67,9 @@ export function SheetView(p: SheetViewProps) {
   const meta = [file.format.toUpperCase(), ...sheetCount, `${formatNumber(formulas)} formulas`, `${formatNumber(file.byteLength)} bytes`].join(" · ");
   // A DBF sheet has no formulas: its values are shown as read (header row included).
   const asRead = file.format === "dbf" ? current.sheet.cells.length : undefined;
-  const filters = <Filters counts={counts} value={filter} onChange={p.onFilter} />;
+  // A DBF has no formulas: no status filters, and the grid on every screen size (it scrolls in its box).
+  const filters = asRead === undefined ? <Filters counts={counts} value={filter} onChange={p.onFilter} /> : null;
+  const statusList = phone && asRead === undefined;
   const toggle = (s: Status) =>
     setExpanded((old) => {
       const next = new Set(old);
@@ -114,7 +116,7 @@ export function SheetView(p: SheetViewProps) {
         <div className="sheet__main">
           <SheetTabs names={file.sheets.map((s) => s.name)} selected={sheetIndex} onSelect={(i) => p.onSelectSheet?.(i)} />
           <TotalsSurface totals={current.verification.totals} asRead={asRead} />
-          {phone ? (
+          {statusList ? (
             <>
               {filters}
               <section className="surface">

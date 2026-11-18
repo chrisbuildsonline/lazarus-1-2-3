@@ -26,7 +26,6 @@ export function TotalsSurface({ totals, asRead }: { totals: Totals; asRead?: num
       <section className="surface totals" aria-label={COPY.totals}>
         <div className="totals__tiles">
           <div className="tile tile--headline">
-            <span className="tile__label">{COPY.verified}</span>
             <span className="tile__value tile__value--display tile__value--words">{COPY.noFormulas}</span>
           </div>
           <div className="tile tile--as-read">
