@@ -12,6 +12,7 @@
     "test:watch": "vitest",
     "e2e": "playwright test",
     "oracle": "bun scripts/oracle.ts",
+    "oracle:mcp": "bun mcp/lotus-oracle/server.ts",
     "lazarus": "bun src/cli/lazarus.ts",
     "verify:golden": "bun scripts/verify-golden.ts",
     "gen:fixtures": "bun scripts/gen-fixtures.ts"

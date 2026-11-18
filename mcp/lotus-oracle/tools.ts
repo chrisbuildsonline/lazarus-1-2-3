@@ -10,7 +10,7 @@ import { valueFromDouble } from "../../src/verify/value.ts";
 
 export type ToolResult = { isError: boolean; data: unknown };
 
-/** The app's per-file limit (src/ui/model/entries.ts LIMITS.maxBytes), so one call cannot exhaust memory. */
+/** The app's per-file limit (LIMITS.maxBytes in the UI model), so one call cannot exhaust memory. */
 export const MAX_BYTES = 32 * 1024 * 1024;
 
 const fail = (error: string): ToolResult => ({ isError: true, data: { error } });

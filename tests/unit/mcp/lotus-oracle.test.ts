@@ -4,8 +4,15 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { spawn } from "node:child_process";
+import { chmodSync, mkdtempSync, readdirSync, readFileSync, rmSync, truncateSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { OPCODE_TABLE } from "../../../src/formula/index.ts";
+import { MAX_BYTES } from "../../../mcp/lotus-oracle/tools.ts";
+import { writeWk1, type CellSpec } from "../../../scripts/lib/wk1-writer.ts";
+import { OPCODE_TABLE, translateFormula } from "../../../src/formula/index.ts";
+import { getCell, parseA1, parseWorkbook } from "../../../src/parser/index.ts";
+import { verifyWorkbookBytes, type Totals } from "../../../src/verify/index.ts";
 
 const SERVER = ["mcp/lotus-oracle/server.ts"];
 
@@ -119,5 +126,241 @@ describe("opcode_lookup", () => {
       expect(r.text).toMatch(/opcode/);
     }
     expect((await call("opcode_lookup", { opcode: 1 })).isError).toBeFalsy();
+  });
+});
+
+const KSBASE = "fixtures/ksbase/KSBASE.WK1";
+const GNOME = "fixtures/libreoffice-wks-functions/gnome647171-1.wks";
+const PEYTREND = "fixtures/format-corpus-peytrend/PEYTREND.WK3";
+const golden = JSON.parse(readFileSync("tests/differential/verify/golden.json", "utf8")) as Record<string, Totals>;
+const bytesOf = (path: string) => new Uint8Array(readFileSync(path));
+
+const dir = mkdtempSync(join(tmpdir(), "lotus-oracle-"));
+const GARBAGE = join(dir, "garbage.wk1");
+const HUGE = join(dir, "huge.wk1");
+const LOCKED = join(dir, "locked.wk1");
+const MISSING = join(dir, "missing.wk1");
+writeFileSync(GARBAGE, "this is not a spreadsheet, only some text bytes. ".repeat(20));
+writeFileSync(HUGE, "");
+truncateSync(HUGE, MAX_BYTES + 1);
+writeFileSync(LOCKED, bytesOf(GNOME));
+chmodSync(LOCKED, 0o000);
+afterAll(() => {
+  chmodSync(LOCKED, 0o600);
+  rmSync(dir, { recursive: true, force: true });
+});
+
+type VerifyData = {
+  format: string;
+  sheets: { name: string; totals: Pick<Totals, "formulas" | "matched" | "mismatched" | "unverifiable">; cells: Record<string, unknown>[] }[];
+  diagnostics: unknown[];
+};
+
+const counts = (t: Totals) => ({ formulas: t.formulas, matched: t.matched, mismatched: t.mismatched, unverifiable: t.unverifiable });
+
+describe("verify_file", () => {
+  it("verifies gnome647171-1.wks: 3 matched and 1 unverifiable of 4, with every cell field", async () => {
+    const r = await call("verify_file", { path: GNOME });
+    expect(r.isError).toBeFalsy();
+    const data = r.data as VerifyData;
+    const direct = verifyWorkbookBytes(bytesOf(GNOME), "gnome647171-1.wks");
+    expect(data.format).toBe(direct.verifications[0]!.format);
+    expect(data.sheets).toHaveLength(1);
+    expect(data.sheets[0]!.totals).toEqual(counts(golden[GNOME]!));
+    expect(data.sheets[0]!.totals).toEqual({ formulas: 4, matched: 3, mismatched: 0, unverifiable: 1 });
+    expect(data.sheets[0]!.cells).toEqual(
+      direct.verifications[0]!.cells.map((c) => ({ address: c.address, status: c.status, reason: { code: c.reason.code, message: c.reason.message }, formula: c.formula, lotusFormula: c.lotusFormula, cached: c.cached, recalculated: c.recalculated })),
+    );
+    const a5 = data.sheets[0]!.cells.find((c) => c.address === "A5")!;
+    expect(a5).toMatchObject({ status: "unverifiable", reason: { code: "string-result" }, cached: null });
+    expect(data.diagnostics).toEqual(JSON.parse(JSON.stringify(direct.diagnostics)));
+  });
+
+  it("verifies KSBASE.WK1: 160 of 160 matched", async () => {
+    const data = (await call("verify_file", { path: KSBASE })).data as VerifyData;
+    expect(data.sheets[0]!.totals).toEqual(counts(golden[KSBASE]!));
+    expect(data.sheets[0]!.totals.matched).toBe(160);
+  });
+
+  it("reports a WK3 file with its format and the totals verifyWorkbookBytes gives", async () => {
+    const data = (await call("verify_file", { path: PEYTREND })).data as VerifyData;
+    const direct = verifyWorkbookBytes(bytesOf(PEYTREND));
+    expect(data.format).toBe("wk3");
+    expect(data.sheets.map((s) => s.totals)).toEqual(direct.verifications.map((v) => counts(v.totals)));
+    expect(data.sheets.every((s) => s.totals.matched === 0)).toBe(true);
+  });
+
+  it.each([
+    ["a missing path", MISSING, /ENOENT|no such file/],
+    ["a folder", dir, /folder/],
+    ["garbage bytes", GARBAGE, /not a WK1, WKS, WK3 or DBF file/],
+    ["a file over 32 MiB", HUGE, /32 MiB/],
+    ["an unreadable file", LOCKED, /EACCES|permission/],
+  ])("gives an error result for %s, naming the path", async (_what, path, why) => {
+    const r = await call("verify_file", { path });
+    expect(r.isError).toBe(true);
+    expect((r.data as { error: string }).error).toContain(path);
+    expect(r.text).toMatch(why);
+    expect((await call("opcode_lookup", { opcode: 0 })).isError).toBeFalsy();
+  });
+});
+
+type View = { address?: string; kind: string; value?: unknown; label?: string; cached?: unknown; excel?: string | null };
+type DiffData = {
+  sheets: { index: number; leftName: string; rightName: string; onlyInLeft: View[]; onlyInRight: View[]; changed: { address: string; left: View; right: View; differs: string[] }[] }[];
+  sheetsOnlyInLeft: string[];
+  sheetsOnlyInRight: string[];
+};
+
+const f64 = (v: number) => [...new Uint8Array(new Float64Array([v]).buffer)];
+const constant = (v: number) => [0x00, ...f64(v), 0x03];
+const LEFT = join(dir, "left.wk1");
+const RIGHT = join(dir, "right.wk1");
+const leftCells: CellSpec[] = [
+  { kind: "number", col: 0, row: 0, value: 1 },
+  { kind: "label", col: 1, row: 0, prefix: "'", text: "before" },
+  { kind: "formula", col: 2, row: 0, cached: 5, rpn: constant(5) },
+  { kind: "number", col: 3, row: 0, value: 7 },
+  { kind: "number", col: 4, row: 0, value: 0 },
+  { kind: "label", col: 5, row: 0, prefix: "'", text: "same" },
+];
+const rightCells: CellSpec[] = [
+  { kind: "number", col: 0, row: 0, value: 2 },
+  { kind: "label", col: 1, row: 0, prefix: "'", text: "after" },
+  { kind: "formula", col: 2, row: 0, cached: 6, rpn: constant(6) },
+  { kind: "number", col: 4, row: 0, value: -0 },
+  { kind: "label", col: 5, row: 0, prefix: "'", text: "same" },
+  { kind: "number", col: 6, row: 0, value: 9 },
+];
+writeFileSync(LEFT, writeWk1(0x0406, leftCells));
+writeFileSync(RIGHT, writeWk1(0x0406, rightCells));
+
+describe("diff_workbooks", () => {
+  it.each([KSBASE, PEYTREND, GNOME])("finds no difference between %s and itself", async (path) => {
+    const r = await call("diff_workbooks", { left: path, right: path });
+    expect(r.isError).toBeFalsy();
+    const data = r.data as DiffData;
+    expect(data.sheets.length).toBe(parseWorkbook(bytesOf(path)).workbook.sheets.length);
+    for (const s of data.sheets) expect([s.onlyInLeft, s.onlyInRight, s.changed]).toEqual([[], [], []]);
+    expect([data.sheetsOnlyInLeft, data.sheetsOnlyInRight]).toEqual([[], []]);
+  });
+
+  it("lists values, labels, stored results and formulas that changed, and cells on one side only", async () => {
+    const data = (await call("diff_workbooks", { left: LEFT, right: RIGHT })).data as DiffData;
+    const excel = (v: number) => translateFormula(Uint8Array.from(constant(v)), { col: 2, row: 0 }).excel;
+    expect(excel(5)).not.toBe(excel(6));
+    expect(data.sheets).toEqual([
+      {
+        index: 0,
+        leftName: "Sheet1",
+        rightName: "Sheet1",
+        onlyInLeft: [{ address: "D1", kind: "number", value: { t: "num", v: 7 } }],
+        onlyInRight: [{ address: "G1", kind: "number", value: { t: "num", v: 9 } }],
+        changed: [
+          { address: "A1", left: { kind: "number", value: { t: "num", v: 1 } }, right: { kind: "number", value: { t: "num", v: 2 } }, differs: ["value"] },
+          { address: "B1", left: { kind: "label", label: "before" }, right: { kind: "label", label: "after" }, differs: ["label"] },
+          { address: "C1", left: { kind: "formula", cached: { t: "num", v: 5 }, excel: excel(5) }, right: { kind: "formula", cached: { t: "num", v: 6 }, excel: excel(6) }, differs: ["cached", "excel"] },
+          // -0 and 0 are different stored doubles; JSON prints both as 0, the differs field keeps it.
+          { address: "E1", left: { kind: "number", value: { t: "num", v: 0 } }, right: { kind: "number", value: { t: "num", v: 0 } }, differs: ["value"] },
+        ],
+      },
+    ]);
+  });
+
+  it("compares KSBASE.WK1 with gnome647171-1.wks, ERR cells as err and formulas as translateFormula gives", async () => {
+    const data = (await call("diff_workbooks", { left: KSBASE, right: GNOME })).data as DiffData;
+    const ks = parseWorkbook(bytesOf(KSBASE)).workbook.sheets[0]!.sheet;
+    const gn = parseWorkbook(bytesOf(GNOME)).workbook.sheets[0]!.sheet;
+    const s = data.sheets[0]!;
+    // A1 is the label OBSERV in KSBASE and the number 10 in gnome647171-1.wks (both read with parseWorkbook above).
+    expect(getCell(ks, 0, 0)).toMatchObject({ kind: "label", text: "OBSERV" });
+    expect(getCell(gn, 0, 0)).toMatchObject({ kind: "number", value: 10 });
+    expect(s.changed.find((c) => c.address === "A1")).toEqual({ address: "A1", left: { kind: "label", label: "OBSERV" }, right: { kind: "number", value: { t: "num", v: 10 } }, differs: ["kind"] });
+    // KSBASE G36 stores 7ff0000000000000 (ERR) and gnome has no G36.
+    expect(s.onlyInLeft.find((c) => c.address === "G36")).toEqual({ address: "G36", kind: "number", value: { t: "err" } });
+    expect(s.onlyInLeft.length + s.changed.length).toBe(ks.cells.size);
+    const formulas = [...s.onlyInLeft, ...s.onlyInRight].filter((c) => c.kind === "formula");
+    expect(formulas.length).toBeGreaterThan(0);
+    for (const c of formulas) {
+      const { col, row } = parseA1(c.address!)!;
+      const cell = (getCell(ks, col, row) && s.onlyInLeft.includes(c) ? getCell(ks, col, row) : getCell(gn, col, row)) as { rpn: Uint8Array };
+      expect(c.excel).toBe(translateFormula(cell.rpn, { col, row }).excel);
+    }
+  });
+
+  it.each([
+    ["missing left", MISSING, GNOME, MISSING],
+    ["missing right", GNOME, MISSING, MISSING],
+    ["garbage left", GARBAGE, GNOME, GARBAGE],
+    ["garbage right", GNOME, GARBAGE, GARBAGE],
+  ])("gives an error result for %s, naming the path", async (_what, left, right, named) => {
+    const r = await call("diff_workbooks", { left, right });
+    expect(r.isError).toBe(true);
+    expect((r.data as { error: string }).error).toContain(named);
+  });
+});
+
+describe("hardening", () => {
+  it("names the bad field for verify_file {} and diff_workbooks with a number, then keeps answering", async () => {
+    const a = await call("verify_file", {});
+    expect(a.isError).toBe(true);
+    expect(a.text).toMatch(/path/);
+    const b = await call("diff_workbooks", { left: 1, right: GNOME });
+    expect(b.isError).toBe(true);
+    expect(b.text).toMatch(/left/);
+    expect((await call("verify_file", { path: GNOME })).isError).toBeFalsy();
+  });
+
+  it("keeps stdout JSON-RPC only through a session that runs all three tools", async () => {
+    const callTool = (id: number, name: string, args: object) => ({ jsonrpc: "2.0", id, method: "tools/call", params: { name, arguments: args } });
+    const { lines } = await rawSession([
+      INIT,
+      INITIALIZED,
+      callTool(2, "opcode_lookup", { opcode: "0xFF" }),
+      callTool(3, "verify_file", { path: KSBASE }),
+      callTool(4, "diff_workbooks", { left: GNOME, right: GARBAGE }),
+      callTool(5, "verify_file", {}),
+    ]);
+    const messages = lines.map((l) => JSON.parse(l) as { jsonrpc: string; id?: number });
+    for (const m of messages) expect(m.jsonrpc).toBe("2.0");
+    // Tool calls run concurrently, so answers may come in any order.
+    expect(messages.map((m) => m.id).sort()).toEqual([1, 2, 3, 4, 5]);
+  }, 20_000);
+
+  it("keeps console.log, network calls and UI imports out of mcp/lotus-oracle", () => {
+    for (const name of readdirSync("mcp/lotus-oracle")) {
+      const src = readFileSync(join("mcp/lotus-oracle", name), "utf8");
+      expect(src).not.toMatch(/console\.log|fetch\(|src\/ui\/|src\/workers\//);
+    }
+  });
+});
+
+describe("setup", () => {
+  it("has the oracle:mcp script and type checks mcp/", () => {
+    const pkg = JSON.parse(readFileSync("package.json", "utf8")) as { scripts: Record<string, string> };
+    expect(pkg.scripts["oracle:mcp"]).toBe("bun mcp/lotus-oracle/server.ts");
+    const ts = JSON.parse(readFileSync("tsconfig.json", "utf8")) as { include: string[] };
+    expect(ts.include).toContain("mcp");
+  });
+
+  it("starts the server through scripts/oracle.ts", async () => {
+    const viaScript = await connect(["scripts/oracle.ts"]);
+    try {
+      expect((await viaScript.listTools()).tools.map((t) => t.name).sort()).toEqual(["diff_workbooks", "opcode_lookup", "verify_file"]);
+    } finally {
+      await viaScript.close();
+    }
+  }, 20_000);
+
+  it("is registered for Kiro in .kiro/settings/mcp.json", () => {
+    const cfg = JSON.parse(readFileSync(".kiro/settings/mcp.json", "utf8")) as { mcpServers: Record<string, { command: string; args: string[] }> };
+    const entry = cfg.mcpServers["lotus-oracle"]!;
+    expect(entry.command).toBe("bun");
+    expect(entry.args).toContain("mcp/lotus-oracle/server.ts");
+  });
+
+  it("is described in the README", () => {
+    const readme = readFileSync("README.md", "utf8");
+    for (const word of ["opcode_lookup", "verify_file", "diff_workbooks", "oracle:mcp", ".kiro/settings/mcp.json"]) expect(readme).toContain(word);
   });
 });
