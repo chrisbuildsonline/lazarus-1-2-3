@@ -1,11 +1,11 @@
-// lazarus <file> --xlsx / --report (requirements 47 to 53). Reads one WK1/WKS file, builds every
+// lazarus <file> --xlsx / --report (requirements 47 to 53). Reads one WK1, WKS, WK3 or DBF file, builds every
 // requested output in memory, and only then writes them: each to a temporary name first, renamed
 // into place once all have been written, so a failure leaves no half-written pair.
 import { readFile, realpath, rename, stat, unlink, writeFile } from "node:fs/promises";
 import { basename, extname, resolve } from "node:path";
-import { parseWk1 } from "../parser/index.ts";
+import { parseWorkbook } from "../parser/index.ts";
 import { buildReport, renderReportHtml, serializeReportJson, sha256Hex } from "../report/index.ts";
-import { verifySheet } from "../verify/index.ts";
+import { sumTotals, verifyWorkbook } from "../verify/index.ts";
 import { writeXlsx } from "../xlsx/index.ts";
 import { USAGE, type ParsedArgs } from "./args.ts";
 import { detectFormat } from "./inventory.ts";
@@ -15,17 +15,26 @@ type Output = { path: string; bytes: Uint8Array | string };
 
 /** The workbook and report for one file's bytes, in memory. Nothing is written. */
 export async function buildOutputs(bytes: Uint8Array, fileName: string, args: ParsedArgs): Promise<{ outputs: Output[]; summary: VerifySummary }> {
-  const { sheet, diagnostics } = parseWk1(bytes);
-  const verification = verifySheet(sheet, fileName);
+  const parsed = parseWorkbook(bytes);
+  const { workbook, diagnostics } = parsed;
+  const verifications = verifyWorkbook(workbook, fileName);
+  // A WK1 or WKS file keeps the one-sheet input, so its outputs are as before.
+  const one = parsed.kind === "wk1" ? { sheet: workbook.sheets[0]!.sheet, verification: verifications[0]! } : null;
   const outputs: Output[] = [];
-  if (args.xlsx !== null) outputs.push({ path: args.xlsx, bytes: (await writeXlsx({ sheet, verification })).bytes });
+  if (args.xlsx !== null) {
+    const input = one ?? { sheets: workbook.sheets.map((s, i) => ({ name: s.name, sheet: s.sheet, verification: verifications[i]! })) };
+    outputs.push({ path: args.xlsx, bytes: (await writeXlsx(input)).bytes });
+  }
   if (args.report !== null) {
     // Read with readFile, not an import attribute, so the same code runs under bun and Vitest (design "CLI").
     const { version } = JSON.parse(await readFile(new URL("../../package.json", import.meta.url), "utf8")) as { version: string };
-    const report = buildReport({ fileName, sha256: await sha256Hex(bytes), byteLength: bytes.length, toolVersion: version, verification });
+    const scalars = { fileName, sha256: await sha256Hex(bytes), byteLength: bytes.length, toolVersion: version };
+    const fields = parsed.kind === "dbf" ? { fields: parsed.table.fields.map((f) => f.name) } : {};
+    const sheets = workbook.sheets.map((s, i) => ({ name: s.name, verification: verifications[i]!, values: s.sheet.cells.size, ...fields }));
+    const report = buildReport(one ? { ...scalars, verification: one.verification } : { ...scalars, format: workbook.format, sheets });
     outputs.push({ path: args.report.path, bytes: args.report.format === "json" ? serializeReportJson(report) : renderReportHtml(report) });
   }
-  return { outputs, summary: { ...verification.totals, parseErrors: diagnostics.filter((d) => d.severity === "error").length } };
+  return { outputs, summary: { ...sumTotals(verifications.map((v) => v.totals)), parseErrors: diagnostics.filter((d) => d.severity === "error").length } };
 }
 
 const canonical = async (path: string) => realpath(path).catch(() => resolve(path));
@@ -60,8 +69,8 @@ export async function runExport(args: ParsedArgs): Promise<number> {
     return 1;
   }
   const { format } = detectFormat(bytes, extname(args.path));
-  if (format !== "wk1" && format !== "wks") {
-    err(`lazarus: ${args.path}: not a Lotus 1-2-3 worksheet (format: ${format})`);
+  if (format !== "wk1" && format !== "wks" && format !== "wk3" && format !== "dbf") {
+    err(`lazarus: ${args.path}: not a Lotus 1-2-3 worksheet or dBase table (format: ${format})`);
     return 1;
   }
 

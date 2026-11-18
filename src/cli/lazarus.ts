@@ -1,7 +1,8 @@
 // lazarus CLI entry: bun run lazarus <path> [--json] [--verify] [--xlsx <out.xlsx>] [--report <out.json|out.html>]
-// Lists format, size and sha256 of each file. With --verify it also parses each WK1/WKS file,
-// recalculates its formulas and adds the matched, mismatched and unverifiable counts. With --xlsx
-// and/or --report it writes the workbook and the provenance report for one WK1/WKS file (export.ts).
+// Lists format, size and sha256 of each file. With --verify it also parses each WK1, WKS, WK3 and
+// DBF file, recalculates its formulas and adds the matched, mismatched and unverifiable counts
+// (summed over sheets). With --xlsx and/or --report it writes the workbook and the provenance
+// report for one such file (export.ts).
 // Exit codes: 0 ok (unknown formats, mismatched and unverifiable cells included), 1 some file could
 // not be read, 2 bad usage or missing path.
 import { readFile, stat } from "node:fs/promises";
@@ -36,7 +37,7 @@ async function main(args: string[]): Promise<number> {
     for await (const file of walk(path)) {
       try {
         const entry = await inventoryFile(file);
-        const spreadsheet = entry.format === "wk1" || entry.format === "wks";
+        const spreadsheet = entry.format === "wk1" || entry.format === "wks" || entry.format === "wk3" || entry.format === "dbf";
         listed.push({ entry, summary: verify && spreadsheet ? summarizeFile(new Uint8Array(await readFile(file))) : null });
       } catch (err) {
         process.stderr.write(`lazarus: cannot read ${file}: ${(err as Error).message}\n`);

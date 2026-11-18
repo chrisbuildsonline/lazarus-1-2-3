@@ -10,8 +10,8 @@ describe("summarizeFile (requirements 70 to 73)", () => {
     expect(summarizeFile(MIXED)).toEqual({ formulas: 4, matched: 4, mismatched: 0, unverifiable: 0, exact: 4, withinTolerance: 0, byReason: { exact: 4 }, parseErrors: 0 });
   });
 
-  it("gives null for a DBF and for a text file", () => {
-    expect(summarizeFile(SAMPLE_DBF)).toBeNull();
+  it("gives no formulas for a DBF and null for a text file", () => {
+    expect(summarizeFile(SAMPLE_DBF)).toEqual({ formulas: 0, matched: 0, mismatched: 0, unverifiable: 0, exact: 0, withinTolerance: 0, byReason: {}, parseErrors: 0 });
     expect(summarizeFile(new TextEncoder().encode("not a spreadsheet"))).toBeNull();
   });
 

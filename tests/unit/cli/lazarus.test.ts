@@ -181,6 +181,18 @@ describe("lazarus cli", () => {
     }
     expect(Object.keys(golden).every((p) => listed.some((x) => x.path === p))).toBe(true);
   });
+
+  it("--verify counts WK3 formulas as unverifiable and a DBF as no formulas", () => {
+    const listed = ["fixtures/wk3-sheets/wk3-sheets.wk3", "fixtures/dbf-table/dbf-table.dbf"].map((path) => {
+      const run = lazarus(path, "--verify", "--json");
+      expect(run.status).toBe(0);
+      return (JSON.parse(run.stdout) as { format: string; verify?: Record<string, unknown> }[])[0]!;
+    });
+    expect(listed.map((x) => [x.format, x.verify])).toEqual([
+      ["wk3", { formulas: 1, matched: 0, mismatched: 0, unverifiable: 1, exact: 0, withinTolerance: 0, byReason: { "wk3-formula-not-decoded": 1 } }],
+      ["dbf", { formulas: 0, matched: 0, mismatched: 0, unverifiable: 0, exact: 0, withinTolerance: 0, byReason: {} }],
+    ]);
+  });
 });
 
 const VERIFY_NOTICE = "lazarus: verify: formulas are recalculated and compared with the values stored in the file. Stored values are never changed.\n";
@@ -188,15 +200,15 @@ const VERIFY_NOTICE = "lazarus: verify: formulas are recalculated and compared w
 describe("lazarus cli --verify (requirements 70 to 72)", () => {
   const line = (path: string, bytes: Uint8Array, format: string, extra: string[] = []) => [path, format, bytes.length, sha256(bytes), ...extra].join("\t");
 
-  it("appends one verify field to each wk1/wks line; other lines are unchanged", () => {
+  it("appends one verify field to each wk1, wks, wk3 and dbf line; other lines are unchanged", () => {
     const run = lazarus(root, "--verify");
     const lines = run.stdout.trimEnd().split("\n");
     // mixed.wk1: 4 formulas, all synthetic and matched (manifest). x.wks holds one integer, no formula.
     expect(lines).toContain(line(join(root, "b.wk1"), WK1, "wk1", ["verify: 4 formulas, 4 matched, 0 mismatched, 0 unverifiable"]));
     expect(lines).toContain(line(join(root, "a", "y", "x.wks"), WKS, "wks", ["verify: 0 formulas, 0 matched, 0 mismatched, 0 unverifiable"]));
     expect(lines).toContain(line(join(root, "d.dbf"), WK1, "wk1", ["(extension says dbf)", "verify: 4 formulas, 4 matched, 0 mismatched, 0 unverifiable"]));
-    expect(lines).toContain(line(join(root, "a", "z.dbf"), SAMPLE_DBF, "dbf"));
-    expect(lines.filter((l) => l.includes("verify:"))).toHaveLength(3);
+    expect(lines).toContain(line(join(root, "a", "z.dbf"), SAMPLE_DBF, "dbf", ["verify: 0 formulas, 0 matched, 0 mismatched, 0 unverifiable"]));
+    expect(lines.filter((l) => l.includes("verify:"))).toHaveLength(4);
     expect(run.stderr).toBe(VERIFY_NOTICE);
     expect(run.status).toBe(0);
   });
@@ -230,7 +242,7 @@ describe("lazarus cli --verify (requirements 70 to 72)", () => {
     expect(lazarus().stderr).toContain("usage: bun run lazarus <path> [--json] [--verify]");
   });
 
-  it("--verify --json adds a verify object to wk1/wks entries only", () => {
+  it("--verify --json adds a verify object to wk1, wks, wk3 and dbf entries only", () => {
     const run = lazarus(root, "--verify", "--json");
     const parsed = JSON.parse(run.stdout) as Record<string, unknown>[];
     expect(parsed.map((e) => e.path)).toEqual(ROOT_FILES);
@@ -238,7 +250,7 @@ describe("lazarus cli --verify (requirements 70 to 72)", () => {
     expect(parsed.find((e) => e.path === join(root, "b.wk1"))!.verify).toEqual(mixedVerify);
     expect(parsed.find((e) => e.path === join(root, "d.dbf"))!.verify).toEqual(mixedVerify);
     expect(parsed.find((e) => e.path === join(root, "a", "y", "x.wks"))!.verify).toEqual({ formulas: 0, matched: 0, mismatched: 0, unverifiable: 0, exact: 0, withinTolerance: 0, byReason: {} });
-    for (const e of parsed) expect("verify" in e, String(e.path)).toBe(e.format === "wk1" || e.format === "wks");
+    for (const e of parsed) expect("verify" in e, String(e.path)).toBe(["wk1", "wks", "wk3", "dbf"].includes(String(e.format)));
     expect(run.stderr).toBe(VERIFY_NOTICE);
     expect(run.status).toBe(0);
   });

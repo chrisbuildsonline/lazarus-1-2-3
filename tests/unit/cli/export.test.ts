@@ -1,6 +1,6 @@
 // lazarus <file> --xlsx / --report end to end (requirements 47 to 53), spawning the real CLI.
 import { spawnSync } from "node:child_process";
-import { chmodSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync } from "node:fs";
+import { chmodSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
@@ -87,11 +87,37 @@ describe("lazarus --xlsx and --report", () => {
     expect(out.verify.formulas).toBe(160);
   });
 
-  it("refuses a DBF input with exit 1, names the format and writes nothing", () => {
+  it("writes a DBF as a one-sheet workbook and a report with the as-read line", async () => {
     const dir = freshDir();
     const run = lazarus(DBF, "--xlsx", join(dir, "o.xlsx"), "--report", join(dir, "o.json"));
+    expect(run.status).toBe(0);
+    const back = await readXlsx(new Uint8Array(readFileSync(join(dir, "o.xlsx"))));
+    expect(back.sheetNames).toEqual(["Table"]);
+    expect(back.sheets[0]!.values.get("A1")).toEqual({ value: "featurecla", formula: null });
+    const report = JSON.parse(readFileSync(join(dir, "o.json"), "utf8")) as { source: { format: string }; totals: { formulas: number }; sheets: { asRead: number }[] };
+    expect(report.source.format).toBe("dbf");
+    expect(report.totals.formulas).toBe(0);
+    expect(report.sheets[0]!.asRead).toBe(384);
+  });
+
+  it("writes a WK3 as three worksheets and an HTML report with the WK3 wording", async () => {
+    const dir = freshDir();
+    const run = lazarus("fixtures/wk3-sheets/wk3-sheets.wk3", "--xlsx", join(dir, "o.xlsx"), "--report", join(dir, "o.html"));
+    expect(run.status).toBe(0);
+    expect((await readXlsx(new Uint8Array(readFileSync(join(dir, "o.xlsx"))))).sheetNames).toEqual(["A", "B", "Totals"]);
+    const page = readFileSync(join(dir, "o.html"), "utf8");
+    scan(page);
+    expect(page).toContain("Formulas in WK3 files are not read yet.");
+    expect(page).toContain("Totals!C2");
+  });
+
+  it("refuses an input that is not a Lotus or dBase file with exit 1 and writes nothing", () => {
+    const dir = freshDir();
+    const noise = join(dir, "..", `noise${n}.wk1`);
+    writeFileSync(noise, "not a spreadsheet at all");
+    const run = lazarus(noise, "--xlsx", join(dir, "o.xlsx"));
     expect(run.status).toBe(1);
-    expect(run.stderr).toContain(`lazarus: ${DBF}: not a Lotus 1-2-3 worksheet (format: dbf)`);
+    expect(run.stderr).toContain("not a Lotus 1-2-3 worksheet or dBase table");
     expect(readdirSync(dir)).toEqual([]);
   });
 
