@@ -35,6 +35,15 @@ function scan(entry: Entry, bytes: Uint8Array) {
   return entry.format === "dbf" ? scanDbf(bytes) : entry.format === "wk3" ? scanWk3(bytes) : scanWk1(bytes);
 }
 
+describe("fixtures/manifest.json dbf entries", () => {
+  it("the real table has no deleted record; the synthetic one has record 3 deleted and blank PRICE and QTY in record 4", () => {
+    expect(scanDbf(readFileSync("fixtures/natural-earth-land/ne_110m_land.dbf")).deleted).toEqual([]);
+    const synthetic = scanDbf(readFileSync("fixtures/dbf-table/dbf-table.dbf"));
+    expect(synthetic.deleted).toEqual([3]);
+    expect(synthetic.cells.filter((c) => c.kind === "number" && c.value === null).map((c) => c.cell)).toEqual(["4:PRICE", "4:QTY"]);
+  });
+});
+
 describe("fixtures/manifest.json wk3 entries", () => {
   const wk3 = entries.filter((e) => e.format === "wk3");
 

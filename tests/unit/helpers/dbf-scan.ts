@@ -4,10 +4,11 @@
 import type { Counts } from "./wk1-scan.ts";
 
 export type DbfCell = { cell: string; kind: "label" | "number" | "other"; value: number | string | null };
-export type DbfScan = { counts: Counts; cells: DbfCell[] };
+/** `deleted` lists the 1-based numbers of records whose flag byte is `*` (0x2A). */
+export type DbfScan = { counts: Counts; cells: DbfCell[]; deleted: number[] };
 
 export function scanDbf(bytes: Uint8Array): DbfScan {
-  const scan: DbfScan = { counts: { cells: 0, formulas: 0, labels: 0, numbers: 0 }, cells: [] };
+  const scan: DbfScan = { counts: { cells: 0, formulas: 0, labels: 0, numbers: 0 }, cells: [], deleted: [] };
   if (bytes.length < 32) return scan;
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   const records = view.getUint32(4, true);
@@ -41,6 +42,7 @@ export function scanDbf(bytes: Uint8Array): DbfScan {
   for (let r = 0; r < records; r++) {
     const start = headerLen + r * recordLen;
     if (start + recordLen > bytes.length) break;
+    if (bytes[start] === 0x2a) scan.deleted.push(r + 1);
     for (const f of fields) {
       const text = latin1.decode(bytes.subarray(start + f.offset, start + f.offset + f.length));
       const kind = kindOf(f.type);
