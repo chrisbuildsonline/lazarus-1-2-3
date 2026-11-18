@@ -1,0 +1,14 @@
+{
+  "enabled": true,
+  "name": "Fixture PII scan",
+  "description": "Scans edited fixtures for personal data.",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": ["fixtures/**/*"]
+  },
+  "then": {
+    "type": "runCommand",
+    "command": "bun run check:pii"
+  }
+}

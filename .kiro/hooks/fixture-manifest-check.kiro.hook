@@ -1,0 +1,14 @@
+{
+  "enabled": true,
+  "name": "Fixture manifest check",
+  "description": "Checks that every new fixture is listed in the fixture manifest.",
+  "version": "1",
+  "when": {
+    "type": "fileCreated",
+    "patterns": ["fixtures/**/*"]
+  },
+  "then": {
+    "type": "runCommand",
+    "command": "bun run check:manifest"
+  }
+}

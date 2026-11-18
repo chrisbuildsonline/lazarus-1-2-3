@@ -1,0 +1,14 @@
+{
+  "enabled": true,
+  "name": "Opcode coverage check",
+  "description": "Checks that formula opcodes are still covered when formula or verify code is edited.",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": ["src/formula/**/*.ts", "src/verify/**/*.ts"]
+  },
+  "then": {
+    "type": "runCommand",
+    "command": "bun run check:opcodes"
+  }
+}

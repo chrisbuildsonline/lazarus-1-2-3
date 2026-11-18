@@ -1,0 +1,14 @@
+{
+  "enabled": true,
+  "name": "Parser differential tests",
+  "description": "Runs the differential tests when a parser source file is edited.",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": ["src/parser/**/*.ts"]
+  },
+  "then": {
+    "type": "runCommand",
+    "command": "bun run check:diff"
+  }
+}
