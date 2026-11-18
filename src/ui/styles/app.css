@@ -17,6 +17,8 @@
   --content-max: 1360px;
   --pill-h: 44px;
   --gutter: var(--space-10);
+  /* The macro queue: 320 to 520px, 520 at 1440 (macro spec requirement 63). */
+  --queue-w: clamp(320px, 38vw, 520px);
 }
 
 /* ---------- base ---------- */
@@ -1630,9 +1632,400 @@ pre {
   outline: 2px solid var(--accent);
 }
 
+/* ---------- step tabs (macro spec requirement 59) ---------- */
+
+.step-tabs {
+  margin-left: var(--space-6);
+}
+
+/* On a phone the same tabs sit under the title as a quiet segmented control. */
+.step-tabs--under {
+  align-self: flex-start;
+  margin-left: 0;
+  padding: var(--space-1);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+}
+
+/* ---------- Macros (DESIGN.md 4.4, macro spec requirements 59 to 75) ---------- */
+
+.macros {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  padding-top: var(--space-4);
+}
+
+.macros__head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.macros__status {
+  font: var(--text-body-strong);
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.macros__ai,
+.macros__hint,
+.macros__notes,
+.is-muted {
+  color: var(--text-muted);
+}
+
+.macros__ai,
+.macros__hint {
+  font: var(--text-small);
+}
+
+.macros__notes {
+  margin-top: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  font: var(--text-small);
+  list-style: none;
+  overflow-wrap: anywhere;
+}
+
+.macros__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-6);
+  align-items: start;
+}
+
+.macros__queue {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+  padding: var(--space-3);
+}
+
+.macros__hint {
+  padding: 0 var(--space-4) var(--space-2);
+}
+
+.macros__empty {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-4);
+}
+
+.queue {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.queue-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "top pill"
+    "line pill";
+  align-items: center;
+  column-gap: var(--space-3);
+  row-gap: var(--space-1);
+  min-height: 64px;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+
+/* A hairline divider between rows, kept off the selected fill. */
+.queue-row + .queue-row::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: var(--space-4);
+  right: var(--space-4);
+  height: 1px;
+  background: var(--hairline);
+}
+
+.queue-row:hover {
+  background: var(--surface-sunken);
+}
+
+.queue-row.is-selected {
+  background: var(--accent-soft);
+}
+
+.queue-row.is-selected::before,
+.queue-row.is-selected + .queue-row::before {
+  display: none;
+}
+
+.queue-row:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.queue-row__top {
+  grid-area: top;
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-width: 0;
+  font: var(--text-label);
+  letter-spacing: var(--tracking-label);
+  color: var(--text-muted);
+}
+
+.queue-row__kind {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.queue-row__time {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.queue-row__line {
+  grid-area: line;
+  min-width: 0;
+  font: var(--text-body-strong);
+  color: var(--text);
+  white-space: pre;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.queue-row__pill {
+  grid-area: pill;
+}
+
+/* Queue pills, apart from the proof pills (DESIGN.md section 3). */
+.pill--queue-waiting {
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+}
+
+.pill--queue-approved {
+  background: var(--surface-sunken);
+  color: var(--text);
+}
+
+.pill--queue-rejected {
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+}
+
+.queue-row.is-selected .pill--queue-waiting {
+  background: var(--surface);
+}
+
+.glyph--dash {
+  width: 8px;
+  height: 2px;
+  border-radius: var(--radius-pill);
+  background: currentColor;
+}
+
+.glyph--check {
+  width: 8px;
+  height: 4px;
+  border-left: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: translateY(-1px) rotate(-45deg);
+}
+
+.macro-detail,
+.macro-dialog__scroll {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  min-width: 0;
+}
+
+.macro-detail__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.macro-detail__title {
+  font: var(--text-h2);
+  font-family: var(--font-mono);
+  color: var(--text);
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+.macro-detail__meta {
+  font: var(--text-small);
+  color: var(--text-muted);
+}
+
+.macro-detail__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.macro-detail__label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+  font: var(--text-label);
+  letter-spacing: var(--tracking-label);
+  color: var(--text-muted);
+}
+
+.macro-explain__model {
+  font: var(--text-mono);
+  font-size: inherit;
+}
+
+.macro-steps {
+  max-height: none;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.macro-step {
+  display: grid;
+  grid-template-columns: minmax(0, max-content) minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: baseline;
+}
+
+.macro-step__raw {
+  font: var(--text-mono);
+  overflow-wrap: anywhere;
+}
+
+.macro-step__label {
+  font: var(--text-body);
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.macro-fact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+  overflow-wrap: anywhere;
+}
+
+.macro-facts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.macro-fact__label {
+  font: var(--text-label);
+  letter-spacing: var(--tracking-label);
+  color: var(--text-muted);
+  align-self: center;
+}
+
+.mono {
+  font: var(--text-mono);
+}
+
+.macro-detail__note {
+  font: var(--text-small);
+  color: var(--text-muted);
+}
+
+.macro-cells {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  list-style: none;
+}
+
+.macro-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.macro-explain__text {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.macro-detail__actions,
+.macro-dialog__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* Narrow: the detail is a full-screen dialog over a scrim, its buttons sticky at the bottom. */
+.macro-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-drawer);
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  animation: sheet-in var(--dur-slow) var(--ease-out) both;
+}
+
+.macro-dialog__scroll {
+  flex: 1;
+  padding: var(--space-4);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.macro-dialog__back {
+  align-self: flex-start;
+}
+
+.macro-dialog__foot {
+  position: sticky;
+  bottom: 0;
+  flex-wrap: nowrap;
+  padding: var(--space-3) var(--space-4) calc(var(--space-3) + env(safe-area-inset-bottom));
+  background: var(--surface);
+  border-top: 1px solid var(--hairline);
+}
+
+.macro-dialog__foot .btn-primary,
+.macro-dialog__foot .btn-ghost {
+  height: 48px;
+}
+
+.macro-dialog__foot .btn-primary {
+  flex: 1;
+}
+
 /* ---------- desktop: the grid reflows beside the open drawer ---------- */
 
 @media (min-width: 1024px) {
+  .macros__body {
+    grid-template-columns: var(--queue-w) minmax(0, 1fr);
+  }
+
+  /* The detail stays beside a long queue. */
+  .macro-detail {
+    position: sticky;
+    top: var(--space-4);
+  }
+
   .sheet--batch .sheet__body {
     grid-template-columns: var(--batch-w) minmax(0, 1fr);
   }
@@ -1782,6 +2175,7 @@ pre {
   .grid.is-fresh .cell__value,
   .drawer,
   .scrim,
+  .macro-dialog,
   .toast {
     animation: none;
   }

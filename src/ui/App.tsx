@@ -1,18 +1,22 @@
-// The app: the reducer and the worker client (useRaise), and the switch between the Summon and
-// Sheet views (requirement 1). Each view has one h1, sets document.title, and takes focus on its h1
-// when it replaces the other view.
+// The app: the reducer and the worker client (useRaise), and the switch between the Summon view and
+// a raised file's two steps, Sheet and Macros (requirement 1; macro spec requirement 59). Each view has
+// one h1, sets document.title, and takes focus on its h1 when it replaces the other view.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { COPY } from "./copy.ts";
+import { counts } from "../macro/index.ts";
 import { ErrorPanel } from "./components/ErrorPanel.tsx";
+import { MacrosStep } from "./components/MacrosView.tsx";
 import { ProgressSurface, type ProgressPhase } from "./components/ProgressSurface.tsx";
 import { SheetView } from "./components/SheetView.tsx";
 import { SummonView, type SummonMode } from "./components/SummonView.tsx";
 import { Toasts } from "./components/Toast.tsx";
+import { STEP_PANEL, StepTabs, stepTabId } from "./components/StepTabs.tsx";
 import { TopBar } from "./components/TopBar.tsx";
-import { PHONE, useMatchMedia } from "./hooks/useMatchMedia.ts";
+import { NARROW, PHONE, useMatchMedia } from "./hooks/useMatchMedia.ts";
 import { useRaise } from "./hooks/useRaise.ts";
 import type { DownloadKind } from "./model/file-names.ts";
 import { collectDropped } from "./io/drop.ts";
+import { createAppExplainer } from "./io/explainer.ts";
 import { loadSample, SAMPLE_NAME } from "./io/sample.ts";
 import type { FoundFile, Skipped } from "./model/entries.ts";
 
@@ -26,6 +30,8 @@ const fromList = (list: FileList): FoundFile<File>[] => Array.from(list, (file) 
 export function App() {
   const { state, dispatch, summon } = useRaise();
   const phone = useMatchMedia(PHONE);
+  const narrow = useMatchMedia(NARROW);
+  const explainer = useMemo(createAppExplainer, []);
   const folderSupported = useMemo(() => "webkitdirectory" in document.createElement("input"), []);
   const [fromSample, setFromSample] = useState(false);
   const title = useRef<HTMLHeadingElement | null>(null);
@@ -35,11 +41,13 @@ export function App() {
 
   const selected = state.items.find((i) => i.id === state.selectedId);
   const file = state.view === "sheet" ? selected?.raised : undefined;
-  const viewTitle = file ? file.name : COPY.summonTitle;
+  const queue = file && selected ? state.queues[selected.id] : undefined;
+  const macros = file !== undefined && queue !== undefined && state.step === "macros";
+  const pageTitle = macros ? COPY.macroPageTitle(file.name) : COPY.pageTitle(file ? file.name : COPY.summonTitle);
 
   useEffect(() => {
-    document.title = COPY.pageTitle(viewTitle);
-  }, [viewTitle]);
+    document.title = pageTitle;
+  }, [pageTitle]);
 
   // A chosen row remounts the sheet (it is keyed by file), so the focus goes back to that row.
   const rowFocus = useRef(false);
@@ -53,14 +61,29 @@ export function App() {
     dispatch({ type: "selectFile", id });
   };
 
-  // Focus the new view's h1 when the view changes, not on the first paint of the page.
+  // Focus the new view's h1 when the view or the step changes, not on the first paint of the page.
+  // Arrow keys on the step tabs keep the focus on the tab, as in any tab list.
   useEffect(() => {
     if (firstView.current) {
       firstView.current = false;
       return;
     }
+    if (document.activeElement?.closest(".step-tabs")) return;
     (title.current ?? document.querySelector<HTMLElement>("h1"))?.focus();
-  }, [state.view]);
+  }, [state.view, state.step]);
+
+  // Requirement 67: a decision or an undo is announced in an info toast.
+  const decide = (id: string, decision: "approve" | "reject") => {
+    const item = queue?.items.find((i) => i.id === id);
+    if (!item || item.status === (decision === "approve" ? "approved" : "rejected")) return;
+    dispatch({ type: "decide", id, decision, at: new Date().toISOString() });
+    dispatch({ type: "toast", kind: "info", text: decision === "approve" ? COPY.toastApproved : COPY.toastRejected });
+  };
+  const undoLast = () => {
+    if (!queue || queue.history.length === 0) return;
+    dispatch({ type: "undo" });
+    dispatch({ type: "toast", kind: "info", text: COPY.toastUndone });
+  };
 
   const summonSample = useCallback(async () => {
     try {
@@ -111,7 +134,7 @@ export function App() {
     try {
       await new Promise((done) => requestAnimationFrame(done));
       const { buildDownload, saveBlob } = await import("./io/downloads.ts");
-      const result = await buildDownload(kind, file, __LAZARUS_VERSION__);
+      const result = await buildDownload(kind, file, __LAZARUS_VERSION__, queue);
       if (!result.ok) return dispatch({ type: "toast", kind: "error", text: result.reason });
       const { name, data, mime } = result.download;
       saveBlob<HTMLAnchorElement>(document, URL, name, data as BlobPart, mime);
@@ -136,7 +159,32 @@ export function App() {
 
   let body;
   let primary;
-  if (file && selected) {
+  const steps =
+    file && selected && queue ? <StepTabs step={state.step} waiting={counts(queue).pending} under={phone} onStep={(step) => dispatch({ type: "setStep", step })} /> : undefined;
+  const titleRef = (el: HTMLHeadingElement | null) => {
+    title.current = el;
+  };
+  if (file && selected && queue && macros) {
+    body = (
+      <MacrosStep
+        key={selected.id}
+        queue={queue}
+        fileKey={`${state.batchId}:${selected.id}`}
+        explainer={explainer}
+        lastFocus={state.lastFocus}
+        narrow={narrow}
+        format={file.format}
+        noteLines={file.macroNotes}
+        lineCounts={Object.fromEntries(file.macros.map((m) => [m.id, m.lines.length]))}
+        steps={phone ? steps : undefined}
+        titleRef={titleRef}
+        onDecide={decide}
+        onUndo={undoLast}
+        onExplained={(itemId, explanation) => dispatch({ type: "explained", batchId: state.batchId, fileId: selected.id, itemId, explanation })}
+        onFocusDone={() => dispatch({ type: "focusDone" })}
+      />
+    );
+  } else if (file && selected) {
     primary = downloadButton("xlsx", COPY.downloadXlsx, "btn-primary primary-sticky");
     // Requirement 53: without a fingerprint the reports are off, with the reason in view.
     const noHash = file.sha256 === null;
@@ -153,9 +201,8 @@ export function App() {
         onSelectSheet={(index) => dispatch({ type: "selectSheet", index })}
         cell={state.cell?.address ?? null}
         sample={fromSample && file.name === SAMPLE_NAME}
-        titleRef={(el) => {
-          title.current = el;
-        }}
+        titleRef={titleRef}
+        steps={phone ? steps : undefined}
         links={
           <>
             {downloadButton("report-html", COPY.downloadHtml, "btn-text", noHash)}
@@ -193,8 +240,14 @@ export function App() {
 
   return (
     <div className="page">
-      <TopBar view={file ? COPY.viewSheet : COPY.viewSummon} primary={primary} />
-      {body}
+      <TopBar view={macros ? COPY.macrosTitle : file ? COPY.viewSheet : COPY.viewSummon} primary={primary} steps={phone ? undefined : steps} />
+      {steps ? (
+        <div id={STEP_PANEL} role="tabpanel" aria-labelledby={stepTabId(state.step)}>
+          {body}
+        </div>
+      ) : (
+        body
+      )}
       <Toasts toasts={state.toasts} onDismiss={dismiss} />
     </div>
   );

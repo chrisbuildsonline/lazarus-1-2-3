@@ -38,6 +38,8 @@ export type SheetViewProps = {
   titleRef: (el: HTMLHeadingElement | null) => void;
   /** The report links beside the title. */
   links: ReactNode;
+  /** The step tabs on a phone, under the title (requirement 59 of the macro spec). */
+  steps?: ReactNode;
   onSelectFile: (id: number) => void;
   onFilter: (f: Filter) => void;
   onOpenCell: (address: string) => void;
@@ -103,6 +105,7 @@ export function SheetView(p: SheetViewProps) {
           </h1>
           {!phone && filters}
         </div>
+        {p.steps}
         <div className="sheet__row">
           <p className="sheet__meta">
             {meta}

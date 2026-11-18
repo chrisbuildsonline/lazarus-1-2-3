@@ -130,7 +130,7 @@ test("keyboard focus shows the focus ring on each kind of control", async ({ pag
   await expect(h1(page, "mixed-status.wk1")).toBeVisible();
 
   // The filters are one tab stop (roving tabindex): Tab reaches the selected one, arrows move on.
-  await expectRing(page, page.getByRole("tab", { selected: true }));
+  await expectRing(page, page.getByRole("tablist", { name: "Filter by status" }).getByRole("tab", { selected: true }));
   await page.keyboard.press("ArrowRight");
   const next = page.getByRole("tab", { name: /^Matched/ });
   await expect(next).toBeFocused();
