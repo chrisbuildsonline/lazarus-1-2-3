@@ -1,6 +1,7 @@
 // The three downloads of a raised file and the Blob hand-off (requirements 52 to 55, 57).
 import { readFileSync } from "node:fs";
 import { describe, expect, expectTypeOf, it } from "vitest";
+import { approve, buildQueue, reject } from "../../../src/macro/index.ts";
 import { buildDownload, saveBlob, type AnchorLike, type DocLike, type UrlLike } from "../../../src/ui/io/downloads.ts";
 import { downloadName } from "../../../src/ui/model/file-names.ts";
 import type { RaisedFile } from "../../../src/workers/verify-protocol.ts";
@@ -87,6 +88,46 @@ describe("buildDownload", () => {
     expect(src).toMatch(/import\(\s*"\.\.\/\.\.\/xlsx\/index\.ts"\s*\)/);
     expect(src).toMatch(/import\(\s*"\.\.\/\.\.\/report\/index\.ts"\s*\)/);
     expect(src).not.toMatch(/from\s*["'][^"']*\/(xlsx|report)\//);
+  });
+});
+
+describe("buildDownload with the macro queue (macro-translator requirement 55)", () => {
+  const T = "2026-11-18T09:30:00.000Z";
+  const decided = async () => {
+    const raised = await raiseFixture("fixtures/macros/macros.wk1");
+    const q0 = buildQueue({ macros: raised.macros, sheets: raised.sheets.map((s) => ({ name: s.name, cells: s.verification.cells })) }, T);
+    return { raised, queue: reject(approve(q0, "macro:Sheet1!H1", T), "opcode:0x61", T) };
+  };
+
+  it("report-json carries the decisions", async () => {
+    const { raised, queue } = await decided();
+    const r = await buildDownload("report-json", raised, "0.0.0", queue);
+    if (!r.ok) throw new Error(r.reason);
+    const report = JSON.parse(r.download.data as string);
+    expect(report.macros.map((m: { title: string; status: string; decidedAt: string | null }) => [m.title, m.status, m.decidedAt])).toEqual([
+      ["\\0", "pending", null],
+      ["\\P", "approved", T],
+      ["Macro at J1", "pending", null],
+      ["0x61", "rejected", T],
+    ]);
+    const html = await buildDownload("report-html", raised, "0.0.0", queue);
+    if (!html.ok) throw new Error(html.reason);
+    expect(html.download.data).toContain("Approved by you");
+  });
+
+  it("without a queue the report has no macros key", async () => {
+    const { raised } = await decided();
+    const r = await buildDownload("report-json", raised, "0.0.0");
+    if (!r.ok) throw new Error(r.reason);
+    expect(JSON.parse(r.download.data as string).macros).toBeUndefined();
+  });
+
+  it("the XLSX bytes do not depend on the queue", async () => {
+    const { raised, queue } = await decided();
+    const a = await buildDownload("xlsx", raised, "0.0.0");
+    const b = await buildDownload("xlsx", raised, "0.0.0", queue);
+    if (!a.ok || !b.ok) throw new Error("no xlsx");
+    expect(Buffer.from(b.download.data as Uint8Array).equals(Buffer.from(a.download.data as Uint8Array))).toBe(true);
   });
 });
 

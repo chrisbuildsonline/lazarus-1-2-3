@@ -4,7 +4,7 @@
 // each row's address carries the sheet name.
 import { sumTotals, TOLERANCE, type CellResult } from "../verify/index.ts";
 import { unknownOpcodes, unsupportedFeatures } from "./features.ts";
-import type { ProvenanceReport, ReportInput, ReportRow, ReportSheet, ReportSheetInput } from "./types.ts";
+import type { ProvenanceReport, ReportInput, ReportMacroItem, ReportRow, ReportSheet, ReportSheetInput } from "./types.ts";
 
 const hex = (n: number) => `0x${n.toString(16).toUpperCase().padStart(2, "0")}`;
 
@@ -51,5 +51,20 @@ export function buildReport(input: ReportInput): ProvenanceReport {
     unsupportedFeatures: unsupportedFeatures(rows),
     unknownOpcodes: unknownOpcodes(rows),
     rows,
+    ...(input.macros && input.macros.length > 0 ? { macros: input.macros.map(macroItem) } : {}),
   };
 }
+
+const macroItem = (m: ReportMacroItem): ReportMacroItem => ({
+  kind: m.kind,
+  title: m.title,
+  sheet: m.sheet,
+  steps: m.steps.map((s) => ({ label: s.label, raw: s.raw })),
+  explanation: m.explanation,
+  rationale: m.rationale,
+  confidence: m.confidence,
+  model: m.model,
+  status: m.status,
+  decidedAt: m.decidedAt,
+  cells: [...m.cells],
+});

@@ -10,6 +10,22 @@ export type ReportSheetInput = {
   fields?: string[];
 };
 
+/** A macro or unknown opcode and the person's decision (macro-translator requirement 51). */
+export type ReportMacroItem = {
+  kind: "macro" | "unknown-opcode";
+  title: string;
+  sheet: string;
+  steps: { label: string; raw: string }[];
+  /** The local model's text, unchecked; plain text. */
+  explanation: string | null;
+  rationale: string | null;
+  confidence: "Low" | "Medium" | "High" | null;
+  model: string | null;
+  status: "pending" | "approved" | "rejected";
+  decidedAt: string | null;
+  cells: string[];
+};
+
 export type ReportInput = {
   /** May include a path; buildReport keeps the base name. */
   fileName: string;
@@ -17,6 +33,8 @@ export type ReportInput = {
   sha256: string;
   byteLength: number;
   toolVersion: string;
+  /** Additive: missing or empty leaves the report as it was. */
+  macros?: ReportMacroItem[];
 } & ({ verification: SheetVerification } | { format: SheetVerification["format"]; sheets: ReportSheetInput[] });
 
 export type ReportSheet = {
@@ -58,4 +76,6 @@ export type ProvenanceReport = {
   unsupportedFeatures: UnsupportedFeatureEntry[];
   unknownOpcodes: UnknownOpcodeEntry[];
   rows: ReportRow[];
+  /** Only when the input has at least one item. */
+  macros?: ReportMacroItem[];
 };

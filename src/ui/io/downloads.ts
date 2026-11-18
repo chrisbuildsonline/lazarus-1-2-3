@@ -1,6 +1,7 @@
 // The three downloads of a raised file (requirements 52 to 55, 57). The writer and the report are
 // loaded by import() on the first download, so the Summon view never loads them. The functions are
 // called unchanged: nothing here formats, rounds or replaces a value.
+import { toReportItems, type MacroQueue } from "../../macro/index.ts";
 import { sheetFromWire, type RaisedFile } from "../../workers/verify-protocol.ts";
 import { COPY } from "../copy.ts";
 import { downloadName, type DownloadKind } from "../model/file-names.ts";
@@ -16,7 +17,8 @@ const MIME: Record<DownloadKind, string> = {
 
 const oneSheet = (raised: RaisedFile) => raised.format !== "wk3" && raised.format !== "dbf";
 
-export async function buildDownload(kind: DownloadKind, raised: RaisedFile, version: string): Promise<DownloadResult> {
+/** The queue goes into both reports as the person's decisions; the XLSX never reads it. */
+export async function buildDownload(kind: DownloadKind, raised: RaisedFile, version: string, queue?: MacroQueue): Promise<DownloadResult> {
   const done = (data: Uint8Array | string): DownloadResult => ({ ok: true, download: { name: downloadName(raised.name, kind), data, mime: MIME[kind] } });
   if (kind === "xlsx") {
     const { writeXlsx } = await import("../../xlsx/index.ts");
@@ -26,7 +28,7 @@ export async function buildDownload(kind: DownloadKind, raised: RaisedFile, vers
   }
   if (raised.sha256 === null) return { ok: false, reason: COPY.noFingerprint };
   const { buildReport, renderReportHtml, serializeReportJson } = await import("../../report/index.ts");
-  const scalars = { fileName: raised.name, sha256: raised.sha256, byteLength: raised.byteLength, toolVersion: version };
+  const scalars = { fileName: raised.name, sha256: raised.sha256, byteLength: raised.byteLength, toolVersion: version, ...(queue ? { macros: toReportItems(queue) } : {}) };
   const fields = raised.table ? { fields: raised.table.fields.map((f) => f.name) } : {};
   const report = oneSheet(raised)
     ? buildReport({ ...scalars, verification: raised.sheets[0]!.verification })

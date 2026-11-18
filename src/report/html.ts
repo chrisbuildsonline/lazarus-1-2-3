@@ -4,7 +4,7 @@
 import type { InputRow, Status, Value } from "../verify/index.ts";
 import { escapeHtml } from "./escape.ts";
 import { TOKENS } from "./tokens.ts";
-import type { ProvenanceReport, ReportRow, UnknownOpcodeEntry, UnsupportedFeatureEntry } from "./types.ts";
+import type { ProvenanceReport, ReportMacroItem, ReportRow, UnknownOpcodeEntry, UnsupportedFeatureEntry } from "./types.ts";
 
 const t = (x: string): string => escapeHtml(x);
 
@@ -104,6 +104,47 @@ function sheetList(r: ProvenanceReport): string {
   return `<section id="sheets" class="features"><div><h2>Sheets</h2><ul>${r.sheets.map(item).join("")}</ul></div></section>`;
 }
 
+// Added to the page only when it has a Macros section, so a report without macros keeps its bytes.
+const MACROS_CSS = `
+.macro { padding: var(--space-4) 0; border-top: 1px solid var(--hairline); display: grid; gap: var(--space-2); min-width: 0; }
+.macro-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); }
+.macro-steps li { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-3); padding: var(--space-1) 0; }
+.macro-explain { background: var(--surface-sunken); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); overflow-wrap: anywhere; white-space: pre-wrap; }
+.pill-waiting { background: var(--status-unverifiable-bg); color: var(--status-unverifiable-fg); }
+.pill-approved { background: var(--status-matched-bg); color: var(--status-matched-fg); }
+.pill-rejected { background: var(--status-mismatched-bg); color: var(--status-mismatched-fg); }
+`;
+
+const DECISION: Record<ReportMacroItem["status"], string> = {
+  pending: '<span class="pill pill-waiting">Waiting</span>',
+  approved: '<span class="pill pill-approved">Approved by you</span>',
+  rejected: '<span class="pill pill-rejected">Rejected</span>',
+};
+
+function macroItem(m: ReportMacroItem): string {
+  const kind = m.kind === "macro" ? "Macro" : "Unknown opcode";
+  const when = m.decidedAt === null ? "" : ` <span class="muted">${t(m.decidedAt)}</span>`;
+  const steps = m.steps.length === 0 ? "" : `<ul class="macro-steps">${m.steps.map((s) => `<li><code>${t(s.raw)}</code><span>${t(s.label)}</span></li>`).join("")}</ul>`;
+  const model = m.model === null ? "" : ` <span class="muted">${t(m.model)}</span>`;
+  const confidence = m.kind === "unknown-opcode" && m.confidence !== null ? `<p>${t(`Confidence: ${m.confidence}`)}</p>` : "";
+  const rationale = m.rationale === null ? "" : `<p class="muted">${t(m.rationale)}</p>`;
+  const explanation =
+    m.explanation === null
+      ? '<p class="muted">No explanation.</p>'
+      : `<p class="macro-explain">${t(m.explanation)}</p>${confidence}${rationale}`;
+  return (
+    `<div class="macro"><div class="macro-head"><span class="label">${t(kind)}</span><code>${t(m.title)}</code>${DECISION[m.status]}${when}</div>` +
+    `<p class="muted">${t(`${m.cells.length === 1 ? "Cell" : "Cells"}: ${m.cells.join(", ")}`)}</p>${steps}` +
+    `<p class="label">Explanation (local model, unchecked)${model}</p>${explanation}</div>`
+  );
+}
+
+/** The person's decisions on macros and unknown opcodes; empty without a list (requirement 53). */
+function macrosSection(r: ProvenanceReport): string {
+  if (!r.macros) return "";
+  return `<section id="macros"><h2>Macros</h2><p class="kept">${t("Macros were not run. Each item below needs a person's decision.")}</p>${r.macros.map(macroItem).join("")}</section>`;
+}
+
 function features(r: ProvenanceReport): string {
   return `<section id="features" class="features"><div><h2>Unsupported features</h2>${list(r.unsupportedFeatures.map(feature))}</div><div><h2>Unknown opcodes</h2>${list(r.unknownOpcodes.map(opcode))}</div></section>`;
 }
@@ -121,10 +162,11 @@ export function renderReportHtml(r: ProvenanceReport): string {
     '<!doctype html>\n<html lang="en"><head><meta charset="utf-8">',
     `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'">`,
     '<meta name="viewport" content="width=device-width, initial-scale=1">',
-    `<title>${t(`${r.source.fileName}: provenance report`)}</title><style>${CSS}</style></head><body><main>`,
+    `<title>${t(`${r.source.fileName}: provenance report`)}</title><style>${CSS}${r.macros ? MACROS_CSS : ""}</style></head><body><main>`,
     `<header><span class="brand">Lazarus 1-2-3</span><h1>${t(r.source.fileName)}</h1>${facts(r)}</header>`,
     summary(r),
     sheetList(r),
+    macrosSection(r),
     features(r),
     '<section id="cells"><h2>Every formula</h2><div class="scroll"><table><thead><tr><th>Cell</th><th>Lotus formula</th><th>Excel formula</th><th>Stored</th><th>Recalculated</th><th>Status</th><th>Reason</th></tr></thead><tbody>',
   ];
