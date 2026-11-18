@@ -3,7 +3,10 @@
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { writeDbf } from "../../scripts/lib/dbf-writer.ts";
 import { bof, writeWk1 } from "../../scripts/lib/wk1-writer.ts";
+import * as w3 from "../../scripts/lib/wk3-writer.ts";
+import { writeWk3 } from "../../scripts/lib/wk3-writer.ts";
 
 const WK1 = 0x0406;
 const REF = 0x01;
@@ -65,7 +68,34 @@ export const payload = (name: string, bytes: Uint8Array | string): Payload => ({
   buffer: Buffer.from(bytes),
 });
 
+/** Three sheets: A holds labels, B numbers, Totals (sheet 2, named) two numbers and C2 a formula storing 7.5. */
+export function wk3Book(): Uint8Array {
+  return writeWk3([
+    w3.sheetName(2, "Totals"),
+    w3.label(0, 0, 0, "'", "Item"),
+    w3.label(0, 0, 1, "'", "Lamp"),
+    w3.number80(1, 0, 0, 0.1),
+    w3.small(1, 1, 0, w3.smallInt(42)),
+    w3.number80(2, 0, 1, 2.5),
+    w3.number80(2, 1, 1, 5),
+    w3.formula80(2, 2, 1, 7.5, [0x01, 0x02, 0x03]),
+  ]);
+}
+
+/** A dBase III table: NAME C(8), PRICE N(6,2); two live records and one deleted. */
+export function dbfTable(): Uint8Array {
+  return writeDbf({
+    fields: [
+      { name: "NAME", type: "C", length: 8 },
+      { name: "PRICE", type: "N", length: 6, decimals: 2 },
+    ],
+    records: [{ values: ["Lamp", "12.50"] }, { deleted: true, values: ["Old", "1.00"] }, { values: ["Chair", "40.00"] }],
+  });
+}
+
 export const files = {
+  wk3: () => payload("book.wk3", wk3Book()),
+  dbf: () => payload("table.dbf", dbfTable()),
   mismatch: () => payload("mismatch.wk1", mismatchWk1()),
   mixedStatus: () => payload("mixed-status.wk1", mixedStatusWk1()),
   corrupt: () => payload("corrupt.wk1", corruptWk1()),
