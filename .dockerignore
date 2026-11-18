@@ -1,0 +1,15 @@
+.git
+node_modules
+dist
+test-results
+playwright-report
+.backups
+.omc
+.claude
+.env
+.env.*
+.DS_Store
+design/refs
+docs/sources
+PLAN.md
+CLAUDE.md

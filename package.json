@@ -19,7 +19,9 @@
     "oracle:mcp": "bun mcp/lotus-oracle/server.ts",
     "lazarus": "bun src/cli/lazarus.ts",
     "verify:golden": "bun scripts/verify-golden.ts",
-    "gen:fixtures": "bun scripts/gen-fixtures.ts"
+    "gen:fixtures": "bun scripts/gen-fixtures.ts",
+    "docker:test": "docker build --target test -t lazarus-1-2-3:test . && docker run --rm lazarus-1-2-3:test",
+    "docker:e2e": "docker build --target e2e -t lazarus-1-2-3:e2e . && docker run --rm --ipc=host lazarus-1-2-3:e2e"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.32.2",
