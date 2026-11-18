@@ -4,36 +4,92 @@ Raise your dead Lotus 1-2-3 spreadsheets: every formula re-derived in a modern f
 
 Built for [Kiroween 2026](https://kiroween.devpost.com/). Submissions close 2026-12-04.
 
+## Quick start
+
+Requires [bun](https://bun.sh) and Node (tested with bun 1.4.2 and Node 24; Vitest and Playwright start under Node).
+
+```sh
+git clone https://github.com/chrisbuildsonline/lazarus-1-2-3.git
+cd lazarus-1-2-3
+bun install
+bun run lazarus fixtures --verify          # inventory and verify every fixture
+bun run lazarus fixtures/ksbase/KSBASE.WK1 --xlsx ksbase.xlsx --report ksbase.html
+bun run build && bun run preview           # the browser app on http://localhost:4173
+```
+
+To run the checks: `bun run typecheck`, `bun run test`, and for the browser tests `bunx playwright install chromium` once, then `CI=1 bun run e2e`. Or run them in Docker (see below).
+
 ## What it does
 
 You drop in a Lotus 1-2-3 worksheet or a dBase table. Lazarus 1-2-3 parses the binary records, rebuilds every formula as a modern expression, and writes a clean XLSX. Then it recalculates the whole sheet with its own engine and compares each result with the cached value stored inside the original file. Every cell is marked matched, mismatched or unverifiable. Old macros, such as the brace keystroke language and slash commands, are translated into a plain-English step list that a human must approve. The output is the workbook plus a provenance report listing what was proven and what was not.
 
-Built so far: the WK1/WKS parser, the formula translator, the verification engine (run it with `bun run lazarus <path> --verify`), the XLSX writer and the provenance report as JSON and a self-contained HTML page (run them with `bun run lazarus <file> --xlsx out.xlsx --report out.html`). The writer keeps every stored value: each formula is written with the number the file remembered, never the recalculated one, and the same input gives byte-identical output. All 10 WK1/WKS fixtures (4 real, 6 synthetic) round-trip: re-reading the workbook with exceljs gives back every cell's value, formula text and stored result, and no extra cell. The writer and the report page also run in Chromium with no network request. Measured on our fixture corpus: of the 174 formulas in the three real Lotus files, 173 recalculate to exactly the number the file stored (KSBASE.WK1 160 of 160, testLotus123.wks 10 of 10, gnome647171-1.wks 3 of 4), none is mismatched, and 1 is unverifiable: a formula that returns text ("Odd" or "Even"), whose stored text the parser does not read yet. All 27 synthetic test formulas match as well.
+## Measured on the fixture corpus
 
-The browser app is built too (`bun run build`, then `bun run preview`). The Summon view takes one file, several files or a whole folder (dropped, or chosen with "Choose file" and "Choose folder"), or "Summon the sample". Parsing, verification and hashing run in a Web Worker. The Sheet view shows the percentage verified, the matched, mismatched and unverifiable counts with a proof bar, the grid with a status on every formula cell (a status list on phones), filters by status, and a cell drawer with both formulas and both values. It downloads the XLSX and the report as HTML or JSON. A batch gets a file list at the left. Measured in the Playwright tests: the sample shows 160 matched, 0 mismatched, 0 unverifiable, 100.0% verified; every request in a full session is a GET for the page or a file under `/assets/`, and a fetch to another origin is blocked by the page's Content-Security-Policy; axe finds no violation on any view; the longest main-thread task while a generated 5,000-formula sheet is raised was 94.0 ms and 123.0 ms in two full parallel runs of the suite (limit 200 ms); a full 8,192-row by 256-column sheet keeps fewer than 2,000 grid cells in the page. The suite: 1,865 unit, property and differential tests in 166 files and 64 Playwright tests, all passing (measured by running `bun run test` and `CI=1 bun run e2e`).
+Measured by running `bun run lazarus fixtures --verify` and by parsing each file with `parseWorkbook` from `src/parser`. The corpus has 15 spreadsheet files: 6 real files from public sources and 9 synthetic test files made by `scripts/gen-fixtures.ts`. Each has a `LICENSE.txt` next to it and an entry in `fixtures/manifest.json`.
 
-WK3 and dBase readers: `src/parser` now has `parseWk3`, `parseDbf` and `parseWorkbook`, which picks the reader from the bytes. The WK3 record layouts were read from two independent open-source readers (LibreOffice and Gnumeric); the BOF version word and the sheet-name record rest on LibreOffice alone. Sources, line by line, are in `.kiro/specs/wk3-dbf-readers/evidence.md`. One real WK3 is in the corpus, `PEYTREND.WK3` from the openpreserve format corpus (CC0): it reads as one sheet of 1,034 cells (5 labels, 1,029 numbers, no formulas), the same counts an independent walker in the tests gives. It has no formulas, so WK3 formula reading is checked only against our own synthetic file. WK3 formulas are not decoded; they keep their stored result. The real `ne_110m_land.dbf` reads as 127 records, 3 fields, 381 values (127 text, 254 numbers). The app, `--verify`, `--xlsx` and `--report` take WK3 and DBF files: a WK3 workbook gets one tab per sheet and one worksheet per sheet in the XLSX; each WK3 formula is unverifiable with the reason `wk3-formula-not-decoded` and is written as its stored value, so a WK3 file can never show a green headline. A DBF has no formulas: the app shows "No formulas" and the number of values shown as read, and the XLSX holds the table as read (field names in row 1, deleted records left out).
+| File | Format | Origin | Cells | Formulas | Matched | Mismatched | Unverifiable |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: |
+| `ksbase/KSBASE.WK1` | WK1 | real | 1,250 | 160 | 160 | 0 | 0 |
+| `lotus123-wks/testLotus123.wks` | WKS | real | 33 | 10 | 10 | 0 | 0 |
+| `libreoffice-wks-functions/gnome647171-1.wks` | WKS | real | 7 | 4 | 3 | 0 | 1 |
+| `census-delaware-1992/92stlde.wk1` | WK1 | real | 357 | 0 | 0 | 0 | 0 |
+| `format-corpus-peytrend/PEYTREND.WK3` | WK3 | real | 1,034 | 0 | 0 | 0 | 0 |
+| `natural-earth-land/ne_110m_land.dbf` | DBF | real | 381 values | 0 | 0 | 0 | 0 |
+| 7 synthetic WK1 files | WK1 | synthetic | 132 | 28 | 27 | 0 | 1 |
+| `wk3-sheets/wk3-sheets.wk3` | WK3 | synthetic | 16 (3 sheets) | 1 | 0 | 0 | 1 |
+| `dbf-table/dbf-table.dbf` | DBF | synthetic | 29 values | 0 | 0 | 0 | 0 |
+| **All 15 files** | | | **3,239** | **203** | **200** | **0** | **3** |
 
-Macros: for a WK1 or WKS file, `src/macro` reads the range names (NAME records), finds the macros (a name of a backslash and one letter, such as `\0` or `\P`, plus unnamed blocks of labels that start with `{` or `/`), and splits each one into steps: brace keys such as `{GOTO}A1~` ("Go to A1") and `{CALC}` ("Press Calc (F9)"), Enter (`~`) and typed text. The Release 2 menu tree could not be sourced (see `.kiro/specs/macro-translator/evidence.md`), so a slash command such as `/PPRA1..D8~GQ` is listed key by key as "Unknown menu key" steps instead of "Print > Printer > Range". Each macro, and each formula opcode the engine does not know, becomes an item in the approval queue of the Macros step (the tab next to Sheet): you approve or reject it with the buttons or, while the list has focus, with A, R and Z to undo. Macros are never run. Approving records your decision in the JSON and HTML reports and changes no cell, total or XLSX byte; an approved unknown opcode stays Unverifiable. A model only explains: the app first looks up a recorded explanation, then asks Ollama on `http://localhost:11434` if it is running (optional; a page not served from localhost needs `OLLAMA_ORIGINS` set to its origin), and otherwise says "Explanation unavailable: the local model is not running. The steps above are complete." The request holds the macro text and step labels or the opcode, never a cell value. `fixtures/macros/macros.wk1` is a generated test file with two named macros (`\0`, `\P`), one unnamed block and one unknown opcode on A10, so its queue shows four waiting items; its `recorded-explanations.json` is text written by hand to stand in for a model and is shown as "recorded fixture". On the real fixtures the reader finds 9 range names in `KSBASE.WK1` and no macro in any of them. Limits: WK1 and WKS only, no Report tab yet, and decisions last until the page is closed.
+- The three real Lotus files with formulas hold 174 formulas: 173 recalculate to exactly the number the file stored, none is mismatched, and 1 is unverifiable. That one, in `gnome647171-1.wks`, returns text ("Odd" or "Even"), and the parser does not read a stored text result yet.
+- The 7 synthetic WK1 files are `basic-values`, `dates`, `formulas`, `functions`, `labels`, `macros` and `mixed`. Their 27 test formulas all match. The 28th, on A10 of `macros.wk1`, uses an opcode on purpose that the engine does not know, so it is unverifiable and goes to the approval queue.
+- The synthetic WK3 formula is unverifiable by design (`wk3-formula-not-decoded`): WK3 formulas keep their stored result.
+- DBF counts are values only, without the field-name row. A table has no formulas, so it has nothing to verify. `ne_110m_land.dbf` reads as 127 records and 3 fields (127 text, 254 numbers). `dbf-table.dbf` has 7 records, one of them deleted and left out, and 6 fields.
+- All 11 WK1 and WKS files (4 real, 7 synthetic) round-trip through the XLSX writer: reading the workbook back with exceljs returns every cell's value, formula text and stored result, and no extra cell (`tests/differential/xlsx/roundtrip.test.ts`).
 
-Limits, as the app says them: "This version reads WK1, WKS and WK3 worksheets and dBase tables. WK3 formulas are shown with their stored results and are not checked yet. Macros in WK1 and WKS files are listed as steps for you to approve. They are never run, and macros in WK3 files are not read yet." A summon takes at most 500 files of at most 32 MiB each. The Report view is not built yet.
+## What is built
+
+**Readers.** `src/parser` has `parseWk1` (WK1 and WKS), `parseWk3`, `parseDbf` and `parseWorkbook`, which picks the reader from the bytes, never the file name. The WK3 record layouts were read from two independent open-source readers (LibreOffice and Gnumeric). The BOF version word and the sheet-name record rest on LibreOffice alone. Sources, line by line, are in `.kiro/specs/wk3-dbf-readers/evidence.md`. `PEYTREND.WK3` (openpreserve format corpus, CC0) has no formulas, so WK3 formula reading is checked only against our own synthetic file.
+
+**Formulas and verification.** `src/formula` decodes the RPN tokens of a WK1/WKS formula and prints an Excel formula. `src/verify` recalculates the sheet with its own deterministic engine (cycle detection, the documented tolerance in one file) and classifies every formula cell as matched, mismatched or unverifiable with a reason. The stored values are the oracle and are never changed. A WK3 workbook gets one result per sheet, and each WK3 formula is unverifiable with the reason `wk3-formula-not-decoded`, so a WK3 file can never show a green headline.
+
+**XLSX and report.** `src/xlsx` writes each formula with the number the file remembered, never the recalculated one, and the same input gives byte-identical output. Only `src/xlsx/exceljs-adapter.ts` imports exceljs. `src/report` builds the provenance report as JSON and as a self-contained HTML page. A WK3 workbook gets one worksheet per sheet. A DBF table is written as read: field names in row 1, deleted records left out. The writer and the report page also run in Chromium with no network request.
+
+**Browser app** (`bun run build`, then `bun run preview`). The Summon view takes one file, several files or a whole folder (dropped, or chosen with "Choose file" and "Choose folder"), or "Summon the sample". Parsing, verification and hashing run in a Web Worker. The Sheet view shows the percentage verified, the matched, mismatched and unverifiable counts with a proof bar, the grid with a status on every formula cell (a status list on phones), filters by status, and a cell drawer with both formulas and both values. A WK3 workbook gets one tab per sheet. A DBF table shows "No formulas" and the number of values as read. The app downloads the XLSX and the report as HTML or JSON. A batch gets a file list at the left.
+
+Measured in the Playwright tests: the sample shows 160 matched, 0 mismatched, 0 unverifiable, 100.0% verified. Every request in a full session is a GET for the page or a file under `/assets/`, and a fetch to another origin is blocked by the page's Content-Security-Policy. axe finds no violation on any view. The longest main-thread task while a generated 5,000-formula sheet is raised was 94.0 ms and 105.0 ms in two full runs of the suite (limit 200 ms). A full 8,192-row by 256-column sheet keeps fewer than 2,000 grid cells in the page.
+
+**Macros.** For a WK1 or WKS file, `src/macro` reads the range names (NAME records), finds the macros (a name of a backslash and one letter, such as `\0` or `\P`, plus unnamed blocks of labels that start with `{` or `/`), and splits each one into steps: brace keys such as `{GOTO}A1~` ("Go to A1") and `{CALC}` ("Press Calc (F9)"), Enter (`~`) and typed text. The Release 2 menu tree could not be sourced (see `.kiro/specs/macro-translator/evidence.md`), so a slash command such as `/PPRA1..D8~GQ` is listed key by key as "Unknown menu key" steps instead of "Print > Printer > Range".
+
+Each macro, and each formula opcode the engine does not know, becomes an item in the approval queue of the Macros step (the tab next to Sheet). You approve or reject it with the buttons or, while the list has focus, with A, R and Z to undo. Macros are never run. Approving records your decision in the JSON and HTML reports and changes no cell, total or XLSX byte. An approved unknown opcode stays unverifiable.
+
+A model only explains. The app first looks up a recorded explanation, then asks Ollama on `http://localhost:11434` if it is running (optional; a page not served from localhost needs `OLLAMA_ORIGINS` set to its origin), and otherwise says "Explanation unavailable: the local model is not running. The steps above are complete." The request holds the macro text and step labels or the opcode, never a cell value. `fixtures/macros/macros.wk1` has two named macros (`\0`, `\P`), one unnamed block and one unknown opcode on A10, so its queue shows four waiting items. Its `recorded-explanations.json` is text written by hand to stand in for a model and is shown as "recorded fixture". On the real fixtures the reader finds 9 range names in `KSBASE.WK1` and no macro in any of them.
+
+**Limits**, as the app says them: "This version reads WK1, WKS and WK3 worksheets and dBase tables. WK3 formulas are shown with their stored results and are not checked yet. Macros in WK1 and WKS files are listed as steps for you to approve. They are never run, and macros in WK3 files are not read yet." A summon takes at most 500 files of at most 32 MiB each. The app has no Report tab yet (the report is a download), and approval decisions last until the page is closed.
 
 The sample behind "Summon the sample" is `fixtures/ksbase/KSBASE.WK1`, a real Lotus 1-2-3 WK1 file from openpreserve/format-corpus by Johan van der Knijff, CC0-1.0. Its source and license are in `fixtures/ksbase/LICENSE.txt`.
 
+## Tests
+
+1,911 unit, property and differential tests in 170 files (`bun run test`) and 64 Playwright tests in 17 files (`CI=1 bun run e2e`), all passing, plus a clean `bun run typecheck`.
+
+- Unit tests mirror `src/` under `tests/unit`.
+- Differential tests (`tests/differential`) compare the recalculated value with the cached value of every fixture, and round-trip the XLSX.
+- Property tests (`tests/property`, fast-check) check that the WK1, WK3 and DBF readers, the formula translator, the verifier, the XLSX writer and the macro reader never throw on arbitrary or mutated bytes, and cover round trips and RPN to Excel.
+- The Playwright specs in `e2e/` drive the built app in Chromium, run axe, check the request log and take the screenshots in `e2e/screenshots`.
+
 ## Stack
 
-TypeScript, React with Vite, runs fully in the browser; Web Workers for parsing and recalculation; Vitest for differential tests; exceljs (4.4.0, behind one adapter file) for XLSX output; a small Node MCP server (lotus-oracle); an optional local model (Ollama on localhost:11434, or a recorded fixture) used only to explain macros and unknown opcodes, behind an approval queue; static hosting.
+- TypeScript (strict), React 19 and Vite 8. The app runs fully in the browser. There is no backend: `bun run build` writes static files to `dist/`.
+- Web Workers for parsing, verification and hashing.
+- exceljs 4.4.0 for XLSX output, behind one adapter file.
+- Vitest with fast-check, Playwright with @axe-core/playwright.
+- A small stdio MCP server, lotus-oracle, on `@modelcontextprotocol/sdk`, run with bun.
+- Optional: a local model (Ollama on localhost:11434, or a recorded fixture), used only to explain macros and unknown opcodes, behind the approval queue.
+- Docker images for the checks.
 
-## Setup
+## Scripts
 
-Requires [bun](https://bun.sh).
-
-```sh
-bun install
-bunx playwright install chromium   # one-time browser download for e2e
-```
-
-Scripts (`bun run <script>`):
+Run with `bun run <script>`:
 
 - `dev`: Vite dev server
 - `build`: production build into `dist/`
@@ -43,10 +99,53 @@ Scripts (`bun run <script>`):
 - `test:watch`: Vitest in watch mode
 - `e2e`: Playwright specs under `e2e/` (builds and previews the app)
 - `oracle` / `oracle:mcp`: start the lotus-oracle MCP server on stdio (see below)
-- `lazarus <path> [--json] [--verify]`: inventory a file or folder, one line per file with path, format (wk1, wks, wk3, dbf or unknown), size and sha256. With `--verify` it also parses each WK1/WKS file, recalculates its formulas and adds the matched, mismatched and unverifiable counts (stored values are never changed). Example: `bun run lazarus fixtures --verify`
-- `lazarus <file> [--xlsx <out.xlsx>] [--report <out.json|out.html>]`: for one WK1/WKS file, write the XLSX workbook and/or the provenance report (JSON or a self-contained HTML page, chosen by the extension). Both outputs are built in memory and written only when all succeed; a non-Lotus input exits 1, a bad flag or an output that is the input exits 2. Example: `bun run lazarus fixtures/ksbase/KSBASE.WK1 --xlsx /tmp/ksbase.xlsx --report /tmp/ksbase.html`
+- `lazarus <path> [--json] [--verify]`: inventory a file or folder, one line per file with path, format (wk1, wks, wk3, dbf or unknown), size and sha256. With `--verify` it also parses each WK1, WKS, WK3 and DBF file, recalculates its formulas and adds the matched, mismatched and unverifiable counts (stored values are never changed). Example: `bun run lazarus fixtures --verify`
+- `lazarus <file> [--xlsx <out.xlsx>] [--report <out.json|out.html>]`: for one WK1, WKS, WK3 or DBF file, write the XLSX workbook and/or the provenance report (JSON or a self-contained HTML page, chosen by the extension). Both outputs are built in memory and written only when all succeed. An unreadable input, or one that is not a Lotus worksheet or dBase table, exits 1; a bad flag, a missing path, a folder, or an output that is the input exits 2. Example: `bun run lazarus fixtures/ksbase/KSBASE.WK1 --xlsx /tmp/ksbase.xlsx --report /tmp/ksbase.html`
 - `verify:golden`: regenerate `tests/differential/verify/golden.json`, the measured verification counts of the real fixtures (keeps the human-written findings)
+- `gen:fixtures`: regenerate the synthetic fixtures
 - `check:diff`, `check:manifest`, `check:opcodes`, `check:pii`: run one slice of the test suite each (see Kiro hooks below)
+- `docker:test`, `docker:e2e`: run the checks in Docker (see below)
+
+## Docker
+
+The `Dockerfile` builds test images only; the app itself is static files. Both images install from `bun.lock` with `bun install --frozen-lockfile` and run as a non-root user, because the CLI and MCP tests make a file unreadable with `chmod 000` and expect an error, which root would not get.
+
+- `bun run docker:test` builds the `test` target (Node 24 slim with bun 1.4.2, user `node`) and runs `bun run typecheck && bun run test` in it.
+- `bun run docker:e2e` builds the `e2e` target (Microsoft's Playwright 1.65.1 image, which has Chromium, user `pwuser`) and runs `bun run e2e` with `CI=1`, so Playwright builds and serves its own preview inside the container.
+
+`tests/unit/docker/dockerfile.test.ts` checks that both targets exist, run as a non-root user with `CI=1`, and that the Playwright image matches the installed `@playwright/test`.
+
+## Kiro
+
+Each feature started as a spec, and everything Kiro reads is in `.kiro/`.
+
+**Specs** (`.kiro/specs/<name>/`): each has `requirements.md`, `design.md` and `tasks.md`; five also have an `evidence.md` with the sources and measurements behind their decisions. There are 10 specs, and all 254 of their tasks are ticked:
+
+- `scaffold`: project scaffold and test gate
+- `fixtures`: fixture corpus, manifest and licenses
+- `wk1-parser`: WK1 and WKS record parser
+- `formula-translator`: formula token decoder and Excel translator
+- `verification-engine`: recalculation engine and cell classification
+- `xlsx-writer`: XLSX writer and provenance report
+- `seance-ui`: the browser app
+- `wk3-dbf-readers`: WK3 and DBF readers
+- `macro-translator`: macro steps, approval queue and local model explainer
+- `lotus-oracle-mcp`: the MCP server below
+
+**Steering** (`.kiro/steering/`): `product.md` (users and the proof-first promise), `tech.md` (stack, commands, test gate), `structure.md` (module layout and import rules) and `ai-boundaries.md` (the model never touches a number) are always included. `lotus-format.md` (record and formula format notes) is included for files under `src/parser`, `src/formula`, `mcp`, `tests` and `fixtures`, and `design.md` (visual rules) for `src/ui`, `e2e`, `index.html` and CSS. `design/DESIGN.md` turns the design steering into tokens and screen layouts.
+
+**Hooks** and **MCP**: see the next two sections.
+
+## Kiro hooks
+
+Four agent hooks in `.kiro/hooks/`, made with kiro-cli. Each runs one `bun run` script, which you can also run by hand:
+
+- `parser-differential-tests.kiro.hook`: when a file under `src/parser/` is saved, `bun run check:diff` runs the differential tests in `tests/differential`.
+- `fixture-manifest-check.kiro.hook`: when a file is created under `fixtures/`, `bun run check:manifest` checks that every WK1, WKS, WK3 and DBF file is listed in `fixtures/manifest.json` with matching sha256 and counts and a `LICENSE.txt` next to it, and that the generated fixtures still match their generator.
+- `opcode-coverage-check.kiro.hook`: when a file under `src/formula/` or `src/verify/` is saved, `bun run check:opcodes` checks that every opcode in the table decodes and translates to Excel (only `@ERR` has no Excel form), that no translator rule names a function the table lacks, and that the evaluator covers exactly the table's functions.
+- `fixture-pii-scan.kiro.hook`: when a file under `fixtures/` is saved, `bun run check:pii` scans every fixture for personal data, with a reviewed allowlist.
+
+`tests/unit/kiro/hooks.test.ts` checks that every hook parses and only runs scripts that `package.json` has.
 
 ## lotus-oracle MCP server
 
@@ -59,17 +158,6 @@ A small stdio MCP server (`mcp/lotus-oracle/server.ts`) for developer tools. Its
 A missing, unreadable or larger than 32 MiB file, or one that is not a Lotus or dBase file, gives an error result, and the server keeps running. Only JSON-RPC goes to stdout; logs go to stderr.
 
 Run it with `bun run oracle:mcp` (or `bun mcp/lotus-oracle/server.ts`). Kiro picks it up from `.kiro/settings/mcp.json`, which starts `bun mcp/lotus-oracle/server.ts` from the project root; give an absolute path there if your Kiro starts elsewhere. The integration test `tests/unit/mcp/lotus-oracle.test.ts` spawns the server through the SDK's stdio client and calls every tool.
-
-## Kiro hooks
-
-Four agent hooks in `.kiro/hooks/`, made with kiro-cli. Each runs one `bun run` script, which you can also run by hand:
-
-- `parser-differential-tests.kiro.hook`: when a file under `src/parser/` is saved, `bun run check:diff` runs the differential tests in `tests/differential`.
-- `fixture-manifest-check.kiro.hook`: when a file is created under `fixtures/`, `bun run check:manifest` checks that every WK1, WKS, WK3 and DBF file is listed in `fixtures/manifest.json` with matching sha256 and counts and a `LICENSE.txt` next to it, and that the generated fixtures still match their generator.
-- `opcode-coverage-check.kiro.hook`: when a file under `src/formula/` or `src/verify/` is saved, `bun run check:opcodes` checks that every opcode in the table decodes and translates to Excel (only `@ERR` has no Excel form), that no translator rule names a function the table lacks, and that the evaluator covers exactly the table's functions.
-- `fixture-pii-scan.kiro.hook`: when a file under `fixtures/` is saved, `bun run check:pii` scans every fixture for personal data, with a reviewed allowlist.
-
-`tests/unit/kiro/hooks.test.ts` checks that every hook parses and only runs scripts that `package.json` has.
 
 ## License
 
