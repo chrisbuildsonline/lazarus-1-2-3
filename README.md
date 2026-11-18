@@ -42,10 +42,22 @@ Scripts (`bun run <script>`):
 - `test`: Vitest, whole suite under `tests/`
 - `test:watch`: Vitest in watch mode
 - `e2e`: Playwright specs under `e2e/` (builds and previews the app)
-- `oracle`: start the lotus-oracle MCP server (prints "not built yet" until it exists)
+- `oracle` / `oracle:mcp`: start the lotus-oracle MCP server on stdio (see below)
 - `lazarus <path> [--json] [--verify]`: inventory a file or folder, one line per file with path, format (wk1, wks, wk3, dbf or unknown), size and sha256. With `--verify` it also parses each WK1/WKS file, recalculates its formulas and adds the matched, mismatched and unverifiable counts (stored values are never changed). Example: `bun run lazarus fixtures --verify`
 - `lazarus <file> [--xlsx <out.xlsx>] [--report <out.json|out.html>]`: for one WK1/WKS file, write the XLSX workbook and/or the provenance report (JSON or a self-contained HTML page, chosen by the extension). Both outputs are built in memory and written only when all succeed; a non-Lotus input exits 1, a bad flag or an output that is the input exits 2. Example: `bun run lazarus fixtures/ksbase/KSBASE.WK1 --xlsx /tmp/ksbase.xlsx --report /tmp/ksbase.html`
 - `verify:golden`: regenerate `tests/differential/verify/golden.json`, the measured verification counts of the real fixtures (keeps the human-written findings)
+
+## lotus-oracle MCP server
+
+A small stdio MCP server (`mcp/lotus-oracle/server.ts`) for developer tools. Its three tools are thin wrappers over `src/`: they parse, decode and verify with the same code as the app, call no model and make no network request. They read the files you name and never write.
+
+- `opcode_lookup { opcode }`: a WK1/WKS formula opcode (`80` or `"0x50"`) from the opcode table: kind, name or operator, arity, `confirmed` or `candidate`, and the source. An opcode not in the table is an error result that says cells using it stay unverifiable.
+- `verify_file { path }`: parses a WK1, WKS, WK3 or DBF file and recalculates its formulas. Per sheet the matched, mismatched and unverifiable counts; per formula cell the status, reason, Excel and Lotus formula, stored and recalculated value; and the parser diagnostics. Example: `{ "path": "fixtures/libreoffice-wks-functions/gnome647171-1.wks" }` gives 3 matched and 1 unverifiable of 4.
+- `diff_workbooks { left, right }`: compares two files sheet by sheet (paired by position) and lists the cells only in one and the cells whose kind, value, label, stored result or Excel formula changed.
+
+A missing, unreadable or larger than 32 MiB file, or one that is not a Lotus or dBase file, gives an error result, and the server keeps running. Only JSON-RPC goes to stdout; logs go to stderr.
+
+Run it with `bun run oracle:mcp` (or `bun mcp/lotus-oracle/server.ts`). Kiro picks it up from `.kiro/settings/mcp.json`, which starts `bun mcp/lotus-oracle/server.ts` from the project root; give an absolute path there if your Kiro starts elsewhere. The integration test `tests/unit/mcp/lotus-oracle.test.ts` spawns the server through the SDK's stdio client and calls every tool.
 
 ## License
 
