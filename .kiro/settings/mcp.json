@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "lotus-oracle": {
+      "command": "bun",
+      "args": ["mcp/lotus-oracle/server.ts"],
+      "env": {},
+      "disabled": false
+    }
+  }
+}
