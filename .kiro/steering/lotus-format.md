@@ -86,6 +86,22 @@ Lotus date serials count days from 1900-01-01 = 1 and wrongly treat 1900 as a le
 
 Algorithm in one line: serial 1 = 1900-01-01, 1900 counts as a leap year, so serial 60 is the fictional 1900-02-29 and from serial 61 the serial is the days since 1899-12-30.
 
+## WK3
+
+Sources, line by line, in `.kiro/specs/wk3-dbf-readers/evidence.md` (LibreOffice `sc/source/filter/lotus` = LO, Gnumeric `plugins/lotus-123` = GN; copies in `docs/sources/wk3/`). The reader's table is `src/parser/wk3-records.ts`. All little-endian.
+
+| Opcode | Name | Body | Source |
+|---|---|---|---|
+| 0x0000 | BOF | 26 bytes: version u16 0x1000, sub u16 0x0004, 22 more | LO filter.cxx 162-171, lotimpop.cxx 57-79. **One secondary source** for 0x1000 (GN names 0x1002+ only) |
+| 0x0001 | EOF | empty | LO lotread.cxx |
+| 0x0016 | LABEL | row u16, sheet u8, col u8, prefix u8, text, 0x00 | LO lotimpop.cxx 218-239; GN lotus.c 2132-2141 |
+| 0x0017 | NUMBER | address (4), 10-byte extended precision | LO lotimpop.cxx 241-258, ftools.cxx 42-108; GN lotus.c 2161-2168 |
+| 0x0018 | SMALLNUM | address (4), i16 packed: bit 0 clear = word >> 1 (integer); set = (word >> 4) x 5000, 500, /20, /200, /2000, /20000, /16, /64 by (word >> 1) & 7 | LO tool.cxx 104-126; GN lotus.c 909-922 |
+| 0x0019 | FORMULA | address (4), 10-byte cached result, RPN to the end of the record | LO lotimpop.cxx 279-288; GN lotus.c 2374-2395 |
+| 0x001B | sheet name (subtype 14000) | subtype u16 14000, sheet u16, name, 0x00 | LO lotread.cxx, lotimpop.cxx 353-371. **One secondary source** |
+
+Differences from WK1: no format byte in cell records; the address is row u16, sheet u8, column u8; numbers are 80-bit extended (significand u64 with explicit integer bit, then sign and 15-bit exponent, bias 16383); FORMULA has no RPN length word; several sheets per file. WK3 RPN is not decoded, so every WK3 formula is `unverifiable`. Real file: `fixtures/format-corpus-peytrend/PEYTREND.WK3` (CC0).
+
 ## ERR and NA stored doubles (rule S27)
 
 A stored double with sign 0, exponent 0x7FF and fraction 0 is ERR (+Infinity). Sign 1 with the same exponent and fraction is NA (-Infinity). Exponent 0x7FF with a non-zero fraction is the STRING pattern: do not read it as a number. Finding in `docs/verify-evidence.md`: no fixture contradicts this. KSBASE.WK1 has six NUMBER cells holding `7ff0000000000000` (ERR), none read by a formula. No fixture holds the NA pattern, so that half is untested. gnome647171-1.wks A5 stores `7ff0ffffffffffff`, the STRING pattern, for a formula that returns text. The full rules are in `.kiro/specs/verification-engine/design.md`.
