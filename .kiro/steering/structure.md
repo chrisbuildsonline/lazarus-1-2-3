@@ -6,9 +6,9 @@ inclusion: always
 
 ```
 src/
-  parser/      WKS/WK1 reader implemented (parseWk1 in src/parser); DBF and WK3 later. Bytes in, typed records plus diagnostics out.
+  parser/      WK1/WKS, WK3 and DBF readers implemented (parseWk1, parseWk3, parseDbf); parseWorkbook picks the reader from the bytes (detectKind). Bytes in, a workbook of named sheets plus diagnostics out.
   formula/     RPN token decoder, Excel translator and printer implemented (translateFormula in src/formula, chaining decodeRpn, toExcelAst and printExcel); deterministic engine later.
-  verify/      Implemented: tolerance, values, dates, ops, functions (lists, math, finance, lookup, decimal), evaluate, graph (Tarjan cycle detection), recalc, classify, report, index (verifySheet, verifyBytes). Provenance report UI and file output later.
+  verify/      Implemented: tolerance, values, dates, ops, functions (lists, math, finance, lookup, decimal), evaluate, graph (Tarjan cycle detection), recalc, classify, report, index (verifySheet, verifyBytes), workbook (verifyWorkbook, verifyWorkbookBytes: one result per sheet; WK3 formulas unverifiable with wk3-formula-not-decoded, DBF has no formulas). Provenance report UI and file output later.
   report/      Implemented: provenance report built from verification results (build, types, features, tokens), as JSON (json.ts) and as a self-contained HTML page (html.ts, escape.ts), plus sha256.ts. No network, no external assets.
   xlsx/        Implemented: XLSX writer (writeXlsx in index.ts; plan.ts, labels.ts, zip-normalize.ts for byte-identical output). The only module that imports the writer library, and only exceljs-adapter.ts does.
   macro/       Brace keystroke and slash-command parser, plain-English step list, approval state.

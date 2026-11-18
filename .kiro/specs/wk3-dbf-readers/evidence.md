@@ -82,3 +82,7 @@ Published description: Independent Software, "DBF and DBT/FPT File Structure" (h
 | end of file | 0x1A | 0x1A | same |
 
 `ne_110m_land.dbf` bytes agree: `tests/unit/parser/dbf-robustness.test.ts` reads 127 records and 3 fields with no error from these offsets, the same counts the independent `tests/unit/helpers/dbf-scan.ts` gives for the manifest.
+
+## Measured counts (task 16)
+
+From tests/differential/parser (bun run test). fixtures/wk3-sheets/wk3-sheets.wk3 (synthetic): 19 records, 3 sheets (A 4 labels; B 8 numbers; Totals 3 numbers and 1 formula), 16 cells, 0 skipped, 1 value rounded from 10-byte precision (value-rounded info). fixtures/format-corpus-peytrend/PEYTREND.WK3 (real, CC0): 1036 records, 1 sheet, 1034 cells (5 labels, 1029 numbers), 0 skipped, no diagnostics. fixtures/dbf-table/dbf-table.dbf (synthetic): 7 records, 1 deleted, 6 fields, 29 cells (6 labels, 10 numbers, 13 other), 7 blank, 0 unreadable; diagnostics memo-not-read, deleted-record. fixtures/natural-earth-land/ne_110m_land.dbf (real): 127 records, 0 deleted, 3 fields, 381 cells (127 labels, 254 numbers), 0 blank, 0 unreadable; diagnostics: missing-eof (info: the file has no 0x1A byte). Every wk3 and dbf manifest entry matches its counts and the independent walkers. WK3 is checked against one real file without formulas; WK3 formula reading rests on synthetic files only.
