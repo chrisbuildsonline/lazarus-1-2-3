@@ -36,8 +36,21 @@ Run everything with `bun run <script>`:
 - `oracle`: start the lotus-oracle MCP server
 - `lazarus <file> [--json] [--verify] [--xlsx out.xlsx] [--report out.json|out.html]`: inventory a file or folder (path, format, size, sha256). With `--verify` it also parses each WK1/WKS file and adds matched, mismatched and unverifiable counts. With `--xlsx` and/or `--report` (one WK1/WKS file) it writes the XLSX workbook and the provenance report (JSON or self-contained HTML, chosen by extension). Run as `bun run lazarus <file> [--json] [--verify] [--xlsx out.xlsx] [--report out.json|out.html]`.
 - `verify:golden`: regenerate `tests/differential/verify/golden.json` (measured verification counts of the real fixtures).
+- `check:diff`: run `tests/differential`.
+- `check:manifest`: run `tests/unit/fixtures/manifest.test.ts` and `gen-fixtures.test.ts`.
+- `check:opcodes`: run `tests/unit/formula/opcode-coverage.test.ts` and `opcodes.test.ts`.
+- `check:pii`: run `tests/unit/fixtures/pii.test.ts`.
 
 If a script does not exist yet, add it to package.json rather than calling the tool directly.
+
+## Hooks
+
+- `fixture-manifest-check.kiro.hook`: on fileCreated for `fixtures/**/*`, runs `bun run check:manifest`.
+- `opcode-coverage-check.kiro.hook`: on fileEdited for `src/formula/**/*.ts` and `src/verify/**/*.ts`, runs `bun run check:opcodes`.
+- `parser-differential-tests.kiro.hook`: on fileEdited for `src/parser/**/*.ts`, runs `bun run check:diff`.
+- `fixture-pii-scan.kiro.hook`: on fileEdited for `fixtures/**/*`, runs `bun run check:pii`.
+
+`tests/unit/kiro/hooks.test.ts` checks that every hook parses and only runs scripts that package.json has.
 
 ## Test gate
 
