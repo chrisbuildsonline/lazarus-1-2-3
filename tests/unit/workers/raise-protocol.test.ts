@@ -3,7 +3,7 @@
 import fc from "fast-check";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { parseWk1 } from "../../../src/parser/index.ts";
+import { parseWk1, parseWorkbook } from "../../../src/parser/index.ts";
 import { verifyBytes } from "../../../src/verify/index.ts";
 import { handleRaiseRequest, installRaiseWorker, sheetFromWire, sheetToWire, type RaiseResponse, type RaiseScopeLike } from "../../../src/workers/verify-protocol.ts";
 
@@ -66,6 +66,33 @@ describe("handleRaiseRequest over the manifest fixtures", () => {
       const cloned = structuredClone(last);
       expect(cloned).toEqual(last);
       if (cloned.type === "raised") expect(sheetFromWire(cloned.file.sheets[0]!.sheet)).toEqual(parseWk1(new Uint8Array(bytes)).sheet);
+      // Macros (macro-translator requirements 47, 48): new fields, every other field as before.
+      expect(Array.isArray(file.macros)).toBe(true);
+      expect(Array.isArray(file.macroNotes)).toBe(true);
+      expect(file.stats).toEqual(parseWorkbook(new Uint8Array(bytes)).stats);
+      expect(Object.keys(file).sort()).toEqual(["byteLength", "diagnostics", "format", "macroNotes", "macros", "name", "sha256", "sheets", "stats"]);
+    });
+  }
+
+  it("macros.wk1 gives the three macros and no notes", async () => {
+    const [, , last] = await raise({ type: "raise", id: 1, name: "macros.wk1", bytes: buffer("fixtures/macros/macros.wk1") });
+    if (last?.type !== "raised") throw new Error("not raised");
+    expect(last.file.macros.map((m) => [m.id, m.name, m.start, m.lines.length])).toEqual([
+      ["macro:Sheet1!F1", "\\0", "F1", 3],
+      ["macro:Sheet1!H1", "\\P", "H1", 1],
+      ["macro:Sheet1!J1", null, "J1", 2],
+    ]);
+    expect(last.file.macroNotes).toEqual([]);
+    expect(structuredClone(last)).toEqual(last);
+  });
+
+  for (const f of manifest.fixtures.filter((x) => x.format === "wk3" || x.format === "dbf")) {
+    it(`${f.path} gives no macros and no notes`, async () => {
+      const posted = await raise({ type: "raise", id: 2, name: f.path.split("/").pop()!, bytes: buffer(f.path) });
+      const last = posted.at(-1)!;
+      if (last.type !== "raised") throw new Error("not raised");
+      expect([last.file.macros, last.file.macroNotes]).toEqual([[], []]);
+      expect(last.file.stats).toEqual(parseWorkbook(new Uint8Array(buffer(f.path))).stats);
     });
   }
 });
@@ -104,6 +131,16 @@ describe("handleRaiseRequest errors", () => {
       },
     });
     expect(posted).toEqual([{ type: "error", id: 4, message: expect.stringContaining("parser exploded") }]);
+  });
+
+  it("an injected macros hook that throws posts an error with its message and no raised", async () => {
+    const posted = await raise({ type: "raise", id: 6, name: "m.wk1", bytes: buffer("fixtures/macros/macros.wk1") }, {
+      macros: () => {
+        throw new Error("macros exploded");
+      },
+    });
+    expect(posted.some((m) => m.type === "raised")).toBe(false);
+    expect(posted.at(-1)).toEqual({ type: "error", id: 6, message: expect.stringContaining("macros exploded") });
   });
 
   it("an injected verify that throws posts read, then an error", async () => {

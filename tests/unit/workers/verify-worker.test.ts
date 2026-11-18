@@ -59,9 +59,10 @@ describe("worker and engine boundaries (requirement 10)", () => {
     });
   }
 
-  it("verify-protocol.ts imports only ../verify/index.ts, ../parser/index.ts and its own files", () => {
+  it("verify-protocol.ts imports only ../verify/index.ts, ../parser/index.ts, ../macro/index.ts and its own files", () => {
+    // macro-translator design.md "Layout": workers import macro.
     for (const target of imports("src/workers/verify-protocol.ts")) {
-      expect(["src/verify/index.ts", "src/parser/index.ts"].includes(target) || target.startsWith("src/workers/"), target).toBe(true);
+      expect(["src/verify/index.ts", "src/parser/index.ts", "src/macro/index.ts"].includes(target) || target.startsWith("src/workers/"), target).toBe(true);
     }
   });
 

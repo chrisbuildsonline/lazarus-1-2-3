@@ -52,5 +52,7 @@ export function handBuilt(cells: Cell[], results: CellResult[], name = "hand.wk1
       },
     ],
     stats: { records: 0, cells: cells.length, formulas: 0, labels: 0, numbers: 0, skippedRecords: 0, skippedByOpcode: {}, bytesRead: 0 },
+    macros: [],
+    macroNotes: [],
   };
 }

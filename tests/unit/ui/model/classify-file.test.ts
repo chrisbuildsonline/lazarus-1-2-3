@@ -33,9 +33,18 @@ describe("classifyRaised", () => {
     expect(classifyRaised(file)).toEqual({ kind: "raised" });
   });
 
-  it("200 bytes of noise are unsupported", async () => {
+  it("200 bytes of noise are unsupported, with no macros", async () => {
     const noise = new Uint8Array(200).map((_, i) => (i * 197 + 13) % 251);
-    expect(classifyRaised(await raised(noise, "noise.wk1"))).toEqual({ kind: "unsupported" });
+    const file = await raised(noise, "noise.wk1");
+    expect(classifyRaised(file)).toEqual({ kind: "unsupported" });
+    expect([file.macros, file.macroNotes]).toEqual([[], []]);
+  });
+
+  it("macros and macro notes do not change the class", async () => {
+    const file = await fixture("fixtures/macros/macros.wk1");
+    expect(file.macros).toHaveLength(3);
+    expect(classifyRaised(file)).toEqual({ kind: "raised" });
+    expect(classifyRaised({ ...file, macros: [], macroNotes: ["a note"] })).toEqual({ kind: "raised" });
   });
 
   it("a BOF-only WK1 with a truncated record failed, with offset lines", async () => {

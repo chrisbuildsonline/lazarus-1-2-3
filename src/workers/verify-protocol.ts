@@ -15,6 +15,7 @@ import {
   type WorkbookParseResult,
   type WorkbookStats,
 } from "../parser/index.ts";
+import { detectMacros, readNames, type DetectedMacro } from "../macro/index.ts";
 import { verifyBytes, verifyWorkbook, type SheetVerification, type VerifyBytesResult } from "../verify/index.ts";
 import { sha256Hex } from "./hash.ts";
 
@@ -78,6 +79,10 @@ export type RaisedFile = {
   /** DBF only: the table header, for the meta line and the report. */
   table?: DbfTable;
   stats: WorkbookStats;
+  /** WK1 and WKS: the macros found by name or shape (never run). Empty for other formats. */
+  macros: DetectedMacro[];
+  /** Notes of the NAME walker and of detection, for the Macros view. */
+  macroNotes: string[];
 };
 
 export type RaiseResponse = RaiseProgress | { type: "raised"; id: number; file: RaisedFile } | { type: "error"; id: number | null; message: string };
@@ -87,7 +92,17 @@ export type RaiseDeps = {
   parse?: (bytes: Uint8Array) => WorkbookParseResult;
   verify?: (workbook: Workbook, name: string) => SheetVerification[];
   hash?: (bytes: Uint8Array) => Promise<string>;
+  macros?: (bytes: Uint8Array, workbook: Workbook) => { macros: DetectedMacro[]; notes: string[] };
 };
+
+/** WK1 and WKS only: NAME records, then detection on the one sheet. */
+export function findMacros(bytes: Uint8Array, workbook: Workbook): { macros: DetectedMacro[]; notes: string[] } {
+  const first = workbook.sheets[0];
+  if ((workbook.format !== "wk1" && workbook.format !== "wks") || !first) return { macros: [], notes: [] };
+  const names = readNames(bytes);
+  const found = detectMacros(first.sheet, names.names, first.name);
+  return { macros: found.macros, notes: [...names.notes, ...found.notes] };
+}
 
 export type RaiseScopeLike = { onmessage: ((event: { data: unknown }) => void) | null; postMessage(message: RaiseResponse): void };
 
@@ -107,7 +122,7 @@ export function installRaiseWorker(scope: RaiseScopeLike): void {
 
 /** Validates the shape, parses (posts read), verifies (posts check), hashes, posts raised. Never throws. */
 export async function handleRaiseRequest(request: unknown, post: (m: RaiseResponse) => void, deps: RaiseDeps = {}): Promise<void> {
-  const { parse = parseWorkbook, verify = verifyWorkbook, hash = sha256Hex } = deps;
+  const { parse = parseWorkbook, verify = verifyWorkbook, hash = sha256Hex, macros: findAll = findMacros } = deps;
   const rawId = field(request, "id");
   const id = typeof rawId === "number" && Number.isInteger(rawId) ? rawId : null;
   const error = (text: string) => post({ type: "error", id, message: text });
@@ -124,6 +139,7 @@ export async function handleRaiseRequest(request: unknown, post: (m: RaiseRespon
     post({ type: "progress", id, step: "read" });
     const verifications = verify(workbook, name);
     const sheets = workbook.sheets.map((s, i) => ({ name: s.name, sheet: sheetToWire(s.sheet), verification: verifications[i]! }));
+    const found = findAll(bytes, workbook);
     post({ type: "progress", id, step: "check" });
     let sha256: string | null;
     try {
@@ -131,7 +147,7 @@ export async function handleRaiseRequest(request: unknown, post: (m: RaiseRespon
     } catch {
       sha256 = null;
     }
-    const file: RaisedFile = { name, byteLength: bytes.byteLength, sha256, format: workbook.format, diagnostics, sheets, stats };
+    const file: RaisedFile = { name, byteLength: bytes.byteLength, sha256, format: workbook.format, diagnostics, sheets, stats, macros: found.macros, macroNotes: found.notes };
     if (parsed.kind === "dbf") file.table = parsed.table;
     post({ type: "raised", id, file });
   } catch (e) {
