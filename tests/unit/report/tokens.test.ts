@@ -7,24 +7,38 @@ import { verifyBytes } from "../../../src/verify/index.ts";
 
 const declarations = (css: string) => new Map([...css.matchAll(/--([a-z0-9-]+):\s*([^;]+);/g)].map((m) => [m[1]!, m[2]!.trim()]));
 
-const design = (() => {
+const block = (heading: string) => {
   const md = readFileSync("design/DESIGN.md", "utf8");
-  const section = md.slice(md.indexOf("## 2. Tokens"));
+  const section = md.slice(md.indexOf(heading));
   return declarations(/```css\n([\s\S]*?)```/.exec(section)![1]!);
-})();
+};
+/** The app's seance block, and the light paper block the report keeps (seance-visuals requirement 7). */
+const design = block("## 2. Tokens");
+const paper = block("### Paper palette (HTML report)");
+const want = (name: string) => paper.get(name) ?? design.get(name);
 
 const page = renderReportHtml(buildReport({ fileName: "K.WK1", sha256: "0".repeat(64), byteLength: 1, toolVersion: "0", verification: verifyBytes(new Uint8Array(readFileSync("fixtures/ksbase/KSBASE.WK1"))).verification }));
 const css = /<style>([\s\S]*?)<\/style>/.exec(page)![1]!;
 
 describe("report tokens", () => {
-  it("every token exists in DESIGN.md section 2 with the same value", () => {
-    for (const [name, value] of Object.entries(TOKENS)) expect(design.get(name), name).toBe(value);
+  it("every token exists in DESIGN.md section 2: the paper value for paper names, the seance value for the rest", () => {
+    for (const [name, value] of Object.entries(TOKENS)) {
+      expect(design.has(name), name).toBe(true);
+      expect(want(name), name).toBe(value);
+    }
   });
 
-  it("matches src/ui/tokens.css when it exists (it did not exist when this test was written)", () => {
+  it("uses the token names of src/ui/tokens.css, and its values for the names the paper block leaves out", () => {
     if (!existsSync("src/ui/tokens.css")) return;
     const ui = declarations(readFileSync("src/ui/tokens.css", "utf8"));
-    for (const [name, value] of Object.entries(TOKENS)) expect(ui.get(name), name).toBe(value);
+    for (const [name, value] of Object.entries(TOKENS)) {
+      expect(ui.has(name), name).toBe(true);
+      if (!paper.has(name)) expect(ui.get(name), name).toBe(value);
+    }
+  });
+
+  it("the report page carries none of the seance colours", () => {
+    for (const hex of ["#0d0b14", "#17141f", "#efeaf6"]) expect(page.toLowerCase()).not.toContain(hex);
   });
 
   it("the page uses only token variables and no other colour", () => {

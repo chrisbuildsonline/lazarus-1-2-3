@@ -38,6 +38,10 @@ body {
   margin: 0;
   min-height: 100vh;
   min-height: 100dvh;
+  /* The seance room: a faint violet moonlight from above, over the dark canvas colour. */
+  background-image: radial-gradient(ellipse 90% 55% at 50% -12%, var(--accent-glow), transparent 70%);
+  background-repeat: no-repeat;
+  background-attachment: fixed;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -131,7 +135,10 @@ pre {
   width: 24px;
   height: 24px;
   border-radius: var(--radius-xs);
-  background: radial-gradient(circle at 50% 62%, var(--candle-core) 0 16%, var(--accent-glow) 17% 30%, transparent 31%), var(--primary);
+  background:
+    radial-gradient(circle at 50% 62%, var(--candle-core) 0 14%, var(--candle-warm) 15% 34%, transparent 35%),
+    radial-gradient(circle at 50% 62%, var(--accent-glow), transparent 70%),
+    var(--surface-sunken);
   box-shadow: var(--shadow-primary);
 }
 
@@ -1295,13 +1302,13 @@ pre {
   min-height: 44px;
 }
 
-/* The phone scrim: the --text ink at 24% (DESIGN.md: rgba(18, 20, 26, 0.24), one below the drawer). */
+/* The phone scrim: the dark canvas at 72%, one below the drawer (DESIGN.md section 3 "Drawer"). */
 .scrim {
   position: fixed;
   inset: 0;
   z-index: calc(var(--z-drawer) - 1);
-  background: var(--text);
-  opacity: 0.24;
+  background: var(--canvas);
+  opacity: 0.72;
   animation: fade-in var(--dur-slow) var(--ease-out) both;
 }
 
