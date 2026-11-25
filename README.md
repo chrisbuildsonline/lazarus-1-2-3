@@ -4,6 +4,10 @@ Raise your dead Lotus 1-2-3 spreadsheets: every formula re-derived in a modern f
 
 Built for [Kiroween 2026](https://kiroween.devpost.com/). Submissions close 2026-12-04.
 
+![The summoning circle: drop a Lotus 1-2-3 file into it](docs/screenshots/seance-summon-1440.png)
+![The verification sweep: each cell lights up green as its formula is re-derived and matches the value the file remembers](docs/screenshots/seance-sweep-1440.png)
+<img src="docs/screenshots/seance-summon-390.png" width="240" alt="The summoning circle on a phone"> <img src="docs/screenshots/seance-sweep-390.png" width="240" alt="The totals counting up on a phone"> <img src="docs/screenshots/seance-drawer-1440.png" width="480" alt="One cell's proof: remembered value, raised value, Lotus and Excel formulas">
+
 ## Quick start
 
 Requires [bun](https://bun.sh) and Node (tested with bun 1.4.2 and Node 24; Vitest and Playwright start under Node).
