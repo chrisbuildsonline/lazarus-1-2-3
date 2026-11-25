@@ -1,6 +1,6 @@
 // translateFormula: rpn bytes to the Lotus AST and Excel text, with one status for the cell.
 import type { Expr, Origin } from "./ast.ts";
-import { decodeRpn } from "./decode.ts";
+import { decodeRpn, type Dialect } from "./decode.ts";
 import { diag, type FormulaDiagnostic } from "./diagnostics.ts";
 import { toExcelAst } from "./excel-ast.ts";
 import { printExcel } from "./print-excel.ts";
@@ -21,8 +21,8 @@ export function isUnverifiable(diagnostics: readonly FormulaDiagnostic[]): boole
   return diagnostics.some((d) => d.severity === "error" || d.code === "volatile-function");
 }
 
-export function translateFormula(rpn: Uint8Array, origin: Origin): FormulaTranslation {
-  const decoded = decodeRpn(rpn, origin);
+export function translateFormula(rpn: Uint8Array, origin: Origin, dialect: Dialect = "wk1"): FormulaTranslation {
+  const decoded = decodeRpn(rpn, origin, dialect);
   const diagnostics = [...decoded.diagnostics];
   let excel: string | null = null;
   if (decoded.ast) {

@@ -20,7 +20,8 @@
 import type { BinaryOp, UnaryOp } from "./ast.ts";
 
 export type OpcodeStatus = "confirmed" | "candidate";
-export type OperandName = "NUM" | "REF" | "RANGE" | "INT" | "STRING";
+/** WK1 operands, then the WK3 ones (opcodes-wk3.ts): 10-byte constant, packed small number, cell and range reference. */
+export type OperandName = "NUM" | "REF" | "RANGE" | "INT" | "STRING" | "NUM10" | "SNUM" | "CREF" | "RREF";
 
 type Evidence = { opcode: number; source: string; status: OpcodeStatus };
 

@@ -1,9 +1,13 @@
 // decodeRpn: a stack machine over the RPN bytes of one FORMULA cell. One forward pass, no
 // recursion; every iteration reads at least one byte, so it ends on any input.
-import { ByteReader } from "../parser/index.ts";
+// Dialect "wk1" (WK1/WKS, opcodes.ts) is the default; "wk3" reads Release 3 tokens (opcodes-wk3.ts).
+import { ByteReader, a1, float80ToDouble, unpackSmall } from "../parser/index.ts";
 import { MAX_DEPTH, type Expr, type Origin, type Ref } from "./ast.ts";
 import { diag, type FormulaDiagnostic } from "./diagnostics.ts";
 import { OPCODE_TABLE, type OpcodeEntry, type OperandName } from "./opcodes.ts";
+import { WK3_OPCODE_TABLE, WK3_UNSUPPORTED_REFERENCES } from "./opcodes-wk3.ts";
+
+export type Dialect = "wk1" | "wk3";
 
 export type DecodeResult = {
   ast: Expr | null;
@@ -17,7 +21,7 @@ const MAX_COL = 255;
 const MAX_ROW = 8191;
 
 /** Why an operand could not be read; null fields mean success. */
-type Fault = { code: "truncated-stream" | "non-finite-constant" | "reference-out-of-grid"; message: string };
+type Fault = { code: "truncated-stream" | "non-finite-constant" | "reference-out-of-grid" | "foreign-reference"; message: string };
 
 const signed = (v: number, bits: number) => (v & (1 << (bits - 1)) ? v - (1 << bits) : v);
 
@@ -36,8 +40,12 @@ function coord(w: number, bits: number, origin: number): { value: number; abs: b
   return { value: signed(field, bits) + origin, abs: false, reserved: high !== expected };
 }
 
-export function decodeRpn(rpn: Uint8Array, origin: Origin): DecodeResult {
+/** Lotus sheet letter for a WK3 sheet byte: 0 is A, 26 is AA. */
+const sheetLetter = (index: number) => a1(index, 0).slice(0, -1);
+
+export function decodeRpn(rpn: Uint8Array, origin: Origin, dialect: Dialect = "wk1"): DecodeResult {
   const reader = new ByteReader(rpn);
+  const table = dialect === "wk3" ? WK3_OPCODE_TABLE : OPCODE_TABLE;
   const diagnostics: FormulaDiagnostic[] = [];
   const stack: Expr[] = [];
   const fail = (d: FormulaDiagnostic): DecodeResult => {
@@ -62,6 +70,23 @@ export function decodeRpn(rpn: Uint8Array, origin: Origin): DecodeResult {
   };
 
   const isFault = (x: object): x is Fault => "code" in x;
+
+  /**
+   * One WK3 corner: row u16, sheet u8, column u8, stored as they are (LO ReadSRD, GN get_new_cellref).
+   * `bits` is its 3-bit relbits field: bit 0 column relative, bit 1 row relative (LO; see opcodes-wk3.ts).
+   */
+  const readCorner3 = (bits: number): Ref | Fault | null => {
+    const row = reader.u16();
+    const sheet = reader.u8();
+    const col = reader.u8();
+    if (row === null || sheet === null || col === null) return null;
+    const own = origin.sheet ?? 0;
+    if (sheet !== own) {
+      return { code: "foreign-reference", message: `reference to ${sheetLetter(sheet)}:${a1(col, row)} on sheet ${sheetLetter(sheet)}, not this formula's sheet ${sheetLetter(own)}` };
+    }
+    if (row > MAX_ROW) return { code: "reference-out-of-grid", message: `reference resolves to column ${col}, row ${row}, outside the 256 x 8192 grid` };
+    return { col, row, colAbs: (bits & 1) === 0, rowAbs: (bits & 2) === 0 };
+  };
 
   const readOperand = (name: OperandName, at: number, op: number): Expr | Fault => {
     const cut: Fault = { code: "truncated-stream", message: "stream ends inside the operand" };
@@ -99,6 +124,35 @@ export function decodeRpn(rpn: Uint8Array, origin: Origin): DecodeResult {
         if (isFault(to)) return to;
         return { type: "range", from, to };
       }
+      case "NUM10": {
+        const raw = reader.slice(10);
+        if (raw === null) return cut;
+        const { value, exact } = float80ToDouble(raw);
+        if (!Number.isFinite(value)) return { code: "non-finite-constant", message: `number constant is ${value}` };
+        if (!exact) diagnostics.push(diag("constant-precision", "info", at, "10-byte constant rounded to the nearest double", op));
+        return { type: "number", value };
+      }
+      case "SNUM": {
+        const w = reader.i16();
+        if (w === null) return cut;
+        const { kind, value } = unpackSmall(w);
+        return kind === "integer" ? { type: "int", value } : { type: "number", value };
+      }
+      case "CREF":
+      case "RREF": {
+        const bits = reader.u8();
+        if (bits === null) return cut;
+        const unused = name === "CREF" ? bits & ~0x07 : bits & ~0x3f;
+        if (unused) diagnostics.push(diag("reserved-bits-set", "warning", at, "relbits byte has unused high bits set", op));
+        const from = readCorner3(bits & 7);
+        if (from === null) return cut;
+        if (isFault(from)) return from;
+        if (name === "CREF") return { type: "ref", ref: from };
+        const to = readCorner3((bits >> 3) & 7);
+        if (to === null) return cut;
+        if (isFault(to)) return to;
+        return { type: "range", from, to };
+      }
     }
   };
 
@@ -110,7 +164,9 @@ export function decodeRpn(rpn: Uint8Array, origin: Origin): DecodeResult {
     const at = reader.pos;
     const op = reader.u8();
     if (op === null) return fail(diag("truncated-stream", "error", at, "formula ends without a return token"));
-    const entry = OPCODE_TABLE.get(op);
+    const entry = table.get(op);
+    const unsupported = dialect === "wk3" ? WK3_UNSUPPORTED_REFERENCES.get(op) : undefined;
+    if (unsupported) return fail(diag("reference-kind-unsupported", "error", at, `${unsupported} is not read yet`, op));
     if (!entry) {
       // Operand length is unknown, so nothing after this byte can be read safely.
       const result = fail(diag("unknown-opcode", "error", at, "opcode not in the table; decoding stops here", op));

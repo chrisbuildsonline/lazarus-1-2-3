@@ -21,6 +21,8 @@ export type Sheet = {
   declaredDimensions: { firstCol: number; firstRow: number; lastCol: number; lastRow: number } | null;
   /** Keyed by cellKey(col, row). */
   cells: Map<number, Cell>;
+  /** WK3 only: the sheet byte of its records, which formula references name. */
+  sheetIndex?: number;
 };
 
 export type NamedSheet = { name: string; sheet: Sheet };

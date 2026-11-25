@@ -1,6 +1,6 @@
 // Lotus 1-2-3 release 3 (WK3) record parser. Pure: bytes in, workbook + diagnostics + stats out.
 // Record table: wk3-records.ts (each entry sourced). Same framing and checks as parseWk1.
-// The RPN of formulas is copied, never decoded. Never throws; every read is bounds-checked.
+// The RPN of formulas is copied here; src/formula decodes it (dialect "wk3"). Never throws; every read is bounds-checked.
 
 import { a1 } from "./address.ts";
 import { DiagnosticSink, type Diagnostic } from "./diagnostics.ts";
@@ -38,7 +38,8 @@ function latin1UpToNul(body: ByteReader): string {
   return text;
 }
 
-function smallValue(word: number): { kind: "integer" | "number"; value: number } {
+/** The packed 16-bit small number of SMALLNUM records and of WK3 formula token 0x05. */
+export function unpackSmall(word: number): { kind: "integer" | "number"; value: number } {
   if ((word & 1) === 0) return { kind: "integer", value: word >> 1 };
   const scale = WK3_SMALL_SCALE[(word >> 1) & 7]!;
   const mantissa = word >> 4;
@@ -59,7 +60,7 @@ export function parseWk3(bytes: Uint8Array): Wk3ParseResult {
   const sheetAt = (index: number): Sheet => {
     let s = sheets.get(index);
     if (!s) {
-      s = { format: "wk3", version, sawEof: false, declaredDimensions: null, cells: new Map() };
+      s = { format: "wk3", version, sawEof: false, declaredDimensions: null, cells: new Map(), sheetIndex: index };
       sheets.set(index, s);
     }
     return s;
@@ -158,7 +159,7 @@ export function parseWk3(bytes: Uint8Array): Wk3ParseResult {
       if (prefix !== null) cell = { kind: "label", col, row, prefix: String.fromCharCode(prefix), text: latin1UpToNul(body) };
     } else if (entry.decoder === "small") {
       const word = body.i16();
-      if (word !== null) cell = { ...smallValue(word), col, row };
+      if (word !== null) cell = { ...unpackSmall(word), col, row };
     } else if (entry.decoder === "number80") {
       const value = read80(body, where, offset);
       if (value !== null) cell = { kind: "number", col, row, value };

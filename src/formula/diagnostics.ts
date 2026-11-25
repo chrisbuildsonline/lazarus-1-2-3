@@ -10,6 +10,8 @@ export type FormulaDiagnosticCode =
   | "stack-imbalance"
   | "trailing-bytes"
   | "reference-out-of-grid"
+  | "foreign-reference"
+  | "reference-kind-unsupported"
   | "reserved-bits-set"
   | "nesting-too-deep"
   | "non-finite-constant"

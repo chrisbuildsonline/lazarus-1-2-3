@@ -14,7 +14,7 @@ export {
 } from "./sheet.ts";
 export { detectKind, isDbfHeader, WK3_VERSIONS, type ReaderKind } from "./detect.ts";
 export { float80ToDouble } from "./float80.ts";
-export { parseWk3, type Wk3ParseResult, type Wk3Stats } from "./wk3.ts";
+export { parseWk3, unpackSmall, type Wk3ParseResult, type Wk3Stats } from "./wk3.ts";
 export { parseDbf, type DbfField, type DbfParseResult, type DbfStats, type DbfTable } from "./dbf.ts";
 export { parseWorkbook, type WorkbookParseResult, type WorkbookStats } from "./workbook.ts";
 export { parseWk1, type Wk1ParseResult, type Wk1Stats } from "./wk1.ts";

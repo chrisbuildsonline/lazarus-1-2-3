@@ -1,8 +1,8 @@
 // The formula AST. One type serves both the Lotus AST (what the decoder returns) and the
 // Excel AST (after toExcelAst: Excel function names, no and/or/not operator nodes).
 
-/** The formula cell's own address, 0-based. Relative references resolve against it. */
-export type Origin = { col: number; row: number };
+/** The formula cell's own address, 0-based. Relative references resolve against it. `sheet` is the WK3 sheet byte (0 when absent). */
+export type Origin = { col: number; row: number; sheet?: number };
 
 /** A resolved cell reference, 0-based, with the absolute flag of each axis. */
 export type Ref = { col: number; row: number; colAbs: boolean; rowAbs: boolean };
