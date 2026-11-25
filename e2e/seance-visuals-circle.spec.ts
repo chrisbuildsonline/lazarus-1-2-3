@@ -4,6 +4,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { COPY } from "../src/ui/copy.ts";
 import { RUNES } from "../src/ui/model/runes.ts";
+import { interceptFileChoosers } from "./fixtures/file-chooser.ts";
 import { watchNetwork } from "./fixtures/network.ts";
 
 const DESKTOP = { width: 1440, height: 900 };
@@ -50,6 +51,7 @@ test.describe("the summoning circle", () => {
 
   test("Enter and Space on it open the file picker, and so does a click", async ({ page }) => {
     await page.goto("/");
+    await interceptFileChoosers(page);
     await zone(page).focus();
     for (const key of ["Enter", " "]) {
       const chooser = page.waitForEvent("filechooser");

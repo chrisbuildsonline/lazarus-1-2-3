@@ -5,6 +5,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Locator, type Page, type TestInfo } from "@playwright/test";
 import { readFileSync } from "node:fs";
+import { interceptFileChoosers } from "./fixtures/file-chooser.ts";
 import { files, payload } from "./fixtures/seance-files.ts";
 
 const TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "best-practice"];
@@ -149,6 +150,7 @@ test("Sheet view during the verification sweep, and after it", async ({ page }, 
 test("keyboard focus shows the focus ring on each kind of control", async ({ page }) => {
   await page.setViewportSize(DESKTOP);
   await page.goto("/");
+  await interceptFileChoosers(page);
   await expectRing(page, page.getByRole("button", { name: "Summon the sample" }));
   await expectRing(page, page.getByRole("button", { name: "Choose file" }));
   // Keyboard alone (requirement 69): Enter opens the picker, and the chosen file is raised.

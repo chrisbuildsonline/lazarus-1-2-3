@@ -1,6 +1,7 @@
 // Worker failure (task 35; requirement 22). The worker script name comes from the build output
 // (dist/assets/raise.worker-<hash>.js).
 import { expect, test, type Page } from "@playwright/test";
+import { interceptFileChoosers } from "./fixtures/file-chooser.ts";
 import { files, mismatchWk1, payload } from "./fixtures/seance-files.ts";
 
 const WORKER = "**/assets/*raise*worker*.js";
@@ -12,6 +13,7 @@ test.use({ permissions: ["clipboard-read", "clipboard-write"] });
 test("a worker script that cannot load shows the engine panel, and the pill works once it can", async ({ page }) => {
   await page.route(WORKER, (r) => r.abort());
   await page.goto("/");
+  await interceptFileChoosers(page);
   await page.getByRole("button", { name: "Summon the sample" }).click();
 
   const alert = page.getByRole("alert");
