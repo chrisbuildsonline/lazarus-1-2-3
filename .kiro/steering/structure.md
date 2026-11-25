@@ -2,7 +2,7 @@
 inclusion: always
 ---
 
-# Structure (planned)
+# Structure
 
 ```
 src/
@@ -20,7 +20,7 @@ src/
     hooks/       raise, match media, focus return
   workers/     verify.worker.ts and raise.worker.ts. Message types and pure handlers (handleVerifyRequest, handleRaiseRequest, sheetToWire, sheetFromWire) are in verify-protocol.ts. The raise worker parses, verifies and hashes one file per request.
 mcp/
-  lotus-oracle/  Node MCP server: opcode lookup, verify a file, diff two workbooks. Reuses src/parser, src/formula, src/verify.
+  lotus-oracle/  MCP server, run with bun: opcode lookup, verify a file, diff two workbooks. Reuses src/parser, src/formula, src/verify.
 fixtures/
   <name>/      Sample .wk1/.wks/.dbf plus expected.json and a LICENSE note.
 tests/         Vitest: unit/, differential/, property/ (mirrors src/).

@@ -13,7 +13,7 @@ inclusion: always
 - Vitest for unit, differential and property-based tests (fast-check). Playwright for e2e.
 - Component tests render React with react-dom/server (renderToStaticMarkup) in the Node environment of Vitest and check the markup, so no DOM library is needed. Focus, keyboard and drag and drop are tested in Playwright.
 - Accessibility: @axe-core/playwright 4.14.0 (exact) runs in e2e/seance-a11y.spec.ts with the tags wcag2a, wcag2aa, wcag21a, wcag21aa and best-practice. The bar is zero serious or critical findings, with no rule disabled.
-- `mcp/lotus-oracle`: small Node MCP server with tools for opcode lookup, verify a file, and diff two workbooks.
+- `mcp/lotus-oracle`: small MCP server, run with bun (`bun mcp/lotus-oracle/server.ts`), with tools for opcode lookup, verify a file, and diff two workbooks.
 - Static hosting only. No backend.
 
 ## Privacy constraints
@@ -42,6 +42,13 @@ Run everything with `bun run <script>`:
 - `check:pii`: run `tests/unit/fixtures/pii.test.ts`.
 
 If a script does not exist yet, add it to package.json rather than calling the tool directly.
+
+## Docker
+
+- The default (last) Dockerfile target, `app`, runs `bun run build` and then `bun run preview`. That serves `dist/` on 0.0.0.0 at `$PORT` (default 4173, strict port).
+- Run it with `docker build -t lazarus . && docker run --rm -p 4173:4173 lazarus` (`bun run docker:app`).
+- The `test` and `e2e` targets run the checks (`bun run docker:test`, `bun run docker:e2e`).
+- `BASE_URL=<url>` points the Playwright suite at an app that is already running, such as that container. `PORT` picks the port of the preview Playwright starts.
 
 ## Hooks
 
