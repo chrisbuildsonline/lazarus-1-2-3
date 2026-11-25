@@ -14,10 +14,10 @@ src/
   macro/       Implemented: names (NAME record walker, independent of parser/wk1.ts), detect (macro names and unnamed blocks), menu (brace key and command tables; the Release 2 menu tree is not sourced, so slash keys are unknown-key steps), steps (parseSteps), queue (approval queue) and explain (local model explainer, recorded explainer).
   cli/         The `lazarus` CLI (lazarus.ts entry, inventory.ts logic, args.ts flag parsing). Lists path, format, size, sha256. With `--verify` it parses and verifies cells via verify-summary.ts. With `--xlsx` / `--report`, export.ts parses, verifies, writes the workbook and the report.
   ui/          Implemented: the browser app. main.tsx, App.tsx, tokens.css (copy of the DESIGN.md token block), styles/app.css, copy.ts (all user-facing strings).
-    model/       pure view-model functions with no React or DOM (formatting, totals, file names, entries, classification, grid model, window, grid keys, status groups, batch rows, drawer model, app reducer, layout)
+    model/       pure view-model functions with no React or DOM (formatting, totals, file names, entries, classification, grid model, window, grid keys, status groups, batch rows, drawer model, app reducer, layout, sweep.ts for the sweep schedule and partial totals, runes.ts for the function names of the summoning circle)
     io/          worker client, dropped-entry traversal, downloads, sample fetch
-    components/  React views and parts (Summon, drop zone, progress, error panel, Sheet, totals, proof bar, grid, filters, status list, drawer, batch list, toast, status pill, top bar)
-    hooks/       raise, match media, focus return
+    components/  React views and parts (Summon, drop zone, SummoningCircle.tsx, progress, error panel, Sheet, totals, proof bar, grid, filters, status list, drawer, batch list, toast, status pill, top bar)
+    hooks/       raise, match media, focus return, useSweep.ts (the one-shot verification sweep)
   workers/     verify.worker.ts and raise.worker.ts. Message types and pure handlers (handleVerifyRequest, handleRaiseRequest, sheetToWire, sheetFromWire) are in verify-protocol.ts. The raise worker parses, verifies and hashes one file per request.
 mcp/
   lotus-oracle/  MCP server, run with bun: opcode lookup, verify a file, diff two workbooks. Reuses src/parser, src/formula, src/verify.
