@@ -17,7 +17,7 @@ bun run lazarus fixtures/ksbase/KSBASE.WK1 --xlsx ksbase.xlsx --report ksbase.ht
 bun run build && bun run preview           # the browser app on http://localhost:4173
 ```
 
-To run the checks: `bun run typecheck`, `bun run test`, and for the browser tests `bunx playwright install chromium` once, then `CI=1 bun run e2e`. Or run them in Docker (see below).
+To run the checks: `bun run typecheck`, `bun run test`, and for the browser tests `bunx playwright install chromium` once, then `CI=1 bun run e2e`. Or run the app and the checks in Docker (see "Run in Docker" below).
 
 ## What it does
 
@@ -85,7 +85,7 @@ The sample behind "Summon the sample" is `fixtures/ksbase/KSBASE.WK1`, a real Lo
 - Vitest with fast-check, Playwright with @axe-core/playwright.
 - A small stdio MCP server, lotus-oracle, on `@modelcontextprotocol/sdk`, run with bun.
 - Optional: a local model (Ollama on localhost:11434, or a recorded fixture), used only to explain macros and unknown opcodes, behind the approval queue.
-- Docker images for the checks.
+- A Docker image that serves the app, and two more for the checks.
 
 ## Scripts
 
@@ -93,7 +93,7 @@ Run with `bun run <script>`:
 
 - `dev`: Vite dev server
 - `build`: production build into `dist/`
-- `preview`: serve the production build
+- `preview`: serve the production build on `0.0.0.0`, port `$PORT` (default 4173)
 - `typecheck`: `tsc --noEmit` (strict)
 - `test`: Vitest, whole suite under `tests/`
 - `test:watch`: Vitest in watch mode
@@ -104,16 +104,26 @@ Run with `bun run <script>`:
 - `verify:golden`: regenerate `tests/differential/verify/golden.json`, the measured verification counts of the real fixtures (keeps the human-written findings)
 - `gen:fixtures`: regenerate the synthetic fixtures
 - `check:diff`, `check:manifest`, `check:opcodes`, `check:pii`: run one slice of the test suite each (see Kiro hooks below)
+- `docker:app`: build the Docker image and serve the app on port 4173
 - `docker:test`, `docker:e2e`: run the checks in Docker (see below)
 
-## Docker
+## Run in Docker
 
-The `Dockerfile` builds test images only; the app itself is static files. Both images install from `bun.lock` with `bun install --frozen-lockfile` and run as a non-root user, because the CLI and MCP tests make a file unreadable with `chmod 000` and expect an error, which root would not get.
+The app, with nothing to install but Docker and no key or account:
 
-- `bun run docker:test` builds the `test` target (Node 24 slim with bun 1.4.2, user `node`) and runs `bun run typecheck && bun run test` in it.
-- `bun run docker:e2e` builds the `e2e` target (Microsoft's Playwright 1.65.1 image, which has Chromium, user `pwuser`) and runs `bun run e2e` with `CI=1`, so Playwright builds and serves its own preview inside the container.
+```sh
+docker build -t lazarus . && docker run --rm -p 4173:4173 lazarus
+```
 
-`tests/unit/docker/dockerfile.test.ts` checks that both targets exist, run as a non-root user with `CI=1`, and that the Playwright image matches the installed `@playwright/test`.
+Open http://localhost:4173 and press "Summon the sample" (the bundled `KSBASE.WK1`), or drop in any file from `fixtures/`. The default (last) target of the `Dockerfile`, `app`, runs `bun run build` and then `bun run preview`, which serves `dist/` on `0.0.0.0` at `$PORT` (4173 unless set; the port is strict, so a taken port is an error instead of another port). `bun run docker:app` runs the same two commands.
+
+To run the checks in Docker:
+
+- `docker build --target test -t lazarus-1-2-3:test . && docker run --rm lazarus-1-2-3:test` (`bun run docker:test`) builds the `test` target (Node 24 slim with bun 1.4.2, user `node`) and runs `bun run typecheck && bun run test` in it.
+- `docker build --target e2e -t lazarus-1-2-3:e2e . && docker run --rm --ipc=host lazarus-1-2-3:e2e` (`bun run docker:e2e`) builds the `e2e` target (Microsoft's Playwright 1.65.1 image, which has Chromium, user `pwuser`) and runs `bun run e2e` with `CI=1`, so Playwright builds and serves its own preview inside the container.
+- To run the Playwright suite against a running app container instead, give its URL: `BASE_URL=http://localhost:4173 CI=1 bunx playwright test e2e/seance-sample.spec.ts`.
+
+Every image installs from `bun.lock` with `bun install --frozen-lockfile` and runs as a non-root user, because the CLI and MCP tests make a file unreadable with `chmod 000` and expect an error, which root would not get. `tests/unit/docker/dockerfile.test.ts` checks that the targets exist, that the last one builds and serves the app on port 4173, that all run as a non-root user, that the test targets set `CI=1`, that the Playwright image matches the installed `@playwright/test`, and that these commands match `package.json`.
 
 ## Kiro
 
