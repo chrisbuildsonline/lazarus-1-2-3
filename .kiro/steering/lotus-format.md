@@ -100,7 +100,29 @@ Sources, line by line, in `.kiro/specs/wk3-dbf-readers/evidence.md` (LibreOffice
 | 0x0019 | FORMULA | address (4), 10-byte cached result, RPN to the end of the record | LO lotimpop.cxx 279-288; GN lotus.c 2374-2395 |
 | 0x001B | sheet name (subtype 14000) | subtype u16 14000, sheet u16, name, 0x00 | LO lotread.cxx, lotimpop.cxx 353-371. **One secondary source** |
 
-Differences from WK1: no format byte in cell records; the address is row u16, sheet u8, column u8; numbers are 80-bit extended (significand u64 with explicit integer bit, then sign and 15-bit exponent, bias 16383); FORMULA has no RPN length word; several sheets per file. WK3 RPN is not decoded, so every WK3 formula is `unverifiable`. Real file: `fixtures/format-corpus-peytrend/PEYTREND.WK3` (CC0).
+Differences from WK1: no format byte in cell records; the address is row u16, sheet u8, column u8; numbers are 80-bit extended (significand u64 with explicit integer bit, then sign and 15-bit exponent, bias 16383); FORMULA has no RPN length word; several sheets per file. Real file: `fixtures/format-corpus-peytrend/PEYTREND.WK3` (CC0, no formulas).
+
+### WK3 formulas
+
+Decoded by `decodeRpn(rpn, origin, "wk3")` with `src/formula/opcodes-wk3.ts`. Sources: LO `lotform.cxx` (`LotusToSc::Convert` with `bWK3`, `IndexToTypeWK123`, `ReadSRD`) and GN `lotus-formula.c` (`lotus_parse_formula_new`, `get_new_cellref`, `functions_lotus`); copies in `docs/sources/wk3/`. Evidence and hand-decoded examples: `.kiro/specs/wk3-formulas/evidence.md`.
+
+| Token | Operand | Meaning |
+|---|---|---|
+| 0x00 | 10 bytes | extended-precision constant |
+| 0x01 | relbits u8, row u16, sheet u8, col u8 | cell reference, coordinates stored as they are |
+| 0x02 | relbits u8, two 4-byte corners | range; relbits bits 0-2 first corner, 3-5 second |
+| 0x03, 0x04 | none | return, parentheses |
+| 0x05 | i16 | packed small number (same packing as SMALLNUM) |
+| 0x06 | up to NUL | string |
+| 0x07 to 0x0B | | named and error references: not read, `decode-error` |
+| 0x0E to 0x1E | none | negate, + - * / ^, = <> <= >= < >, AND, OR, NOT, unary plus, concatenation |
+| 0x1F to 0x5A | as WK1 | functions, WK1 numbers and arities |
+
+Only nine tokens are `confirmed` by the two NOAA files: 0x01, 0x03, 0x04, 0x05, 0x0F, 0x10, 0x11, 0x12, 0x1D. All others, and every function, are `candidate`.
+
+Relbits finding: LO reads bit 0 as column relative and bit 1 as row relative; GN reads them swapped. `m3.wk3` shows LO is right: relbits 6 (column absolute, row relative) keeps column C and follows the row in the U and V formulas.
+
+A reference whose sheet byte is not the formula's own sheet is a foreign reference: `unverifiable` with `wk3-formula-not-decoded`. A token in no table is `unknown-opcode`.
 
 ## ERR and NA stored doubles (rule S27)
 
