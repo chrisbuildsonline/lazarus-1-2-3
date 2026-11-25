@@ -148,7 +148,7 @@ describe("lazarus --xlsx and --report", () => {
     }
     expect(readFileSync(input).equals(before)).toBe(true);
     expect(readdirSync(dir).sort()).toEqual(["book.html", "in.wk1", "out.html"]);
-  });
+  }, 30_000); // six CLI runs, each a fresh bun start; about 3 s idle, over 5 s on a loaded host
 
   it("exits 1 for an unwritable output folder and leaves no half-written pair", () => {
     const dir = freshDir();
