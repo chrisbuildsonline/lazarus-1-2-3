@@ -9,10 +9,11 @@ import { describe, expect, it } from "vitest";
  * Pixel sizes DESIGN.md names (sections 2 to 4 and requirement 74): hairline 1, dashed outline 1.5, bar,
  * ring and proof gap 2, toast bar 3, progress bar 4, glyph 6, proof bar and outline inset 8, insets 16,
  * pill 24, header and tabs 32, row 36, pill 44, row number and phone pill 48, phone top bar 56, list row 64,
- * top bar 72, Summon offset 96, column 112, empty filter 120, drop zone 180 and 240, batch 320,
+ * top bar 72, Summon offset 96, column 112, empty filter 120, summoning circle 140 (phone) and 220,
+ * drop zone 180, 240 and 320, batch 320,
  * toast 420, drawer 440, queue 520, column and breakpoint 640 (tablet 641 to 1023), desktop 1024, content 1360.
  */
-const NAMED_PX = new Set([1, 1.5, 2, 3, 4, 6, 8, 16, 24, 32, 36, 44, 48, 56, 64, 72, 96, 112, 120, 180, 240, 320, 420, 440, 520, 640, 641, 1023, 1024, 1360]);
+const NAMED_PX = new Set([1, 1.5, 2, 3, 4, 6, 8, 16, 24, 32, 36, 44, 48, 56, 64, 72, 96, 112, 120, 140, 180, 220, 240, 320, 420, 440, 520, 640, 641, 1023, 1024, 1360]);
 
 const COLOUR = /#[0-9a-f]{3,8}\b|\b(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\(|\b(?:white|black|red|green|blue|gr[ae]y|orange|yellow|purple|pink|violet|silver)\b/i;
 const LENGTH = /(?<![\w-])-?\d*\.?\d+(?:px|r?em|%|vh|vw|dvh|svh|ch|ex|pt|cm|mm|in)\b/;
