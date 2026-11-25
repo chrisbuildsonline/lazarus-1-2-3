@@ -68,7 +68,7 @@ export const payload = (name: string, bytes: Uint8Array | string): Payload => ({
   buffer: Buffer.from(bytes),
 });
 
-/** Three sheets: A holds labels, B numbers, Totals (sheet 2, named) two numbers and C2 a formula storing 7.5. */
+/** Three sheets: A holds labels, B numbers, Totals (sheet 2, named) two numbers and C2 = A2+B2 storing 7.5 (WK3 tokens: cell ref 0x01, add 0x0F). */
 export function wk3Book(): Uint8Array {
   return writeWk3([
     w3.sheetName(2, "Totals"),
@@ -78,7 +78,7 @@ export function wk3Book(): Uint8Array {
     w3.small(1, 1, 0, w3.smallInt(42)),
     w3.number80(2, 0, 1, 2.5),
     w3.number80(2, 1, 1, 5),
-    w3.formula80(2, 2, 1, 7.5, [0x01, 0x02, 0x03]),
+    w3.formula80(2, 2, 1, 7.5, [0x01, 0x07, 1, 0, 2, 0, 0x01, 0x07, 1, 0, 2, 1, 0x0f, 0x03]),
   ]);
 }
 

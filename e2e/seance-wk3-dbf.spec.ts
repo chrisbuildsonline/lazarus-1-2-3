@@ -1,5 +1,5 @@
-// A WK3 drop and a DBF drop (requirements 52 to 60, acceptance 6): sheet tabs, the WK3 formula as
-// unverifiable with its stored value, the DBF as-read totals, axe at 1440 and 390, and a PNG of each
+// A WK3 drop and a DBF drop (requirements 52 to 60, acceptance 6): sheet tabs, the WK3 formula
+// decoded and matched against its stored value, the DBF as-read totals, axe at 1440 and 390, and a PNG of each
 // view at both sizes in e2e/screenshots/ (attached to the report as well).
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
@@ -37,7 +37,7 @@ test("the subtitle names WK3 and dBase and the picker accepts both", async ({ pa
   await expect(page.locator('input[type="file"][accept]')).toHaveAttribute("accept", ".wk1,.wks,.wk3,.dbf");
 });
 
-test("a WK3 workbook shows sheet tabs and its formula as unverifiable with the stored value", async ({ page }) => {
+test("a WK3 workbook shows sheet tabs and its formula matched against the stored value", async ({ page }) => {
   await page.setViewportSize(VIEWPORTS[0]);
   await raise(page, files.wk3());
   await expect(page.locator(".sheet__meta")).toContainText("WK3 · 3 sheets · 1 formulas");
@@ -50,13 +50,12 @@ test("a WK3 workbook shows sheet tabs and its formula as unverifiable with the s
   await expect(tabs.nth(1)).toBeFocused();
   await page.keyboard.press("End");
   await expect(tabs.nth(2)).toHaveAttribute("aria-selected", "true");
-  await expect(page.locator(".totals")).toContainText("Unverifiable");
+  await expect(page.locator(".totals")).toContainText("Matched");
   await page.locator('[role="grid"] [data-col="2"][data-row="1"]').click();
   const drawer = page.locator(".drawer");
-  await expect(drawer).toContainText("Formulas in WK3 files are not read yet. The stored result is kept as the file remembers it.");
+  await expect(drawer).toContainText("Raised value matches what the file remembers.");
+  await expect(drawer).toContainText("A2+B2");
   await expect(drawer).toContainText("7.5");
-  await expect(drawer).toContainText("Could not be calculated");
-  await expect(drawer).toContainText("The formula could not be read.");
   // Choosing another sheet closes the drawer.
   await tabs.nth(0).click();
   await expect(drawer).toHaveCount(0);

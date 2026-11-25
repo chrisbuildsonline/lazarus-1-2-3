@@ -6,7 +6,7 @@ import { SummonView } from "../../../../src/ui/components/SummonView.tsx";
 
 const PRIVACY = "Files never leave this browser. No upload, no account.";
 const LIMITS =
-  "This version reads WK1, WKS and WK3 worksheets and dBase tables. WK3 formulas are shown with their stored results and are not checked yet. Macros in WK1 and WKS files are listed as steps for you to approve. They are never run, and macros in WK3 files are not read yet.";
+  "This version reads WK1, WKS and WK3 worksheets and dBase tables. WK3 formulas are checked when they read only their own sheet; a formula that reads another sheet keeps its stored result. Macros in WK1 and WKS files are listed as steps for you to approve. They are never run, and macros in WK3 files are not read yet.";
 const noop = () => {};
 const view = (more: Partial<Parameters<typeof SummonView>[0]> = {}) =>
   renderToStaticMarkup(<SummonView mode="idle" folderSupported={true} onSample={noop} onFiles={noop} onDrop={noop} {...more} />);
