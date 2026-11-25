@@ -25,7 +25,7 @@ You drop in a Lotus 1-2-3 worksheet or a dBase table. Lazarus 1-2-3 parses the b
 
 ## Measured on the fixture corpus
 
-Measured by running `bun run lazarus fixtures --verify` and by parsing each file with `parseWorkbook` from `src/parser`. The corpus has 15 spreadsheet files: 6 real files from public sources and 9 synthetic test files made by `scripts/gen-fixtures.ts`. Each has a `LICENSE.txt` next to it and an entry in `fixtures/manifest.json`.
+Measured by running `bun run lazarus fixtures --verify` and by parsing each file with `parseWorkbook` from `src/parser`. The corpus has 17 spreadsheet files: 8 real files from public sources and 9 synthetic test files made by `scripts/gen-fixtures.ts`. Each has a `LICENSE.txt` next to it and an entry in `fixtures/manifest.json`.
 
 | File | Format | Origin | Cells | Formulas | Matched | Mismatched | Unverifiable |
 | --- | --- | --- | ---: | ---: | ---: | ---: | ---: |
@@ -34,23 +34,27 @@ Measured by running `bun run lazarus fixtures --verify` and by parsing each file
 | `libreoffice-wks-functions/gnome647171-1.wks` | WKS | real | 7 | 4 | 3 | 0 | 1 |
 | `census-delaware-1992/92stlde.wk1` | WK1 | real | 357 | 0 | 0 | 0 | 0 |
 | `format-corpus-peytrend/PEYTREND.WK3` | WK3 | real | 1,034 | 0 | 0 | 0 | 0 |
+| `noaa-ala-wai-m3/m3.wk3` | WK3 | real | 2,373 | 675 | 675 | 0 | 0 |
+| `noaa-ala-wai-m21/m21tab.wk3` | WK3 | real | 61 | 8 | 7 | 1 | 0 |
 | `natural-earth-land/ne_110m_land.dbf` | DBF | real | 381 values | 0 | 0 | 0 | 0 |
 | 7 synthetic WK1 files | WK1 | synthetic | 132 | 28 | 27 | 0 | 1 |
-| `wk3-sheets/wk3-sheets.wk3` | WK3 | synthetic | 16 (3 sheets) | 1 | 0 | 0 | 1 |
+| `wk3-sheets/wk3-sheets.wk3` | WK3 | synthetic | 18 (3 sheets) | 3 | 1 | 0 | 2 |
 | `dbf-table/dbf-table.dbf` | DBF | synthetic | 29 values | 0 | 0 | 0 | 0 |
-| **All 15 files** | | | **3,239** | **203** | **200** | **0** | **3** |
+| **All 17 files** | | | **5,675** | **888** | **883** | **1** | **4** |
 
-- The three real Lotus files with formulas hold 174 formulas: 173 recalculate to exactly the number the file stored, none is mismatched, and 1 is unverifiable. That one, in `gnome647171-1.wks`, returns text ("Odd" or "Even"), and the parser does not read a stored text result yet.
+- The five real Lotus files with formulas hold 857 formulas: 855 recalculate to the number the file stored, 1 is mismatched and 1 is unverifiable. The unverifiable one, in `gnome647171-1.wks`, returns text ("Odd" or "Even"), and the parser does not read a stored text result yet.
+- The two NOAA files are Lotus 1-2-3 Release 3 worksheets of sediment cores from the Ala Wai Canal, Hawaii (1991, NOAA NCEI data set G02887, public domain). All 675 formulas of `m3.wk3` match (484 exactly, 191 within the documented tolerance: the file stores 10-byte results). In `m21tab.wk3`, V44 is `L44/C44`, but the file holds no C44 (C45 and C46 are there), so 1-2-3 itself would give ERR today. The stored 0.01228 means C44 held about 14.33 when the sheet was last recalculated and was cleared after that. That is a real finding about the file, not a decoding error, and it stays mismatched.
 - The 7 synthetic WK1 files are `basic-values`, `dates`, `formulas`, `functions`, `labels`, `macros` and `mixed`. Their 27 test formulas all match. The 28th, on A10 of `macros.wk1`, uses an opcode on purpose that the engine does not know, so it is unverifiable and goes to the approval queue.
-- The synthetic WK3 formula is unverifiable by design (`wk3-formula-not-decoded`): WK3 formulas keep their stored result.
+- In the synthetic WK3 file, `Totals!C2` (A1+B1+C1) matches. D2 reads a cell on another sheet, which is not followed yet (`wk3-formula-not-decoded`), and E2 uses a token no table here holds (`unknown-opcode`); both keep their stored result.
+- Before WK3 formulas were decoded, all 683 formulas of the two NOAA files were unverifiable. Now 682 match and 1 is mismatched.
 - DBF counts are values only, without the field-name row. A table has no formulas, so it has nothing to verify. `ne_110m_land.dbf` reads as 127 records and 3 fields (127 text, 254 numbers). `dbf-table.dbf` has 7 records, one of them deleted and left out, and 6 fields.
 - All 11 WK1 and WKS files (4 real, 7 synthetic) round-trip through the XLSX writer: reading the workbook back with exceljs returns every cell's value, formula text and stored result, and no extra cell (`tests/differential/xlsx/roundtrip.test.ts`).
 
 ## What is built
 
-**Readers.** `src/parser` has `parseWk1` (WK1 and WKS), `parseWk3`, `parseDbf` and `parseWorkbook`, which picks the reader from the bytes, never the file name. The WK3 record layouts were read from two independent open-source readers (LibreOffice and Gnumeric). The BOF version word and the sheet-name record rest on LibreOffice alone. Sources, line by line, are in `.kiro/specs/wk3-dbf-readers/evidence.md`. `PEYTREND.WK3` (openpreserve format corpus, CC0) has no formulas, so WK3 formula reading is checked only against our own synthetic file.
+**Readers.** `src/parser` has `parseWk1` (WK1 and WKS), `parseWk3`, `parseDbf` and `parseWorkbook`, which picks the reader from the bytes, never the file name. The WK3 record layouts were read from two independent open-source readers (LibreOffice and Gnumeric). The BOF version word and the sheet-name record rest on LibreOffice alone. Sources, line by line, are in `.kiro/specs/wk3-dbf-readers/evidence.md`. `PEYTREND.WK3` (openpreserve format corpus, CC0) has no formulas; the two NOAA files have 683.
 
-**Formulas and verification.** `src/formula` decodes the RPN tokens of a WK1/WKS formula and prints an Excel formula. `src/verify` recalculates the sheet with its own deterministic engine (cycle detection, the documented tolerance in one file) and classifies every formula cell as matched, mismatched or unverifiable with a reason. The stored values are the oracle and are never changed. A WK3 workbook gets one result per sheet, and each WK3 formula is unverifiable with the reason `wk3-formula-not-decoded`, so a WK3 file can never show a green headline.
+**Formulas and verification.** `src/formula` decodes the RPN tokens of a WK1/WKS formula, and of a WK3 formula with the Release 3 token table (`src/formula/opcodes-wk3.ts`, read from LibreOffice's `lotform.cxx` and Gnumeric's `lotus-formula.c`), and prints an Excel formula. `src/verify` recalculates the sheet with its own deterministic engine (cycle detection, the documented tolerance in one file) and classifies every formula cell as matched, mismatched or unverifiable with a reason. The stored values are the oracle and are never changed. A WK3 workbook gets one result per sheet. A WK3 formula that reads only its own sheet is recalculated and compared like a WK1 one; a formula that reads another sheet is unverifiable with the reason `wk3-formula-not-decoded`, and named-range and error-reference tokens stop decoding with a reason, never a guessed match.
 
 **XLSX and report.** `src/xlsx` writes each formula with the number the file remembered, never the recalculated one, and the same input gives byte-identical output. Only `src/xlsx/exceljs-adapter.ts` imports exceljs. `src/report` builds the provenance report as JSON and as a self-contained HTML page. A WK3 workbook gets one worksheet per sheet. A DBF table is written as read: field names in row 1, deleted records left out. The writer and the report page also run in Chromium with no network request.
 
@@ -64,7 +68,7 @@ Each macro, and each formula opcode the engine does not know, becomes an item in
 
 A model only explains. The app first looks up a recorded explanation, then asks Ollama on `http://localhost:11434` if it is running (optional; a page not served from localhost needs `OLLAMA_ORIGINS` set to its origin), and otherwise says "Explanation unavailable: the local model is not running. The steps above are complete." The request holds the macro text and step labels or the opcode, never a cell value. `fixtures/macros/macros.wk1` has two named macros (`\0`, `\P`), one unnamed block and one unknown opcode on A10, so its queue shows four waiting items. Its `recorded-explanations.json` is text written by hand to stand in for a model and is shown as "recorded fixture". On the real fixtures the reader finds 9 range names in `KSBASE.WK1` and no macro in any of them.
 
-**Limits**, as the app says them: "This version reads WK1, WKS and WK3 worksheets and dBase tables. WK3 formulas are shown with their stored results and are not checked yet. Macros in WK1 and WKS files are listed as steps for you to approve. They are never run, and macros in WK3 files are not read yet." A summon takes at most 500 files of at most 32 MiB each. The app has no Report tab yet (the report is a download), and approval decisions last until the page is closed.
+**Limits**, as the app says them: "This version reads WK1, WKS and WK3 worksheets and dBase tables. WK3 formulas are checked when they read only their own sheet; a formula that reads another sheet keeps its stored result. Macros in WK1 and WKS files are listed as steps for you to approve. They are never run, and macros in WK3 files are not read yet." A summon takes at most 500 files of at most 32 MiB each. The app has no Report tab yet (the report is a download), and approval decisions last until the page is closed.
 
 The sample behind "Summon the sample" is `fixtures/ksbase/KSBASE.WK1`, a real Lotus 1-2-3 WK1 file from openpreserve/format-corpus by Johan van der Knijff, CC0-1.0. Its source and license are in `fixtures/ksbase/LICENSE.txt`.
 
@@ -74,7 +78,7 @@ The sample behind "Summon the sample" is `fixtures/ksbase/KSBASE.WK1`, a real Lo
 
 ## Tests
 
-1,924 unit, property and differential tests in 171 files (`bun run test`) and 65 Playwright tests in 18 files (`CI=1 bun run e2e`), all passing, plus a clean `bun run typecheck`.
+2,001 unit, property and differential tests in 175 files (`bun run test`) and 68 Playwright tests in 19 files (`CI=1 bun run e2e`), all passing, plus a clean `bun run typecheck`.
 
 - Unit tests mirror `src/` under `tests/unit`.
 - Differential tests (`tests/differential`) compare the recalculated value with the cached value of every fixture, and round-trip the XLSX.
@@ -133,7 +137,7 @@ Every image installs from `bun.lock` with `bun install --frozen-lockfile` and ru
 
 Each feature started as a spec, and everything Kiro reads is in `.kiro/`.
 
-**Specs** (`.kiro/specs/<name>/`): each has `requirements.md`, `design.md` and `tasks.md`; five also have an `evidence.md` with the sources and measurements behind their decisions. There are 10 specs, and all 254 of their tasks are ticked:
+**Specs** (`.kiro/specs/<name>/`): each has `requirements.md`, `design.md` and `tasks.md`; six also have an `evidence.md` with the sources and measurements behind their decisions. Eleven are listed here; 269 of their 270 tasks are ticked (the last is the final gate of `wk3-formulas`, which waits for the whole suite to be green again):
 
 - `scaffold`: project scaffold and test gate
 - `fixtures`: fixture corpus, manifest and licenses
@@ -145,6 +149,7 @@ Each feature started as a spec, and everything Kiro reads is in `.kiro/`.
 - `wk3-dbf-readers`: WK3 and DBF readers
 - `macro-translator`: macro steps, approval queue and local model explainer
 - `lotus-oracle-mcp`: the MCP server below
+- `wk3-formulas`: WK3 formula tokens, decoded and verified against the NOAA files
 
 **Steering** (`.kiro/steering/`): `product.md` (users and the proof-first promise), `tech.md` (stack, commands, test gate), `structure.md` (module layout and import rules) and `ai-boundaries.md` (the model never touches a number) are always included. `lotus-format.md` (record and formula format notes) is included for files under `src/parser`, `src/formula`, `mcp`, `tests` and `fixtures`, and `design.md` (visual rules) for `src/ui`, `e2e`, `index.html` and CSS. `design/DESIGN.md` turns the design steering into tokens and screen layouts.
 
@@ -156,7 +161,7 @@ Four agent hooks in `.kiro/hooks/`, made with kiro-cli. Each runs one `bun run` 
 
 - `parser-differential-tests.kiro.hook`: when a file under `src/parser/` is saved, `bun run check:diff` runs the differential tests in `tests/differential`.
 - `fixture-manifest-check.kiro.hook`: when a file is created under `fixtures/`, `bun run check:manifest` checks that every WK1, WKS, WK3 and DBF file is listed in `fixtures/manifest.json` with matching sha256 and counts and a `LICENSE.txt` next to it, and that the generated fixtures still match their generator.
-- `opcode-coverage-check.kiro.hook`: when a file under `src/formula/` or `src/verify/` is saved, `bun run check:opcodes` checks that every opcode in the table decodes and translates to Excel (only `@ERR` has no Excel form), that no translator rule names a function the table lacks, and that the evaluator covers exactly the table's functions.
+- `opcode-coverage-check.kiro.hook`: when a file under `src/formula/` or `src/verify/` is saved, `bun run check:opcodes` checks that every opcode in the table decodes and translates to Excel (only `@ERR` has no Excel form), that no translator rule names a function the table lacks, that the evaluator covers exactly the table's functions, and that the WK3 table has the WK1 functions with the same numbers and marks confirmed only the tokens a real WK3 file shows.
 - `fixture-pii-scan.kiro.hook`: when a file under `fixtures/` is saved, `bun run check:pii` scans every fixture for personal data, with a reviewed allowlist.
 
 `tests/unit/kiro/hooks.test.ts` checks that every hook parses and only runs scripts that `package.json` has.
