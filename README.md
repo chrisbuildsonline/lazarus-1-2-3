@@ -68,9 +68,13 @@ A model only explains. The app first looks up a recorded explanation, then asks 
 
 The sample behind "Summon the sample" is `fixtures/ksbase/KSBASE.WK1`, a real Lotus 1-2-3 WK1 file from openpreserve/format-corpus by Johan van der Knijff, CC0-1.0. Its source and license are in `fixtures/ksbase/LICENSE.txt`.
 
+## Demo
+
+`docs/demo-script.md` is the demo, scene by scene, on the shipped fixtures: the sample with 160 of 160 formulas matched, one formula cell in the drawer, a real WKS file with one unverifiable cell and its reason, the macro approval queue (an approval changes no cell), and the downloads. `e2e/demo-script.spec.ts` runs those scenes in the app, so the script cannot promise what the app does not do. `docs/devpost.md` is the Devpost write-up, with the numbers above.
+
 ## Tests
 
-1,911 unit, property and differential tests in 170 files (`bun run test`) and 64 Playwright tests in 17 files (`CI=1 bun run e2e`), all passing, plus a clean `bun run typecheck`.
+1,924 unit, property and differential tests in 171 files (`bun run test`) and 65 Playwright tests in 18 files (`CI=1 bun run e2e`), all passing, plus a clean `bun run typecheck`.
 
 - Unit tests mirror `src/` under `tests/unit`.
 - Differential tests (`tests/differential`) compare the recalculated value with the cached value of every fixture, and round-trip the XLSX.
