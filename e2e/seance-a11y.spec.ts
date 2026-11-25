@@ -74,6 +74,22 @@ test.describe("axe under reduced motion", () => {
     await scan(page, testInfo, "summon");
   });
 
+  test("Summon view at 390, with the summoning circle (seance-visuals requirement 29)", async ({ page }, testInfo) => {
+    await page.setViewportSize(PHONE);
+    await page.goto("/");
+    await expect(page.locator(".summoning-circle")).toBeVisible();
+    await scan(page, testInfo, "summon-390");
+  });
+
+  test("the sample's Sheet view in the dark theme at 1440 and 390", async ({ page }, testInfo) => {
+    for (const [vp, label] of [[DESKTOP, "1440"], [PHONE, "390"]] as const) {
+      await page.setViewportSize(vp);
+      await sample(page);
+      await expect(page.getByRole("grid").or(page.locator(".status-list"))).toBeVisible();
+      await scan(page, testInfo, `sheet-sample-${label}`);
+    }
+  });
+
   test("failed-file view", async ({ page }, testInfo) => {
     await page.setViewportSize(DESKTOP);
     await page.goto("/");
@@ -116,6 +132,17 @@ test("Sheet view with motion, after the solidify animation ends", async ({ page 
   await sample(page);
   await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished)));
   await scan(page, testInfo, "sheet-motion");
+});
+
+test("Sheet view during the verification sweep, and after it", async ({ page }, testInfo) => {
+  await page.setViewportSize(DESKTOP);
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.goto("/");
+  await page.getByRole("button", { name: "Summon the sample" }).click();
+  await expect(page.getByRole("grid")).toHaveAttribute("data-sweep", "running");
+  await scan(page, testInfo, "sheet-sweep-running");
+  await expect(page.getByRole("grid")).toHaveAttribute("data-sweep", "done");
+  await scan(page, testInfo, "sheet-sweep-done");
 });
 
 test("keyboard focus shows the focus ring on each kind of control", async ({ page }) => {
