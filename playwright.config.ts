@@ -1,18 +1,24 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const port = 4173;
+// PORT picks the preview port (default 4173). BASE_URL points the suite at an app that is already
+// running, such as the Docker image (README "Run in Docker"); then no preview is started.
+const port = Number(process.env.PORT) || 4173;
+const external = process.env.BASE_URL;
 
 export default defineConfig({
   testDir: "e2e",
   forbidOnly: !!process.env.CI,
   reporter: "list",
   use: {
-    baseURL: `http://localhost:${port}`,
+    baseURL: external ?? `http://localhost:${port}`,
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
-  webServer: {
-    command: `bun run build && bun run preview --port ${port} --strictPort`,
-    url: `http://localhost:${port}`,
-    reuseExistingServer: !process.env.CI,
-  },
+  webServer: external
+    ? undefined
+    : {
+        command: "bun run build && bun run preview",
+        env: { PORT: String(port) },
+        url: `http://localhost:${port}`,
+        reuseExistingServer: !process.env.CI,
+      },
 });
