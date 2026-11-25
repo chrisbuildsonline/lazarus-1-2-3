@@ -10,11 +10,11 @@ const DBF = "fixtures/natural-earth-land/ne_110m_land.dbf";
 const item = async (path: string): Promise<FileItem> => ({ id: 0, name: path, path, size: 1, phase: "raised", raised: await raiseFixture(path) });
 
 describe("batchRow for WK3 and DBF", () => {
-  it("a WK3 row reads WK3 and sums the totals of all sheets: 1 formula, unverifiable", async () => {
+  it("a WK3 row reads WK3 and sums the totals of all sheets: 3 formulas, 1 matched, 2 unverifiable", async () => {
     const row = batchRow(await item(WK3));
     expect(row.kind).toBe("WK3");
     expect(row.pill).toBe("unverifiable");
-    expect(row.line).toBe("0.0% verified");
+    expect(row.line).toBe("33.3% verified");
   });
 
   it("a DBF row reads DBF with No formulas and the neutral pill, never Matched", async () => {

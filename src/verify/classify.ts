@@ -3,7 +3,7 @@
 import { printLotus, translateFormula, type Expr } from "../formula/index.ts";
 import { a1, cellKey, cellsInRowMajorOrder, type Cell, type Sheet } from "../parser/index.ts";
 import { filterRange, precedents } from "./graph.ts";
-import { recalcSheet } from "./recalc.ts";
+import { dialectOf, recalcSheet } from "./recalc.ts";
 import { withinTolerance } from "./tolerance.ts";
 import { cachedNotANumber, labelResult, matchedReason, mismatchedReason, stringResult, valueFromDouble, type Outcome, type Reason, type Value } from "./value.ts";
 
@@ -62,7 +62,7 @@ export function classifySheet(sheet: Sheet): CellResult[] {
     const { outcome, ast, candidateOpcodes } = outcomes.get(cellKey(cell.col, cell.row))!;
     const cached = valueFromDouble(cell.cached);
     const { status, reason } = classify(cached, outcome);
-    const formula = translateFormula(cell.rpn, { col: cell.col, row: cell.row }).excel;
+    const formula = translateFormula(cell.rpn, { col: cell.col, row: cell.row, sheet: sheet.sheetIndex }, dialectOf(sheet)).excel;
     const recalculated = outcome.ok ? outcome.v : null;
     const result: CellResult = { address: a1(cell.col, cell.row), col: cell.col, row: cell.row, status, cached, recalculated, reason, formula, lotusFormula: ast ? printLotus(ast) : null, candidateOpcodes };
     if (status === "mismatched" && ast) {

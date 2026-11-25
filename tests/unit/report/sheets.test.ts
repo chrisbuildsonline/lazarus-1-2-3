@@ -32,11 +32,11 @@ describe("buildReport over sheets", () => {
     expect(report.sheets!.map((s) => [s.name, s.format, s.totals.formulas])).toEqual([
       ["A", "wk3", 0],
       ["B", "wk3", 0],
-      ["Totals", "wk3", 1],
+      ["Totals", "wk3", 3],
     ]);
-    expect(report.totals).toMatchObject({ formulas: 1, matched: 0, unverifiable: 1, byReason: { "wk3-formula-not-decoded": 1 } });
-    expect(report.rows.map((r) => r.address)).toEqual(["Totals!C2"]);
-    expect(report.sheets![2]!.wording).toBe("Formulas in WK3 files are not read yet. The stored results are kept as the file remembers them.");
+    expect(report.totals).toMatchObject({ formulas: 3, matched: 1, unverifiable: 2, byReason: { exact: 1, "wk3-formula-not-decoded": 1, "unknown-opcode": 1 } });
+    expect(report.rows.map((r) => r.address)).toEqual(["Totals!C2", "Totals!D2", "Totals!E2"]);
+    expect(report.sheets![2]!.wording).toBe("WK3 formulas are recalculated when they read only their own sheet. A formula that reads another sheet keeps the result the file stored.");
   });
 
   it("DBF: no formulas and the as-read line", () => {

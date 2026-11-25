@@ -92,9 +92,14 @@ export const stringResult = (): Unverifiable =>
 export const cachedNotANumber = (): Unverifiable =>
   unverifiable("cached-not-a-number", undefined, "The value stored for this formula is a special marker, not a number, so there is nothing to compare the recalculated value with.");
 
-/** A WK3 formula: its RPN uses a table this program does not have, so only the stored result is kept. */
-export const wk3FormulaNotDecoded = (): Unverifiable =>
-  unverifiable("wk3-formula-not-decoded", undefined, "Formulas in WK3 files are not read yet. The stored result is kept as the file remembers it.");
+/**
+ * A WK3 formula that reads another sheet of the workbook. References across sheets are not followed,
+ * so only the stored result is kept. Without a detail: the message of reports made before WK3 formulas were decoded.
+ */
+export const wk3FormulaNotDecoded = (detail?: string): Unverifiable =>
+  detail === undefined
+    ? unverifiable("wk3-formula-not-decoded", undefined, "Formulas in WK3 files are not read yet. The stored result is kept as the file remembers it.")
+    : unverifiable("wk3-formula-not-decoded", undefined, `This formula reads a cell on another sheet, and formulas that reach across sheets are not recalculated yet. The stored result is kept as the file remembers it (${detail}).`);
 
 export const undocumented = (rule: string, what: string): Unverifiable =>
   unverifiable("undocumented-semantics", rule, `The 1-2-3 documentation does not say what ${what} gives, so this formula cannot be checked (rule ${rule}).`);

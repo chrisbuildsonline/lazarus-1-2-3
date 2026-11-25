@@ -185,14 +185,15 @@ describe("lazarus cli", () => {
     expect(Object.keys(golden).every((p) => listed.some((x) => x.path === p))).toBe(true);
   });
 
-  it("--verify counts WK3 formulas as unverifiable and a DBF as no formulas", () => {
+  it("--verify checks WK3 formulas and counts a DBF as no formulas", () => {
     const listed = ["fixtures/wk3-sheets/wk3-sheets.wk3", "fixtures/dbf-table/dbf-table.dbf"].map((path) => {
       const run = lazarus(path, "--verify", "--json");
       expect(run.status).toBe(0);
       return (JSON.parse(run.stdout) as { format: string; verify?: Record<string, unknown> }[])[0]!;
     });
     expect(listed.map((x) => [x.format, x.verify])).toEqual([
-      ["wk3", { formulas: 1, matched: 0, mismatched: 0, unverifiable: 1, exact: 0, withinTolerance: 0, byReason: { "wk3-formula-not-decoded": 1 } }],
+      // wk3-sheets.wk3 Totals: C2 matched, D2 reads sheet B (not followed), E2 an unknown token.
+      ["wk3", { formulas: 3, matched: 1, mismatched: 0, unverifiable: 2, exact: 1, withinTolerance: 0, byReason: { exact: 1, "wk3-formula-not-decoded": 1, "unknown-opcode": 1 } }],
       ["dbf", { formulas: 0, matched: 0, mismatched: 0, unverifiable: 0, exact: 0, withinTolerance: 0, byReason: {} }],
     ]);
   });

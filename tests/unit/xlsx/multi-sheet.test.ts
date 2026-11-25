@@ -44,9 +44,11 @@ describe("a three-sheet WK3 workbook", () => {
       const got = new Map([...back.sheets[i]!.values].map(([k, v]) => [k, v.value]));
       expect(got).toEqual(expectedValues(s.sheet));
     });
-    // Totals!C2: stored value, no formula, and the note.
-    expect(back.sheets[2]!.values.get("C2")).toEqual({ value: 60.5, formula: null });
-    expect(notes).toContainEqual(expect.objectContaining({ sheet: "Totals", address: "C2", code: "wk3-formula-not-translated" }));
+    // Totals!C2 is decoded: the Excel formula with the stored value. D2 reads sheet B: stored value, no formula, and the note.
+    expect(back.sheets[2]!.values.get("C2")).toEqual({ value: 60.5, formula: "A1+B1+C1" });
+    expect(back.sheets[2]!.values.get("D2")).toEqual({ value: 1, formula: null });
+    expect(notes).toContainEqual(expect.objectContaining({ sheet: "Totals", address: "D2", code: "wk3-formula-not-translated" }));
+    expect(notes.filter((n) => n.code === "wk3-formula-not-translated").map((n) => n.address)).toEqual(["D2"]);
   });
 
   it("writes the DBF table as it was read, labels and numbers", async () => {

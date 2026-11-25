@@ -88,7 +88,7 @@ function planCell(cell: Cell, result: CellResult | undefined, notes: [WriterNote
       }
       const value = storedValue(result.cached);
       if (result.reason.code === "wk3-formula-not-decoded") {
-        notes.push(["wk3-formula-not-translated", "This WK3 formula is not read yet, so it has no Excel formula. The stored value is written as a plain value."]);
+        notes.push(["wk3-formula-not-translated", "This WK3 formula reads another sheet, which is not followed yet, so it has no Excel formula. The stored value is written as a plain value."]);
         return { value, formula: null, alignment: null };
       }
       if (result.formula === null) {

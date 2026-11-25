@@ -1,10 +1,10 @@
 // recalcSheet: decode every formula, order them naturally (S26) and evaluate each once, reading
 // precedent outcomes that the order guarantees are already set. The Sheet is only read.
-import { decodeRpn, type Expr } from "../formula/index.ts";
+import { decodeRpn, type Dialect, type Expr } from "../formula/index.ts";
 import { a1, cellKey, cellsInRowMajorOrder, type Cell, type Sheet } from "../parser/index.ts";
 import { evaluate, type CellRead, type EvalContext, type RangeItem } from "./evaluate.ts";
 import { buildGraph, naturalOrder, precedents, type Precedents } from "./graph.ts";
-import { circularReference, decodeError, labelResult, stringResult, unknownOpcode, type Outcome, type Unverifiable, type Value } from "./value.ts";
+import { circularReference, decodeError, labelResult, stringResult, unknownOpcode, wk3FormulaNotDecoded, type Outcome, type Unverifiable, type Value } from "./value.ts";
 
 export type CellOutcome = {
   outcome: Outcome<Value>;
@@ -16,14 +16,21 @@ export type CellOutcome = {
 
 type FormulaCell = Extract<Cell, { kind: "formula" }>;
 
+/** The RPN dialect of a sheet: WK3 sheets use the Release 3 token table. */
+export const dialectOf = (sheet: Sheet): Dialect => (sheet.format === "wk3" ? "wk3" : "wk1");
+
 /** Requirements 66 to 69: the Lotus AST, or why there is none. */
-function decode(cell: FormulaCell): { ast: Expr | null; failure: Unverifiable | null; candidateOpcodes: number[] } {
-  const d = decodeRpn(cell.rpn, { col: cell.col, row: cell.row });
+function decode(cell: FormulaCell, sheet: Sheet): { ast: Expr | null; failure: Unverifiable | null; candidateOpcodes: number[] } {
+  const d = decodeRpn(cell.rpn, { col: cell.col, row: cell.row, sheet: sheet.sheetIndex }, dialectOf(sheet));
   const candidates = d.diagnostics.flatMap((x) => (x.code === "unconfirmed-opcode" && x.opcode !== undefined ? [x.opcode] : []));
   const candidateOpcodes = [...new Set(candidates)].sort((a, b) => a - b);
   if (d.ast) return { ast: d.ast, failure: null, candidateOpcodes };
   const first = d.diagnostics.find((x) => x.severity === "error");
-  const failure = d.unknown ? unknownOpcode(d.unknown.opcode, d.unknown.offset) : decodeError(first?.code ?? "decode-error", first?.message ?? "no syntax tree");
+  const failure = d.unknown
+    ? unknownOpcode(d.unknown.opcode, d.unknown.offset)
+    : first?.code === "foreign-reference"
+      ? wk3FormulaNotDecoded(first.message)
+      : decodeError(first?.code ?? "decode-error", first?.message ?? "no syntax tree");
   return { ast: null, failure, candidateOpcodes };
 }
 
@@ -35,7 +42,7 @@ export function recalcSheet(sheet: Sheet): Map<number, CellOutcome> {
   const decoded = new Map<number, ReturnType<typeof decode>>();
   for (const c of formulas) {
     const key = cellKey(c.col, c.row);
-    const d = decode(c);
+    const d = decode(c, sheet);
     decoded.set(key, d);
     deps.set(key, d.ast ? precedents(d.ast) : { refs: [], ranges: [] });
   }

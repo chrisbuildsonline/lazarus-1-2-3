@@ -30,7 +30,7 @@ function reportSheet(s: ReportSheetInput): ReportSheet {
     out.asRead = s.values;
     out.wording = `A dBase table has no formulas. ${s.values} values shown as read.`;
   }
-  if (s.verification.format === "wk3") out.wording = "Formulas in WK3 files are not read yet. The stored results are kept as the file remembers them.";
+  if (s.verification.format === "wk3") out.wording = "WK3 formulas are recalculated when they read only their own sheet. A formula that reads another sheet keeps the result the file stored.";
   if (s.fields) out.fields = [...s.fields];
   return out;
 }

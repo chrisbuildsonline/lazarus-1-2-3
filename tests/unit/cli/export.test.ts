@@ -107,7 +107,7 @@ describe("lazarus --xlsx and --report", () => {
     expect((await readXlsx(new Uint8Array(readFileSync(join(dir, "o.xlsx"))))).sheetNames).toEqual(["A", "B", "Totals"]);
     const page = readFileSync(join(dir, "o.html"), "utf8");
     scan(page);
-    expect(page).toContain("Formulas in WK3 files are not read yet.");
+    expect(page).toContain("WK3 formulas are recalculated when they read only their own sheet.");
     expect(page).toContain("Totals!C2");
   });
 
