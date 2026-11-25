@@ -47,8 +47,9 @@ describe("fixtures/manifest.json dbf entries", () => {
 describe("fixtures/manifest.json wk3 entries", () => {
   const wk3 = entries.filter((e) => e.format === "wk3");
 
-  it("has a synthetic and a real WK3 entry", () => {
-    expect(wk3.map((e) => e.origin).sort()).toEqual(["real", "synthetic"]);
+  it("has a synthetic WK3 entry and three real ones, two of them with formulas", () => {
+    expect(wk3.map((e) => e.origin).sort()).toEqual(["real", "real", "real", "synthetic"]);
+    expect(wk3.filter((e) => e.origin === "real" && e.counts.formulas > 0).map((e) => e.path)).toEqual(["fixtures/noaa-ala-wai-m21/m21tab.wk3", "fixtures/noaa-ala-wai-m3/m3.wk3"]);
   });
 
   it("lists each sheet's name and counts as the independent walker reads them", () => {

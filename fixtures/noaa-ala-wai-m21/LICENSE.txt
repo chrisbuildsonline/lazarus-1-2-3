@@ -1,0 +1,15 @@
+Source: https://www.ngdc.noaa.gov/mgg/geology/data/g02887/m21tab.wk3
+Author: NOAA National Centers for Environmental Information, data set MGG08005001 (g02887), originator Eric H. DeCarlo
+License: US-Government-Work (public domain in the U.S., 17 U.S.C. 105)
+Redistribution: allowed
+Notes: Real Lotus 1-2-3 Release 3 (WK3) file published by NOAA NCEI, committed unchanged. Sediment core
+  M21 from the Ala Wai Canal, Oahu, Hawaii (1991): sample depths and metal concentrations, with the
+  formulas the authors used for ratios and corrected values. Measurement data, no personal data.
+  The NCEI metadata record (https://www.ncei.noaa.gov/metadata/geoportal/rest/metadata/item/gov.noaa.ngdc.mgg.geology:G02887/xml)
+  says, under "NCEI Copyright Statement": "Produced by the NOAA National Centers for Environmental
+  Information. Not subject to copyright protection within the United States." and "Access to this dataset
+  is unrestricted."
+  Cite as: DeCarlo, Eric and Kahlil Spencer. 1998: Records of Lead and Other Heavy Metal Inputs to
+  Sediments of the Ala Wai Canal, Oahu, HI. First. NOAA National Centers for Environmental Information.
+  Accessed 2026-11-25.
+  sha256 a8c7a675c27e200fa10e891fed439823385ca048fd05dc72673a6b9ee56f0951

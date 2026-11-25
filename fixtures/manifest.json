@@ -512,15 +512,94 @@
       ]
     },
     {
+      "path": "fixtures/noaa-ala-wai-m21/m21tab.wk3",
+      "format": "wk3",
+      "origin": "real",
+      "sourceUrl": "https://www.ngdc.noaa.gov/mgg/geology/data/g02887/m21tab.wk3",
+      "license": "US-Government-Work (public domain in the U.S., 17 U.S.C. 105)",
+      "sha256": "a8c7a675c27e200fa10e891fed439823385ca048fd05dc72673a6b9ee56f0951",
+      "counts": {
+        "cells": 61,
+        "formulas": 8,
+        "labels": 0,
+        "numbers": 53
+      },
+      "sheets": [
+        {
+          "name": "A",
+          "counts": {
+            "cells": 61,
+            "formulas": 8,
+            "labels": 0,
+            "numbers": 53
+          }
+        }
+      ],
+      "expectedValues": [
+        {
+          "cell": "A!K44",
+          "kind": "integer",
+          "cached": 216
+        },
+        {
+          "cell": "A!L44",
+          "kind": "number",
+          "cached": 0.176
+        },
+        {
+          "cell": "A!T44",
+          "kind": "formula",
+          "cached": 0.08148148148148149
+        }
+      ]
+    },
+    {
+      "path": "fixtures/noaa-ala-wai-m3/m3.wk3",
+      "format": "wk3",
+      "origin": "real",
+      "sourceUrl": "https://www.ngdc.noaa.gov/mgg/geology/data/g02887/m3.wk3",
+      "license": "US-Government-Work (public domain in the U.S., 17 U.S.C. 105)",
+      "sha256": "3220bb46949b13e2e542c0725bee1abd23e1476c7c66808cafab328e4a38bf47",
+      "counts": {
+        "cells": 2373,
+        "formulas": 675,
+        "labels": 122,
+        "numbers": 1576
+      },
+      "sheets": [
+        {
+          "name": "A",
+          "counts": {
+            "cells": 2373,
+            "formulas": 675,
+            "labels": 122,
+            "numbers": 1576
+          }
+        }
+      ],
+      "expectedValues": [
+        {
+          "cell": "A!A1",
+          "kind": "label",
+          "cached": "Data file for M3 collected during 1991 NSF-YSP"
+        },
+        {
+          "cell": "A!U9",
+          "kind": "formula",
+          "cached": 46.992186794324525
+        }
+      ]
+    },
+    {
       "path": "fixtures/wk3-sheets/wk3-sheets.wk3",
       "format": "wk3",
       "origin": "synthetic",
       "sourceUrl": null,
       "license": "MIT",
-      "sha256": "e1dc3f08099624e331f5c1c6bd6ae8fc2e9b02bc510f6f72afd2ceb121fa9b2b",
+      "sha256": "40c7286ef3345801a2033662f4bff9b37c04b25c6eb1542bfe971d5c4cb60cfe",
       "counts": {
-        "cells": 16,
-        "formulas": 1,
+        "cells": 18,
+        "formulas": 3,
         "labels": 4,
         "numbers": 11
       },
@@ -546,8 +625,8 @@
         {
           "name": "Totals",
           "counts": {
-            "cells": 4,
-            "formulas": 1,
+            "cells": 6,
+            "formulas": 3,
             "labels": 0,
             "numbers": 3
           }

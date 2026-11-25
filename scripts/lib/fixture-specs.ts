@@ -291,8 +291,14 @@ export const WK3_SPEC = {
     { kind: "number", sheet: 2, col: 0, row: 0, value: 10 },
     { kind: "number", sheet: 2, col: 1, row: 0, value: 20.5 },
     { kind: "number", sheet: 2, col: 2, row: 0, value: 30 },
-    // Stored result 60.5; the RPN bytes are kept as written and never decoded.
-    { kind: "formula", sheet: 2, col: 2, row: 1, cached: 60.5, rpn: [0x01, 0x00, 0x00, 0x00, 0x03] },
+    // WK3 tokens (src/formula/opcodes-wk3.ts): 0x01 cell ref = relbits, row u16, sheet, col; 0x0F add;
+    // 0x1D unary plus; 0x02 range = relbits, two corners; 0x03 return.
+    // C2 = A1+B1+C1 on its own sheet: 10 + 20.5 + 30 = 60.5, matched.
+    { kind: "formula", sheet: 2, col: 2, row: 1, cached: 60.5, rpn: [0x01, 0x07, 0, 0, 2, 0, 0x01, 0x07, 0, 0, 2, 1, 0x0f, 0x01, 0x07, 0, 0, 2, 2, 0x0f, 0x03] },
+    // D2 = +B:B1 (sheet 1 stores 1 there): a reference to another sheet, not followed, so unverifiable.
+    { kind: "formula", sheet: 2, col: 3, row: 1, cached: 1, rpn: [0x01, 0x07, 0, 0, 1, 1, 0x1d, 0x03] },
+    // E2 = @COLS(A1..C1) = 3: opcode 0x63 is in no table of this program, so unverifiable (unknown-opcode).
+    { kind: "formula", sheet: 2, col: 4, row: 1, cached: 3, rpn: [0x02, 0x3f, 0, 0, 2, 0, 0, 0, 2, 2, 0x63, 0x03] },
   ] as Wk3CellSpec[],
   expect: ["A!A1", "A!B1", "B!D1", "B!A2", "B!D2", "Totals!C2"],
 };
