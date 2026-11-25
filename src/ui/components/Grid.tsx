@@ -6,6 +6,7 @@ import { COPY } from "../copy.ts";
 import { cellLabel, columnLetters, type GridModel } from "../model/grid-model.ts";
 import { moveFocus, type GridPos } from "../model/grid-nav.ts";
 import { LAYOUT } from "../model/layout.ts";
+import { initialScrollLeft } from "../model/sweep.ts";
 import { windowRange } from "../model/window.ts";
 
 export type GridProps = {
@@ -25,13 +26,20 @@ export type GridProps = {
   onOpenCell: (pos: GridPos) => void;
   /** Escape in the grid: closes the drawer, and focus stays on the cell. */
   onEscape?: () => void;
+  /**
+   * The verification sweep (seance-visuals requirement 18): formula cells whose verify-order rank is
+   * `lit` or more show as unlit ghosts. Presentation only; labels keep the real status.
+   */
+  sweep?: { lit: number; rank: ReadonlyMap<string, number> };
+  /** First and last column holding a formula: the grid opens scrolled to show them (requirement 26). */
+  formulaCols?: { first: number; last: number } | null;
 };
 
 const range = (w: { start: number; end: number }) => Array.from({ length: Math.max(0, w.end - w.start) }, (_, i) => w.start + i);
 const withIndex = (list: number[], i: number, count: number) => (i < 0 || i >= count || list.includes(i) ? list : [...list, i].sort((a, b) => a - b));
 const sameCell = (a: GridPos | null, col: number, row: number) => a !== null && a.col === col && a.row === row;
 
-export function Grid({ model, label, focus, selected, rowsShown, empty, viewport, onFocusCell, onOpenCell, onEscape }: GridProps) {
+export function Grid({ model, label, focus, selected, rowsShown, empty, viewport, onFocusCell, onOpenCell, onEscape, sweep, formulaCols }: GridProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [scroll, setScroll] = useState({ top: 0, left: 0 });
   const [size, setSize] = useState(viewport ?? { width: 1200, height: 600 });
@@ -63,6 +71,18 @@ export function Grid({ model, label, focus, selected, rowsShown, empty, viewport
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
+
+  // Open on the proof: once per sheet, before the first paint, scroll just far enough to show the
+  // formula columns. Under reduced motion too: it is a starting position, not motion.
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el || !formulaCols) return;
+    const left = initialScrollLeft(formulaCols.first, LAYOUT.colWidth, el.clientWidth - LAYOUT.rowHeaderWidth, formulaCols.last);
+    if (left <= 0) return;
+    el.scrollLeft = left;
+    setScroll({ top: el.scrollTop, left: el.scrollLeft });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once per model (sheet), never on a later render
+  }, [model]);
 
   useLayoutEffect(() => {
     if (!keyed.current) return;
@@ -116,6 +136,8 @@ export function Grid({ model, label, focus, selected, rowsShown, empty, viewport
   };
 
   const width = LAYOUT.rowHeaderWidth + model.cols * LAYOUT.colWidth;
+  const sweeping = sweep !== undefined && sweep.lit < sweep.rank.size;
+  const sweepAttrs = sweep && { "data-sweep": sweeping ? "running" : "done", "data-lit": sweep.lit };
   const x = (col: number) => `translateX(${LAYOUT.rowHeaderWidth + col * LAYOUT.colWidth}px)`;
 
   return (
@@ -131,6 +153,7 @@ export function Grid({ model, label, focus, selected, rowsShown, empty, viewport
         onKeyDown={onKeyDown}
         onClick={onClick}
         onAnimationEnd={() => setFresh(false)}
+        {...sweepAttrs}
       >
         <div className="grid__head" role="row" aria-rowindex={1} style={{ width }}>
           <div className="grid__corner" role="columnheader" aria-colindex={1}>
@@ -155,7 +178,10 @@ export function Grid({ model, label, focus, selected, rowsShown, empty, viewport
                   const address = `${columnLetters(col)}${row + 1}`;
                   const classes = ["cell", `cell--${cell.align}`];
                   if (cell.kind === "formula") classes.push("cell--formula");
-                  if (cell.status) classes.push(`cell--${cell.status}`);
+                  const rank = sweeping && cell.status ? sweep.rank.get(address) : undefined;
+                  const unlit = rank !== undefined && rank >= sweep!.lit;
+                  if (unlit) classes.push("cell--unlit");
+                  else if (cell.status) classes.push(`cell--${cell.status}`);
                   if (sameCell(selected, col, row)) classes.push("is-selected");
                   return (
                     <div
@@ -169,6 +195,7 @@ export function Grid({ model, label, focus, selected, rowsShown, empty, viewport
                       tabIndex={sameCell(at, col, row) ? 0 : -1}
                       data-col={col}
                       data-row={row}
+                      data-sweep={rank === undefined ? undefined : unlit ? "unlit" : "lit"}
                       style={{ transform: x(col) }}
                     >
                       <span className="cell__value">{cell.text}</span>

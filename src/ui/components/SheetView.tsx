@@ -1,7 +1,7 @@
 // The Sheet view (DESIGN.md 4.2, requirements 26 to 41): the title block with the report links, the
 // batch list when there is one, the totals, the filters, and the grid (desktop and tablet) or the
 // status list (phone).
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import type { Status } from "../../verify/index.ts";
 import type { RaisedFile } from "../../workers/verify-protocol.ts";
 import { COPY } from "../copy.ts";
@@ -13,6 +13,8 @@ import { buildGridModel, columnLetters } from "../model/grid-model.ts";
 import type { GridPos } from "../model/grid-nav.ts";
 import { filterRows, statusCounts, type Filter } from "../model/status-groups.ts";
 import { useFocusReturn } from "../hooks/useFocusReturn.ts";
+import { REDUCED_MOTION, useMatchMedia } from "../hooks/useMatchMedia.ts";
+import { useSweep } from "../hooks/useSweep.ts";
 import { drawerModel } from "../model/drawer-model.ts";
 import { BatchList } from "./BatchList.tsx";
 import { Drawer } from "./Drawer.tsx";
@@ -50,6 +52,9 @@ export type SheetViewProps = {
 
 const address = (p: GridPos) => `${columnLetters(p.col)}${p.row + 1}`;
 
+/** Sheets already shown, so the sweep runs once per sheet, also across batch file switches (requirement 17). */
+const swept = new WeakSet<object>();
+
 export function SheetView(p: SheetViewProps) {
   const { file, phone, filter } = p;
   const sheetIndex = Math.min(p.sheetIndex ?? 0, file.sheets.length - 1);
@@ -58,6 +63,24 @@ export function SheetView(p: SheetViewProps) {
   const counts = useMemo(() => statusCounts(current.verification.cells), [current]);
   const [focus, setFocus] = useState<GridPos>({ col: 0, row: 0 });
   const [expanded, setExpanded] = useState<ReadonlySet<Status>>(new Set());
+
+  // The verification sweep: once, for the sheet this view opens on. A filter or sheet change ends it
+  // in its final state; reduced motion, a DBF or a sheet without formulas never start it.
+  const reduced = useMatchMedia(REDUCED_MOTION);
+  const [opening] = useState(() => ({ filter, sheetIndex, fresh: !swept.has(current.verification) }));
+  const [ended, setEnded] = useState(false);
+  const moved = filter !== opening.filter || sheetIndex !== opening.sheetIndex;
+  useEffect(() => {
+    swept.add(current.verification);
+    if (moved) setEnded(true);
+  }, [current.verification, moved]);
+  const engine = current.verification.totals;
+  const sweepable = file.format !== "dbf" && engine.formulas > 0;
+  const sweep = useSweep(current.verification.cells, engine, sweepable && opening.fresh && !reduced && !ended && !moved);
+  const formulaCols = useMemo(() => {
+    const cols = model.formulaCells.map((c) => c.col);
+    return cols.length === 0 ? null : { first: Math.min(...cols), last: Math.max(...cols) };
+  }, [model]);
   const selected = useMemo(() => {
     const r = p.cell === null ? undefined : model.formulaCells.find((c) => c.address === p.cell);
     return r ? { col: r.col, row: r.row } : null;
@@ -119,7 +142,7 @@ export function SheetView(p: SheetViewProps) {
         {batch && <BatchList items={p.items} skipped={p.skipped} selectedId={p.selectedId} onSelect={p.onSelectFile} />}
         <div className="sheet__main">
           <SheetTabs names={file.sheets.map((s) => s.name)} selected={sheetIndex} onSelect={(i) => p.onSelectSheet?.(i)} />
-          <TotalsSurface totals={current.verification.totals} asRead={asRead} />
+          <TotalsSurface totals={engine} asRead={asRead} partial={sweep.partial} running={sweep.running} />
           {statusList ? (
             <>
               {filters}
@@ -139,6 +162,8 @@ export function SheetView(p: SheetViewProps) {
                 onFocusCell={focusCell}
                 onOpenCell={(pos) => p.onOpenCell(address(pos))}
                 onEscape={p.cell === null ? undefined : p.onCloseCell}
+                sweep={sweepable ? { lit: sweep.lit, rank: sweep.plan.rank } : undefined}
+                formulaCols={formulaCols}
               />
             </section>
           )}

@@ -763,6 +763,9 @@ pre {
 .tile__value--display {
   font: var(--text-display);
   letter-spacing: var(--tracking-display);
+  transition:
+    color var(--dur-slow) var(--ease-out),
+    text-shadow var(--dur-slow) var(--ease-out);
 }
 
 .tile__value--words {
@@ -983,12 +986,13 @@ pre {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+  transition: color var(--dur-slow) var(--ease-out);
 }
 
 .cell--formula {
   cursor: pointer;
   padding-left: calc(var(--space-5) + var(--space-1) / 2);
-  transition: background-color var(--dur-fast) var(--ease-out);
+  transition: background-color var(--dur-slow) var(--ease-out);
 }
 
 .cell--formula:hover {
@@ -1009,6 +1013,7 @@ pre {
 
 .cell--matched::before {
   background: var(--status-matched-mark);
+  box-shadow: var(--glow-matched);
 }
 
 .cell--mismatched,
@@ -1052,6 +1057,38 @@ pre {
 .cell:focus-visible {
   z-index: 2;
   border-radius: var(--radius-xs);
+}
+
+/* ---------- the verification sweep (DESIGN.md 4.2) ----------
+   Before its turn a formula cell is an unlit ghost: ghost ink, a faint placeholder dot, no status.
+   While the sweep runs, lit cells hold their status tint, so the proof spreads down the sheet like
+   ectoplasm; when it ends they settle to the normal look over --dur-slow. Transitions only, no loop. */
+.cell--unlit .cell__value {
+  color: var(--ghost-ink);
+}
+
+.cell--unlit::before {
+  content: "";
+  position: absolute;
+  left: var(--space-2);
+  top: calc(50% - 3px);
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--ghost-fill);
+}
+
+.grid[data-sweep="running"] .cell--matched {
+  background: var(--status-matched-bg);
+}
+
+.grid[data-sweep="running"] .cell--unverifiable {
+  background: var(--status-unverifiable-bg);
+}
+
+.totals.is-sweeping .tile--headline .tile__value {
+  color: var(--status-matched-fg);
+  text-shadow: var(--glow-matched);
 }
 
 /* Ghost to solid, once per file; instant under reduced motion (durations are 0 there). */

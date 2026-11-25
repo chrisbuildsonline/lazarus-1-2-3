@@ -82,3 +82,34 @@ describe("ProofBar", () => {
     expect(renderToStaticMarkup(<ProofBar totals={totals(1, 1, 1)} />)).not.toMatch(/style="[^"]*(#|rgb|hsl)/i);
   });
 });
+
+describe("TotalsSurface during the verification sweep (seance-visuals requirements 19, 21)", () => {
+  const engine = totals(3, 2, 1);
+  const partial: Totals = { ...totals(1, 1, 0), formulas: 6 };
+
+  it("without the sweep props the markup has no trace of it", () => {
+    const html = renderToStaticMarkup(<TotalsSurface totals={engine} />);
+    expect(html).not.toMatch(/visually-hidden|is-sweeping|class="totals__tiles"[^>]*aria-hidden/);
+  });
+
+  it("shows the partial figures hidden from assistive tech, and the engine figures in a visually hidden line", () => {
+    const html = renderToStaticMarkup(<TotalsSurface totals={engine} partial={partial} running />);
+    // 1 of 6 matched: 166.6 tenths, floor 166: 16.6%.
+    expect(tileValues(html)).toEqual(["16.6%", "1", "1", "0"]);
+    expect(html).toMatch(/class="totals__tiles"[^>]*aria-hidden="true"/);
+    const hidden = /class="visually-hidden"[^>]*>([^<]*)</.exec(html)![1]!;
+    expect(hidden).toContain("50.0%");
+    expect(hidden).toContain("3 matched, 2 mismatched, 1 unverifiable");
+    expect(/role="img" aria-label="([^"]*)"/.exec(html)![1]).toBe("3 matched, 2 mismatched, 1 unverifiable");
+  });
+
+  it("the proof bar fills over the engine's formula count, from empty", () => {
+    const segs = [...renderToStaticMarkup(<TotalsSurface totals={engine} partial={partial} running />).matchAll(/proof__seg--(\w+)"[^>]*style="flex-grow:([^;"]+)/g)].map((m) => [m[1], Number(m[2])]);
+    expect(segs).toEqual([
+      ["matched", 1 / 6],
+      ["mismatched", 1 / 6],
+    ]);
+    const empty = renderToStaticMarkup(<TotalsSurface totals={engine} partial={{ ...totals(0, 0, 0), formulas: 6 }} running />);
+    expect(empty).not.toMatch(/proof__seg--/);
+  });
+});

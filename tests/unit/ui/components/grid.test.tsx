@@ -124,3 +124,40 @@ describe("Grid states on hand-built cells", () => {
     expect(html).toContain("No mismatched cells on this sheet.");
   });
 });
+
+describe("Grid during the verification sweep (seance-visuals requirements 18, 21)", () => {
+  const formula = (col: number, row: number, cached: number): Cell => ({ kind: "formula", col, row, cached, rpn: new Uint8Array([3]) });
+  const results = [cellResult(0, 0, "A1", "mismatched", 6), cellResult(1, 0, "B1", "unverifiable", 2), cellResult(2, 4, "C5", "matched", 1)];
+  const model = buildGridModel(handBuilt([formula(0, 0, 6), formula(1, 0, 2), formula(2, 4, 1)], results));
+  const rank = new Map(results.map((r, i) => [r.address, i]));
+  const root = (html: string) => /<div([^>]*role="grid"[^>]*)>/.exec(html)![1]!;
+
+  it("without the sweep prop the markup has no trace of it", () => {
+    const html = render(model);
+    expect(html).not.toMatch(/data-sweep|data-lit|cell--unlit/);
+  });
+
+  it("an unlit formula cell is a ghost with no status class, and its label still carries the real status", () => {
+    const html = render(model, { sweep: { lit: 1, rank } });
+    expect(attr(root(html), "data-sweep")).toBe("running");
+    expect(attr(root(html), "data-lit")).toBe("1");
+    const a1 = cellAt(html, /^A1, /)!;
+    expect(attr(a1, "class")).toMatch(/\bcell--mismatched\b/);
+    expect(attr(a1, "data-sweep")).toBe("lit");
+    for (const [label, status] of [[/^B1, /, "Unverifiable"], [/^C5, /, "Matched"]] as const) {
+      const c = cellAt(html, label)!;
+      expect(attr(c, "class")).toMatch(/\bcell--unlit\b/);
+      expect(attr(c, "class")).not.toMatch(/\bcell--(matched|mismatched|unverifiable)\b/);
+      expect(attr(c, "data-sweep")).toBe("unlit");
+      expect(attr(c, "aria-label")).toMatch(new RegExp(`, ${status}$`));
+    }
+  });
+
+  it("once every cell is lit the grid says done and every cell shows its status", () => {
+    const html = render(model, { sweep: { lit: 3, rank } });
+    expect(attr(root(html), "data-sweep")).toBe("done");
+    expect(attr(root(html), "data-lit")).toBe("3");
+    expect(html).not.toMatch(/cell--unlit/);
+    expect(attr(cellAt(html, /^C5, /)!, "class")).toMatch(/\bcell--matched\b/);
+  });
+});
