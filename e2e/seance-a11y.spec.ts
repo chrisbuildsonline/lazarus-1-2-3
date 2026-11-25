@@ -130,7 +130,8 @@ test("Sheet view with motion, after the solidify animation ends", async ({ page 
   await page.setViewportSize(DESKTOP);
   await page.emulateMedia({ reducedMotion: "no-preference" });
   await sample(page);
-  await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished)));
+  await expect(page.getByRole("grid")).toHaveAttribute("data-sweep", "done");
+  await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))));
   await scan(page, testInfo, "sheet-motion");
 });
 

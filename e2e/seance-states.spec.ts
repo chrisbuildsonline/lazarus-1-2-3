@@ -48,6 +48,9 @@ test("the grid paints mismatched and matched cells with their tokens", async ({ 
   await raise(page, files.mixedStatus());
   const mismatched = page.locator('[role="gridcell"][aria-label^="C1,"]');
   await expect(mismatched).toHaveClass(/cell--mismatched/);
+  // The cell lights with a --dur-slow background transition (the verification sweep); read it settled.
+  await expect(page.getByRole("grid")).toHaveAttribute("data-sweep", "done");
+  await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))));
   expect(await mismatched.evaluate((el) => getComputedStyle(el).backgroundColor)).toBe(await tokenColour(page, "--status-mismatched-bg"));
 
   const matched = page.locator('[role="gridcell"][aria-label^="A2,"]');

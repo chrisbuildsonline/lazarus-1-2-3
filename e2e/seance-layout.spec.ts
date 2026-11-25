@@ -104,12 +104,14 @@ for (const vp of VIEWPORTS) {
       if (phone) {
         await page.locator('.status-row[data-address="C1"]').tap();
         await expect(page.getByRole("dialog", { name: "Cell C1" })).toBeVisible();
-        await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished)));
+        // A cell transition the sweep's end replaced is cancelled, not failed: wait without rejecting.
+        await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))));
         await snap(page, testInfo, `dialog-mixed-${vp.name}`);
       } else {
         await page.locator('[role="gridcell"][aria-label^="C1,"]').click();
         await expect(page.getByRole("complementary", { name: "Cell C1" })).toBeVisible();
-        await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished)));
+        // A cell transition the sweep's end replaced is cancelled, not failed: wait without rejecting.
+        await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))));
         await snap(page, testInfo, `drawer-mixed-${vp.name}`);
       }
       expect(problems).toEqual([]);
