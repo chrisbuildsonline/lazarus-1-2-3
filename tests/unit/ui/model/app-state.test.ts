@@ -231,4 +231,17 @@ describe("appReducer", () => {
     const s = run([summon(["KSBASE.WK1"]), { type: "raised", batchId: 1, id: 0, file }, { type: "openCell", address: "O3" }, { type: "reset" }]);
     expect(s).toEqual(initialState);
   });
+
+  it("a summon can open on a filter and a cell: the mismatch sample lands on V44, filtered to Mismatched", async () => {
+    const file = await raiseFixture("fixtures/noaa-ala-wai-m21/m21tab.wk3");
+    const open: AppAction = { type: "summoned", batchId: 1, entries: [entry("m21tab.wk3")], skipped: [], open: { filter: "mismatched", cell: "V44" } };
+    const s = run([open, { type: "raised", batchId: 1, id: 0, file }]);
+    expect(s.view).toBe("sheet");
+    expect(s.filter).toBe("mismatched");
+    expect(s.cell).toEqual({ address: "V44" });
+    // A later plain summon starts from All with no cell.
+    const t = run([summon(["KSBASE.WK1"], 2)], s);
+    expect(t.filter).toBe("all");
+    expect(t.cell).toBeNull();
+  });
 });

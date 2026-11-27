@@ -70,6 +70,34 @@ describe("Drawer modes", () => {
     expect(html).not.toContain("<aside");
   });
 
+  it("a mismatch with a cause shows it under Why, next to the values, and marks the empty input", () => {
+    const m = drawerModel(
+      cellResult(21, 43, "V44", "mismatched", 0.012281069011234387, {
+        recalculated: { t: "err" },
+        inputs: [
+          { address: "C44", kind: "empty", value: null, cached: null },
+          { address: "L44", kind: "number", value: { t: "num", v: 0.176 }, cached: { t: "num", v: 0.176 } },
+        ],
+      }),
+      TOLERANCE,
+    );
+    for (const mode of ["desktop", "phone"] as const) {
+      const html = renderToStaticMarkup(<Drawer model={m} mode={mode} onClose={noop} />);
+      const cause = /<section class="drawer__cause"[^>]*>([\s\S]*?)<\/section>/.exec(html);
+      expect(cause, mode).not.toBeNull();
+      expect(text(cause![1]!)).toContain("Why");
+      expect(text(cause![1]!)).toContain("the file no longer holds C44");
+      // The cause sits right after the value pair, before the formulas.
+      expect(html.indexOf("drawer__cause")).toBeGreaterThan(html.indexOf("drawer__values"));
+      expect(html.indexOf("drawer__cause")).toBeLessThan(html.indexOf("drawer__formulas"));
+      expect(html).toMatch(/<div class="drawer__input is-missing"><dt>C44<\/dt><dd>empty<\/dd><\/div>/);
+    }
+  });
+
+  it("no cause, no Why section", () => {
+    expect(renderToStaticMarkup(<Drawer model={MISMATCHED} mode="desktop" onClose={noop} />)).not.toContain("drawer__cause");
+  });
+
   it("a missing value reads Not stored in the file, never a bare dash", () => {
     const m = drawerModel(cellResult(1, 1, "B2", "unverifiable", null, { recalculated: null, reason: { code: "cached-not-a-number", message: "x" } }), TOLERANCE);
     const html = renderToStaticMarkup(<Drawer model={m} mode="desktop" onClose={noop} />);

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useReducer, useRef } from "react";
 import { COPY } from "../copy.ts";
 import { createRaiseClient, type RaiseClient } from "../io/worker-client.ts";
-import { appReducer, initialState } from "../model/app-state.ts";
+import { appReducer, initialState, type SummonOpen } from "../model/app-state.ts";
 import { planBatch, type FoundFile, type Skipped } from "../model/entries.ts";
 
 /** Anything that can hand over its bytes: a File from a drop or a picker, or the sample. */
@@ -19,13 +19,13 @@ export function useRaise() {
 
   useEffect(() => () => client.current?.dispose(), []);
 
-  const summon = useCallback(async (found: readonly FoundFile<Readable>[], skippedBefore: readonly Skipped[] = []) => {
+  const summon = useCallback(async (found: readonly FoundFile<Readable>[], skippedBefore: readonly Skipped[] = [], open?: SummonOpen) => {
     client.current?.dispose();
     const mine = createRaiseClient(makeWorker);
     client.current = mine;
     const batchId = ++batches.current;
     const { accepted, skipped } = planBatch(found);
-    dispatch({ type: "summoned", batchId, entries: accepted.map(({ name, path, size }) => ({ name, path, size })), skipped: [...skippedBefore, ...skipped] });
+    dispatch({ type: "summoned", batchId, entries: accepted.map(({ name, path, size }) => ({ name, path, size })), skipped: [...skippedBefore, ...skipped], ...(open ? { open } : {}) });
 
     // One file at a time, read just before it is sent, so a big batch holds one buffer at most.
     // An engine failure fails every unfinished row at once (requirement 22), so the loop stops there

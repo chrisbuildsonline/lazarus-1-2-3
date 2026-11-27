@@ -36,7 +36,8 @@ export type SheetViewProps = {
   onSelectSheet?: (index: number) => void;
   /** The drawer's cell address. */
   cell: string | null;
-  sample: boolean;
+  /** The source line of a bundled sample, after the meta line; null for the person's own file. */
+  sampleLine: string | null;
   /** Ref callback for the h1, which takes focus when the view appears. */
   titleRef: (el: HTMLHeadingElement | null) => void;
   /** The report links beside the title. */
@@ -133,7 +134,7 @@ export function SheetView(p: SheetViewProps) {
         <div className="sheet__row">
           <p className="sheet__meta">
             {meta}
-            {p.sample && ` · ${COPY.sampleLine}`}
+            {p.sampleLine && ` · ${p.sampleLine}`}
           </p>
           <div className="sheet__links">{p.links}</div>
         </div>

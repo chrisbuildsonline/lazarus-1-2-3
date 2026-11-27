@@ -409,6 +409,61 @@ pre {
   align-self: center;
 }
 
+/* The second sample: a quiet floating chip under the pill, led by the Mismatched bar. It sits close
+   to the pill (it is the pill's alternative), so it pulls up into the column gap. */
+.summon__mismatch {
+  height: auto;
+  min-height: 56px;
+  margin-top: calc(var(--space-5) * -1);
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4) var(--space-2) var(--space-4);
+  background: var(--surface);
+  box-shadow: var(--shadow-surface);
+  white-space: normal;
+  text-align: left;
+}
+
+.summon__mismatch:hover {
+  background: var(--surface-sunken);
+}
+
+.summon__mismatch-mark {
+  flex: none;
+  width: 3px;
+  height: 32px;
+  border-radius: var(--radius-pill);
+  background: var(--status-mismatched-mark);
+}
+
+.summon__mismatch-words {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.summon__mismatch-title {
+  font: var(--text-body-strong);
+  color: var(--text);
+}
+
+.summon__mismatch-meta {
+  font: var(--text-small);
+  color: var(--text-muted);
+}
+
+.summon__mismatch-arrow {
+  flex: none;
+  color: var(--text-muted);
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
+}
+
+.summon__mismatch:hover .summon__mismatch-arrow {
+  color: var(--accent-ink);
+  transform: translateX(2px);
+}
+
 .summon__drop {
   width: 100%;
   display: flex;
@@ -1534,6 +1589,20 @@ pre {
   color: var(--text-muted);
 }
 
+/* Why a mismatch cannot be raised again from this file: an inset panel with the Mismatched bar. */
+.drawer__cause {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: linear-gradient(to right, var(--status-mismatched-mark) 2px, var(--status-mismatched-bg) 2px);
+}
+
+.drawer__cause-text {
+  color: var(--text);
+}
+
 .drawer__formulas {
   display: flex;
   flex-direction: column;
@@ -1574,6 +1643,15 @@ pre {
 
 .drawer__input dd {
   font-variant-numeric: tabular-nums;
+}
+
+/* The input the file no longer holds, named in the cause. */
+.drawer__input.is-missing {
+  background: linear-gradient(to right, var(--status-mismatched-mark) 2px, var(--status-mismatched-bg) 2px);
+}
+
+.drawer__input.is-missing dd {
+  color: var(--status-mismatched-fg);
 }
 
 .drawer__more {
@@ -2250,6 +2328,34 @@ pre {
 
   .summon__foot {
     order: 1;
+  }
+
+  /* The pill is fixed at the bottom here, so the chip follows the title, full width. */
+  .summon__mismatch {
+    margin-top: 0;
+  }
+
+  .summon__mismatch-words {
+    flex: 1;
+  }
+
+  /* Text scrolling behind the sticky pill fades into the canvas instead of running under it. */
+  .page:has(.primary-sticky)::after {
+    content: "";
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: calc(var(--z-sticky) - 1);
+    height: calc(48px + var(--space-4) * 2 + env(safe-area-inset-bottom));
+    background: linear-gradient(to top, var(--canvas) 70%, transparent);
+    pointer-events: none;
+  }
+
+  /* All four status filters stay in view: they wrap instead of scrolling off the edge. */
+  .filters {
+    flex-wrap: wrap;
+    overflow-x: visible;
   }
 
   /* The one primary pill: thumb reach, 16px above the bottom edge and the safe area. */

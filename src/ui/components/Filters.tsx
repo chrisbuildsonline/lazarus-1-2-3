@@ -29,7 +29,7 @@ export function Filters({ counts, value, onChange, controls }: { counts: Record<
   };
 
   return (
-    <div ref={list} className="tabs" role="tablist" aria-label={COPY.filterLabel} onKeyDown={onKeyDown}>
+    <div ref={list} className="tabs filters" role="tablist" aria-label={COPY.filterLabel} onKeyDown={onKeyDown}>
       {ORDER.map((f) => (
         <button
           key={f}

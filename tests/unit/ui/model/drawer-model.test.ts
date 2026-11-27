@@ -3,7 +3,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { drawerModel } from "../../../../src/ui/model/drawer-model.ts";
-import { TOLERANCE } from "../../../../src/verify/index.ts";
+import { TOLERANCE, verifyWorkbookBytes } from "../../../../src/verify/index.ts";
 import { cellResult } from "../../helpers/raised.ts";
 
 const UNCONFIRMED = "Read by this program but not yet confirmed against a real file.";
@@ -41,10 +41,55 @@ describe("drawerModel", () => {
     expect(m.inputs).toEqual([
       { address: "A1", kind: "number", value: "2", cached: "2" },
       { address: "B1", kind: "number", value: "3", cached: "3" },
-      { address: "D1", kind: "empty", value: "", cached: "" },
+      { address: "D1", kind: "empty", value: "empty", cached: "empty" },
     ]);
     expect(m.inputsOmitted).toBe(4);
     expect(m.diagnostics).toContain("value-differs");
+    // A number that differs is not explained by an empty input alone: no cause is claimed.
+    expect(m.cause).toBeNull();
+  });
+
+  it("mismatched to ERR with an empty input: the cause names the cell the file no longer holds", () => {
+    const r = cellResult(21, 43, "V44", "mismatched", 0.012281069011234387, {
+      recalculated: { t: "err" },
+      lotusFormula: "L44/C44",
+      reason: { code: "value-differs", message: "x" },
+      inputs: [
+        { address: "C44", kind: "empty", value: null, cached: null },
+        { address: "L44", kind: "number", value: { t: "num", v: 0.176 }, cached: { t: "num", v: 0.176 } },
+      ],
+    });
+    const m = drawerModel(r, TOLERANCE);
+    expect(m.remembered).toBe("0.012281069011234387");
+    expect(m.raised).toBe("ERR");
+    expect(m.cause).toBe(
+      "Recalculated now, the formula gives ERR, because the file no longer holds C44: that cell is empty. The remembered value was calculated while C44 still held a number. This is a finding about the file, not a reading error.",
+    );
+    expect(m.inputs[0]).toEqual({ address: "C44", kind: "empty", value: "empty", cached: "empty" });
+  });
+
+  it("two empty inputs are both named", () => {
+    const empty = (address: string) => ({ address, kind: "empty" as const, value: null, cached: null });
+    const m = drawerModel(cellResult(0, 0, "A1", "mismatched", 1, { recalculated: { t: "err" }, inputs: [empty("B1"), empty("C1")] }), TOLERANCE);
+    expect(m.cause).toBe(
+      "Recalculated now, the formula gives ERR, because the file no longer holds B1 and C1: those cells are empty. The remembered value was calculated while B1 and C1 still held numbers. This is a finding about the file, not a reading error.",
+    );
+  });
+
+  it("the real NOAA file: V44 of m21tab.wk3 shows the stored value, ERR and the missing C44", () => {
+    const [v] = verifyWorkbookBytes(new Uint8Array(readFileSync("fixtures/noaa-ala-wai-m21/m21tab.wk3"))).verifications;
+    const v44 = v!.cells.find((c) => c.address === "V44")!;
+    const m = drawerModel(v44, v!.tolerance);
+    expect(m.status).toBe("mismatched");
+    expect(m.remembered).toBe("0.012281069011234387");
+    expect(m.raised).toBe("ERR");
+    expect(m.cause).toContain("the file no longer holds C44");
+    expect(m.inputs.find((i) => i.address === "C44")).toMatchObject({ kind: "empty", value: "empty" });
+  });
+
+  it("matched and unverifiable cells never get a cause", () => {
+    expect(drawerModel(cellResult(0, 0, "A1", "matched", 1, { recalculated: { t: "num", v: 1 } }), TOLERANCE).cause).toBeNull();
+    expect(drawerModel(cellResult(0, 0, "A1", "unverifiable", 1, { recalculated: null }), TOLERANCE).cause).toBeNull();
   });
 
   it("unverifiable: the reason is the sentence, no difference, and the missing recalculated value", () => {

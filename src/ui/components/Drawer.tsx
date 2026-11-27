@@ -85,6 +85,12 @@ export function Drawer({ model, mode, onClose, onCopyExcel }: DrawerProps) {
         <Value label={COPY.raised} value={model.raised} />
       </div>
       {model.difference && <p className="drawer__difference">{model.difference}</p>}
+      {model.cause && (
+        <section className="drawer__cause">
+          <h3 className="drawer__label">{COPY.causeLabel}</h3>
+          <p className="drawer__cause-text">{model.cause}</p>
+        </section>
+      )}
       <div className="drawer__formulas">
         <Formula label={COPY.lotus} text={model.lotus} />
         <Formula label={COPY.excel} text={model.excel} />
@@ -94,7 +100,7 @@ export function Drawer({ model, mode, onClose, onCopyExcel }: DrawerProps) {
           <h3 className="drawer__label">{COPY.inputs}</h3>
           <dl className="drawer__inputs">
             {model.inputs.map((i) => (
-              <div key={i.address} className="drawer__input">
+              <div key={i.address} className={model.cause && i.kind === "empty" ? "drawer__input is-missing" : "drawer__input"}>
                 <dt>{i.address}</dt>
                 <dd>{i.value}</dd>
               </div>

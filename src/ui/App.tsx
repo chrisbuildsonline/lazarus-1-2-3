@@ -17,12 +17,14 @@ import { useRaise } from "./hooks/useRaise.ts";
 import type { DownloadKind } from "./model/file-names.ts";
 import { collectDropped } from "./io/drop.ts";
 import { createAppExplainer } from "./io/explainer.ts";
-import { loadSample, SAMPLE_NAME } from "./io/sample.ts";
+import { loadSample, SAMPLES, type SampleKind } from "./io/sample.ts";
 import type { FoundFile, Skipped } from "./model/entries.ts";
 
 const UNFINISHED = new Set(["queued", "reading", "checking"]);
 
-const copyText = (text: string) => void navigator.clipboard?.writeText(text);
+const SAMPLE_LINE: Record<SampleKind, string> = { proof: COPY.sampleLine, mismatch: COPY.mismatchSampleLine };
+
+const copyText =(text: string) => void navigator.clipboard?.writeText(text);
 
 /** A picked file keeps its path inside a picked folder (requirement 9). */
 const fromList = (list: FileList): FoundFile<File>[] => Array.from(list, (file) => ({ path: file.webkitRelativePath || file.name, name: file.name, size: file.size, file }));
@@ -33,7 +35,7 @@ export function App() {
   const narrow = useMatchMedia(NARROW);
   const explainer = useMemo(createAppExplainer, []);
   const folderSupported = useMemo(() => "webkitdirectory" in document.createElement("input"), []);
-  const [fromSample, setFromSample] = useState(false);
+  const [fromSample, setFromSample] = useState<SampleKind | null>(null);
   const title = useRef<HTMLHeadingElement | null>(null);
   const firstView = useRef(true);
   const preparing = useRef(false);
@@ -85,19 +87,24 @@ export function App() {
     dispatch({ type: "toast", kind: "info", text: COPY.toastUndone });
   };
 
-  const summonSample = useCallback(async () => {
-    try {
-      const sample = await loadSample();
-      setFromSample(true);
-      await summon([{ path: SAMPLE_NAME, name: SAMPLE_NAME, size: sample.size, file: sample }]);
-    } catch (e) {
-      dispatch({ type: "toast", kind: "error", text: e instanceof Error ? e.message : String(e) });
-    }
-  }, [summon, dispatch]);
+  // The mismatch sample opens filtered to Mismatched with V44's drawer open: the red cell and its cause.
+  const summonSample = useCallback(
+    async (kind: SampleKind) => {
+      try {
+        const sample = await loadSample(kind);
+        const { name, open } = SAMPLES[kind];
+        setFromSample(kind);
+        await summon([{ path: name, name, size: sample.size, file: sample }], [], open);
+      } catch (e) {
+        dispatch({ type: "toast", kind: "error", text: e instanceof Error ? e.message : String(e) });
+      }
+    },
+    [summon, dispatch],
+  );
 
   const summonFiles = useCallback(
     (found: FoundFile<File>[], skipped: Skipped[] = []) => {
-      setFromSample(false);
+      setFromSample(null);
       void summon(found, skipped);
     },
     [summon],
@@ -200,7 +207,7 @@ export function App() {
         sheetIndex={state.sheetIndex}
         onSelectSheet={(index) => dispatch({ type: "selectSheet", index })}
         cell={state.cell?.address ?? null}
-        sample={fromSample && file.name === SAMPLE_NAME}
+        sampleLine={fromSample !== null && file.name === SAMPLES[fromSample].name ? SAMPLE_LINE[fromSample] : null}
         titleRef={titleRef}
         steps={phone ? steps : undefined}
         links={
@@ -231,7 +238,8 @@ export function App() {
         folderSupported={folderSupported}
         busy={current && <ProgressSurface name={current.name} phase={current.phase as ProgressPhase} index={index} count={state.items.length} />}
         panel={panel && <ErrorPanel kind={panel.kind} reason={reason} lines={panel.lines} onCopy={copyText} />}
-        onSample={() => void summonSample()}
+        onSample={() => void summonSample("proof")}
+        onMismatch={() => void summonSample("mismatch")}
         onFiles={(list) => summonFiles(fromList(list))}
         onDrop={summonDropped}
       />

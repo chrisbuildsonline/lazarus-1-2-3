@@ -15,6 +15,8 @@ export type SummonViewProps = {
   /** Error or unsupported panel. */
   panel?: ReactNode;
   onSample: () => void;
+  /** The second sample: a real file with one mismatched cell, opened on that cell. */
+  onMismatch?: () => void;
   onFiles?: (files: FileList, from: "files" | "folder") => void;
   onDrop?: (dt: DataTransfer) => void;
 };
@@ -24,7 +26,7 @@ const PRIMARY: Record<SummonMode, string> = { idle: COPY.summonPrimary, failed: 
 /** React has no typed prop for it; rendered as the plain attribute. */
 const FOLDER_ATTRS = { webkitdirectory: "" } as Record<string, string>;
 
-export function SummonView({ mode, folderSupported, busy, panel, onSample, onFiles, onDrop }: SummonViewProps) {
+export function SummonView({ mode, folderSupported, busy, panel, onSample, onMismatch, onFiles, onDrop }: SummonViewProps) {
   const files = useRef<HTMLInputElement>(null);
   const folder = useRef<HTMLInputElement>(null);
   const pickFiles = () => files.current?.click();
@@ -44,6 +46,18 @@ export function SummonView({ mode, folderSupported, busy, panel, onSample, onFil
       <button type="button" className="btn-primary primary-sticky summon__primary" onClick={mode === "idle" ? onSample : pickFiles}>
         {PRIMARY[mode]}
       </button>
+      {mode === "idle" && (
+        <button type="button" className="btn-ghost summon__mismatch" onClick={onMismatch}>
+          <span className="summon__mismatch-mark" aria-hidden="true" />
+          <span className="summon__mismatch-words">
+            <span className="summon__mismatch-title">{COPY.mismatchTitle}</span>
+            <span className="summon__mismatch-meta">{COPY.mismatchMeta}</span>
+          </span>
+          <svg className="summon__mismatch-arrow" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M5 12h14M13 6l6 6-6 6" />
+          </svg>
+        </button>
+      )}
       {panel}
       {busy ?? (
         <div className="summon__drop">

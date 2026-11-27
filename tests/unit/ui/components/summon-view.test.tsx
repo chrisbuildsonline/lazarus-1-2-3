@@ -47,6 +47,26 @@ describe("SummonView", () => {
     expect(primaries(html)).toEqual(["Summon the sample"]);
   });
 
+  it("offers a real mismatch as a second, ghost sample right after the pill, never a second primary", () => {
+    const html = view();
+    const alt = /<button[^>]*class="([^"]*\bsummon__mismatch\b[^"]*)"[^>]*>([\s\S]*?)<\/button>/.exec(html);
+    expect(alt).not.toBeNull();
+    expect(alt![1]).toContain("btn-ghost");
+    expect(alt![1]).not.toContain("btn-primary");
+    const words = alt![2]!.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+    expect(words).toContain("Open a real mismatch");
+    expect(words).toContain("m21tab.wk3");
+    expect(words).toContain("NOAA");
+    expect(html.indexOf("summon__mismatch")).toBeGreaterThan(html.indexOf("summon__primary"));
+    expect(html.indexOf("summon__mismatch")).toBeLessThan(html.indexOf("dropzone"));
+    expect(elementsWithPrimary(html)).toBe(1);
+  });
+
+  it("the mismatch sample is offered only while nothing failed", () => {
+    expect(view({ mode: "failed" })).not.toContain("summon__mismatch");
+    expect(view({ mode: "unsupported" })).not.toContain("summon__mismatch");
+  });
+
   it("shows the privacy line and the limits line verbatim", () => {
     const html = view();
     expect(html).toContain(PRIVACY);

@@ -48,8 +48,11 @@ export type AppState = {
   lastFocus: string | null;
 };
 
+export type SummonOpen = { filter: Filter; cell: string };
+
 export type AppAction =
-  | { type: "summoned"; batchId: number; entries: { name: string; path: string; size: number }[]; skipped: Skipped[] }
+  /** open: the filter and the drawer's cell the raised file opens on (the mismatch sample opens on V44). */
+  | { type: "summoned"; batchId: number; entries: { name: string; path: string; size: number }[]; skipped: Skipped[]; open?: SummonOpen }
   /** start: sent to the worker; read and check: the worker's two progress messages. */
   | { type: "progress"; batchId: number; id: number; step: "start" | "read" | "check" }
   | { type: "raised"; batchId: number; id: number; file: RaisedFile; at?: string }
@@ -127,7 +130,8 @@ export function appReducer(s: AppState, a: AppAction): AppState {
     case "summoned": {
       const items = a.entries.map((e, id): FileItem => ({ id, ...e, phase: "queued" }));
       const panel: Panel | null = items.length === 0 && a.skipped.length > 0 ? skippedPanel(a.skipped) : null;
-      return { ...initialState, batchId: a.batchId, items, skipped: a.skipped, panel, toasts: s.toasts };
+      const open = a.open ? { filter: a.open.filter, cell: { address: a.open.cell } } : {};
+      return { ...initialState, ...open, batchId: a.batchId, items, skipped: a.skipped, panel, toasts: s.toasts };
     }
     case "progress": {
       const phase: Phase = a.step === "start" ? "reading" : "checking";

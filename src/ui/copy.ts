@@ -124,5 +124,14 @@ export const COPY = {
   viewSheet: "Sheet",
   sheetLabel: "Sheet",
   sampleLine: "Sample: KSBASE.WK1, soil survey, CC0 (openpreserve format-corpus)",
+  mismatchSampleLine: "Sample: m21tab.wk3, NOAA sediment core M21, Ala Wai Canal, 1991, public domain",
+  mismatchTitle: "Open a real mismatch",
+  mismatchMeta: "m21tab.wk3 · NOAA sediment core, 1991",
+  causeLabel: "Why",
+  causeEmptyInput: (cells: readonly string[]) => {
+    const list = cells.length === 1 ? cells[0]! : `${cells.slice(0, -1).join(", ")} and ${cells.at(-1)!}`;
+    const one = cells.length === 1;
+    return `Recalculated now, the formula gives ERR, because the file no longer holds ${list}: ${one ? "that cell is" : "those cells are"} empty. The remembered value was calculated while ${list} still held ${one ? "a number" : "numbers"}. This is a finding about the file, not a reading error.`;
+  },
   honestLimits: "Unverifiable cells are not wrong; we could not prove them. The report lists each one and why.",
 } as const;
