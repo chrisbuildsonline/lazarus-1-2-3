@@ -62,7 +62,7 @@ describe("inventoryFile", () => {
   });
 });
 
-const NOTICE = "lazarus: inventory only. Parsing is not implemented yet.\n";
+const NOTICE = "lazarus: inventory only. Add --verify to parse each file and check its formulas.\n";
 const lazarus = (...args: string[]) => spawnSync("bun", ["src/cli/lazarus.ts", ...args], { encoding: "utf8" });
 const ROOT_FILES = ["a/y/x.wks", "a/z.dbf", "b.wk1", "c.txt", "d.dbf"].map((p) => join(root, p));
 

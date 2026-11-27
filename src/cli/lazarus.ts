@@ -17,7 +17,7 @@ async function main(args: string[]): Promise<number> {
   const parsed = parseArgs(args);
   const verify = args.includes("--verify");
   const exporting = parsed.kind === "ok" && (parsed.xlsx !== null || parsed.report !== null);
-  process.stderr.write(verify || exporting ? `${VERIFY_NOTICE}\n` : "lazarus: inventory only. Parsing is not implemented yet.\n");
+  process.stderr.write(verify || exporting ? `${VERIFY_NOTICE}\n` : "lazarus: inventory only. Add --verify to parse each file and check its formulas.\n");
   if (parsed.kind === "usage") {
     process.stderr.write(`lazarus: ${parsed.message}\n${USAGE}\n`);
     return 2;
