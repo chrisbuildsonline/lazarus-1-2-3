@@ -240,9 +240,11 @@ All interactive components show `box-shadow: var(--focus-ring)` on `:focus-visib
 | Selected | 2px inset ring `--accent` (`--radius-xs`); bg `--accent-soft` unless Mismatched (keeps rose) | ring |
 | Plain (constant/label) | value in `--text`, no marker | none |
 
+**Peek (F19).** A value the column cuts with an ellipsis shows in full on hover and on keyboard focus: a tooltip (`role="tooltip"`, the cell's `aria-describedby`) 4px under the cell, or above it near the bottom of the screen, lined up with the cell's right edge for numbers and its left edge for text, kept on screen. `--surface-sunken`, `--radius-xs`, `--shadow-raised`, `--text-body-strong` tabular. It is fixed to the viewport so the grid's scroll box never clips it, the pointer passes through it, and Esc dismisses it without moving focus (WCAG 1.4.13). Values that fit get no peek.
+
 Solidify: when a value arrives the cell goes from `opacity 0.35; filter: blur(1px)` to `opacity 1; blur(0)` over `--dur-slow --ease-out`. Under reduced motion it swaps instantly. The ghost effect uses colour and ink, never opacity on real values, so contrast stays measurable.
 
-**Drawer.** Desktop: a floating panel 440px wide, inset 16px from the top, right and bottom of the viewport, `--radius-lg`, `--shadow-raised`, `z-index: var(--z-drawer)`. It is non-modal (`role="complementary"`, labelled "Cell B12"): the grid reflows to leave room, arrow keys keep moving through cells and the drawer follows, Esc closes it and returns focus to the cell. Tablet: same panel overlaying the grid. Phone: full-screen modal sheet (`role="dialog"`, `aria-modal`, focus trapped, scrim: `--canvas` at 72% opacity, at z 49). Slide in 16px plus fade over `--dur-slow`.
+**Drawer.** Desktop: a floating panel 440px wide, inset 16px from the top, right and bottom of the viewport, `--radius-lg`, `--shadow-raised`, `z-index: var(--z-drawer)`. It is non-modal (`role="complementary"`, labelled "Cell B12"): the grid reflows to leave room, arrow keys keep moving through cells and the drawer follows, Esc closes it and returns focus to the cell. Tablet: same panel overlaying the grid. Phone: a modal bottom sheet (`role="dialog"`, `aria-modal`, focus trapped, scrim: `--canvas` at 72% opacity, at z 49), at most `--sheet-h` (68dvh) tall with `--radius-lg` top corners and `--shadow-raised`. The row it explains is lifted above the scrim (z 50) and scrolled to sit just above the sheet, so the red row and its cause are on screen together (F19); the page gets the sheet's height as bottom padding while it is open, so even the last row can sit there. In the sheet the two values sit side by side at `--text-h2` when they fit. Slide in 16px plus fade over `--dur-slow`.
 
 **Queue item.** A row inside the queue surface, 64px minimum, padding `--space-3 --space-4`, `--radius-md`, hairline divider between rows. Line 1: kind label ("Macro step" or "Unknown opcode", `--text-label` muted), time (muted, right). Line 2: one short line (`--text-body-strong`, single line with ellipsis). Right: queue pill. Selected item: bg `--accent-soft`.
 
@@ -310,7 +312,7 @@ Column width 640px, centred, starting 56px below the top bar (the taller circle 
  ( Summon the sample )  ← sticky
 ```
 
-Phone hides "Choose folder" when `webkitdirectory` is unsupported, and batch stays a desktop feature. The privacy line stays visible. Behind every sticky pill a fixed veil (the pill's height plus 16px above and below, `--canvas` fading to transparent, no pointer events) makes text that scrolls under the pill fade out instead of colliding with it. The page's bottom padding keeps the last line clear of the pill at the end of the scroll. On phone the status filters wrap onto a second line rather than scroll off the edge, so all four stay in view.
+Phone hides "Choose folder" when `webkitdirectory` is unsupported, and batch stays a desktop feature. The privacy line stays visible. **The first screen (F19):** everything down to the privacy line is one block at least as tall as the screen under the top bar (16px padding and gaps, 20px drop-zone padding), so the sticky pill sits over empty canvas at first view and the long limits line starts just under the fold; the pill never covers text at first view (checked at 390x844 and 375x812). Behind every sticky pill a fixed veil (the pill's height plus 16px above and below, `--canvas` fading to transparent, no pointer events) makes text that scrolls under the pill fade out instead of colliding with it. The page's bottom padding keeps the last line clear of the pill at the end of the scroll. On phone the status filters wrap onto a second line rather than scroll off the edge, so all four stay in view.
 
 ### 4.2 Sheet grid with proof status
 
@@ -394,7 +396,7 @@ On phone the grid becomes a status list. Rows are grouped by status with Mismatc
 - The value pair is two stat columns. A missing value shows "Not stored in the file" in muted body, never a dash alone.
 - **Why (F18).** When a mismatched cell's stored number now recalculates to ERR and some of its inputs are empty, the drawer says why, right under the values: an inset panel in `--status-mismatched-bg` with a 2px `--status-mismatched-mark` leading bar, the muted label "Why", then one plain paragraph naming the cells the file no longer holds. Those inputs read "empty" and their chips take the same rose treatment. The cause is worked out only from the engine's status, its two values and the input kinds; no number is compared in the UI.
 - The drawer has no primary pill. The view's primary stays "Open report" in the top bar.
-- Phone: full-screen sheet, the same order, with a sticky ghost "Back to list" at the bottom.
+- Phone: a bottom sheet (section 3, "Drawer") under the lifted row, the same order, with a sticky ghost "Back to list" at the bottom. The header, values and the Why panel fit without scrolling the sheet at 390x844 and 375x812.
 
 ### 4.4 Macro approval queue
 
