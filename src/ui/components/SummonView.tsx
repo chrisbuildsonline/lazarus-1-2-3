@@ -37,52 +37,56 @@ export function SummonView({ mode, folderSupported, busy, panel, onSample, onMis
   };
   return (
     <main className="summon">
-      <div className="summon__head">
-        <h1 className="title title--summon" tabIndex={-1}>
-          {COPY.summonTitle}
-        </h1>
-        <p className="summon__subtitle">{COPY.summonSubtitle}</p>
-      </div>
-      <button type="button" className="btn-primary primary-sticky summon__primary" onClick={mode === "idle" ? onSample : pickFiles}>
-        {PRIMARY[mode]}
-      </button>
-      {mode === "idle" && (
-        <button type="button" className="btn-ghost summon__mismatch" onClick={onMismatch}>
-          <span className="summon__mismatch-mark" aria-hidden="true" />
-          <span className="summon__mismatch-words">
-            <span className="summon__mismatch-title">{COPY.mismatchTitle}</span>
-            <span className="summon__mismatch-meta">{COPY.mismatchMeta}</span>
-          </span>
-          <svg className="summon__mismatch-arrow" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M5 12h14M13 6l6 6-6 6" />
-          </svg>
-        </button>
-      )}
-      {panel}
-      {busy ?? (
-        <div className="summon__drop">
-          <DropZone onActivate={pickFiles} onDrop={(dt) => onDrop?.(dt)} />
-          <div className="summon__pickers">
-            <button type="button" className="btn-text" onClick={pickFiles}>
-              {COPY.chooseFile}
-            </button>
-            {folderSupported && (
-              <>
-                <span className="summon__dot" aria-hidden="true">
-                  ·
-                </span>
-                <button type="button" className="btn-text" onClick={() => folder.current?.click()}>
-                  {COPY.chooseFolder}
-                </button>
-              </>
-            )}
-          </div>
+      {/* The first screen on a phone, down to the privacy line: the sticky pill sits below it, over
+          empty canvas, and the limits line starts under the fold (F19). Desktop: display: contents. */}
+      <div className="summon__fold">
+        <div className="summon__head">
+          <h1 className="title title--summon" tabIndex={-1}>
+            {COPY.summonTitle}
+          </h1>
+          <p className="summon__subtitle">{COPY.summonSubtitle}</p>
         </div>
-      )}
-      <input ref={files} type="file" accept=".wk1,.wks,.wk3,.dbf" multiple hidden onChange={picked("files")} />
-      {folderSupported && <input ref={folder} type="file" multiple hidden {...FOLDER_ATTRS} onChange={picked("folder")} />}
-      <div className="summon__foot">
+        <button type="button" className="btn-primary primary-sticky summon__primary" onClick={mode === "idle" ? onSample : pickFiles}>
+          {PRIMARY[mode]}
+        </button>
+        {mode === "idle" && (
+          <button type="button" className="btn-ghost summon__mismatch" onClick={onMismatch}>
+            <span className="summon__mismatch-mark" aria-hidden="true" />
+            <span className="summon__mismatch-words">
+              <span className="summon__mismatch-title">{COPY.mismatchTitle}</span>
+              <span className="summon__mismatch-meta">{COPY.mismatchMeta}</span>
+            </span>
+            <svg className="summon__mismatch-arrow" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M5 12h14M13 6l6 6-6 6" />
+            </svg>
+          </button>
+        )}
+        {panel}
+        {busy ?? (
+          <div className="summon__drop">
+            <DropZone onActivate={pickFiles} onDrop={(dt) => onDrop?.(dt)} />
+            <div className="summon__pickers">
+              <button type="button" className="btn-text" onClick={pickFiles}>
+                {COPY.chooseFile}
+              </button>
+              {folderSupported && (
+                <>
+                  <span className="summon__dot" aria-hidden="true">
+                    ·
+                  </span>
+                  <button type="button" className="btn-text" onClick={() => folder.current?.click()}>
+                    {COPY.chooseFolder}
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+        <input ref={files} type="file" accept=".wk1,.wks,.wk3,.dbf" multiple hidden onChange={picked("files")} />
+        {folderSupported && <input ref={folder} type="file" multiple hidden {...FOLDER_ATTRS} onChange={picked("folder")} />}
         <p className="summon__privacy">{COPY.privacy}</p>
+      </div>
+      <div className="summon__foot">
         <p className="summon__limits">{COPY.limits}</p>
       </div>
     </main>

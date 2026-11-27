@@ -483,14 +483,19 @@ pre {
   padding: 0 var(--space-1);
 }
 
+/* Desktop: no box of its own, so its children sit in the column as before. */
+.summon__fold {
+  display: contents;
+}
+
+/* The limits line sits 8px under the privacy line, not a column gap. */
 .summon__foot {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
   max-width: 34em;
+  margin-top: calc(var(--space-2) - var(--space-8));
 }
 
 .summon__privacy {
+  max-width: 34em;
   font: var(--text-body-strong);
   color: var(--text);
 }
@@ -2307,10 +2312,20 @@ pre {
   }
 
   .summon {
-    padding-top: var(--space-6);
+    padding-top: var(--space-4);
     align-items: stretch;
-    gap: var(--space-6);
+    gap: var(--space-4);
     text-align: left;
+  }
+
+  /* The first screen ends at the bottom of the viewport: the privacy line stays above the sticky
+     pill, the pill sits over empty canvas, and the limits line starts under the fold, so at first
+     view the pill covers no text (jury run 158). The page's bottom padding clears it at the end. */
+  .summon__fold {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    min-height: calc(100dvh - 56px - var(--space-4) * 2);
   }
 
   .summon__head {
@@ -2320,6 +2335,7 @@ pre {
 
   .summon__drop {
     align-items: stretch;
+    gap: var(--space-2);
   }
 
   .summon__pickers {
@@ -2327,7 +2343,7 @@ pre {
   }
 
   .summon__foot {
-    order: 1;
+    margin-top: 0;
   }
 
   /* The pill is fixed at the bottom here, so the chip follows the title, full width. */
@@ -2370,6 +2386,7 @@ pre {
 
   .dropzone {
     min-height: 240px;
+    padding: var(--space-5) var(--space-4);
   }
 
   .summoning-circle {
