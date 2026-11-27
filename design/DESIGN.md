@@ -293,6 +293,8 @@ The first content on every screen (the `h1` after the slim wordmark bar) is a ti
 
 Column width 640px, centred, starting 56px below the top bar (the taller circle zone needs the room). Title, pill, drop zone and privacy line all sit above the fold at 1440x900. There are no step tabs yet. The sample needs no file and no local model.
 
+**The mismatch chip (F18).** Right under the pill (12px, not the 32px column gap) sits a second sample, never a second primary: a `--surface` pill with `--shadow-surface`, 56px tall, led by a 3px x 32px bar in `--status-mismatched-mark` (the Mismatched glyph), then "Open a real mismatch" (`--text-body-strong`) over "m21tab.wk3 · NOAA sediment core, 1991" (`--text-small`, muted), and an arrow that turns `--accent-ink` and moves 2px on hover. It raises NOAA's `m21tab.wk3` and opens it filtered to Mismatched with V44 in the drawer, so the red cell and its cause are on screen together. On phone it follows the subtitle at full width (the pill is sticky at the bottom). It shows only while nothing failed.
+
 ```
 390 ──────────────────────────
  Lazarus 1-2-3
@@ -308,7 +310,7 @@ Column width 640px, centred, starting 56px below the top bar (the taller circle 
  ( Summon the sample )  ← sticky
 ```
 
-Phone hides "Choose folder" when `webkitdirectory` is unsupported, and batch stays a desktop feature. The privacy line stays visible.
+Phone hides "Choose folder" when `webkitdirectory` is unsupported, and batch stays a desktop feature. The privacy line stays visible. Behind every sticky pill a fixed veil (the pill's height plus 16px above and below, `--canvas` fading to transparent, no pointer events) makes text that scrolls under the pill fade out instead of colliding with it. The page's bottom padding keeps the last line clear of the pill at the end of the scroll. On phone the status filters wrap onto a second line rather than scroll off the edge, so all four stay in view.
 
 ### 4.2 Sheet grid with proof status
 
@@ -390,6 +392,7 @@ On phone the grid becomes a status list. Rows are grouped by status with Mismatc
 
 - The header holds a "Cell" label, the address in `--text-mono` at 32px, the status pill and a ghost close button (aria-label "Close cell details"). Below sits one plain sentence per state. Matched: "Raised value matches what the file remembers." Mismatched: "The numbers disagree." Unverifiable: the reason, e.g. "@NOW changes every time; it cannot be proven."
 - The value pair is two stat columns. A missing value shows "Not stored in the file" in muted body, never a dash alone.
+- **Why (F18).** When a mismatched cell's stored number now recalculates to ERR and some of its inputs are empty, the drawer says why, right under the values: an inset panel in `--status-mismatched-bg` with a 2px `--status-mismatched-mark` leading bar, the muted label "Why", then one plain paragraph naming the cells the file no longer holds. Those inputs read "empty" and their chips take the same rose treatment. The cause is worked out only from the engine's status, its two values and the input kinds; no number is compared in the UI.
 - The drawer has no primary pill. The view's primary stays "Open report" in the top bar.
 - Phone: full-screen sheet, the same order, with a sticky ghost "Back to list" at the bottom.
 

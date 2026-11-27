@@ -1,15 +1,17 @@
 // The demo script (docs/demo-script.md), scene by scene, on the shipped fixtures only. Expected
-// numbers come from tests/differential/verify/golden.json, fixtures/manifest.json and verifyBytes,
-// never from the page. If the app or the script drift apart, this fails.
+// numbers come from tests/differential/verify/golden.json, fixtures/manifest.json, verifyBytes and
+// verifyWorkbookBytes, never from the page. If the app or the script drift apart, this fails.
 import { expect, test, type Page } from "@playwright/test";
 import { readFileSync } from "node:fs";
-import { verifyBytes } from "../src/verify/index.ts";
+import { formatNumber } from "../src/ui/model/format-value.ts";
+import { verifyBytes, verifyWorkbookBytes } from "../src/verify/index.ts";
 import { payload } from "./fixtures/seance-files.ts";
 
 type Totals = { formulas: number; matched: number; mismatched: number; unverifiable: number };
 const KSBASE = "fixtures/ksbase/KSBASE.WK1";
 const GNOME = "fixtures/libreoffice-wks-functions/gnome647171-1.wks";
 const MACROS = "fixtures/macros/macros.wk1";
+const M21 = "fixtures/noaa-ala-wai-m21/m21tab.wk3";
 const golden = JSON.parse(readFileSync("tests/differential/verify/golden.json", "utf8")) as Record<string, Totals>;
 const manifest = JSON.parse(readFileSync("fixtures/manifest.json", "utf8")) as { fixtures: { path: string; expectedValues: { cell: string; cached: number | string }[] }[] };
 const o3Cached = String(manifest.fixtures.find((f) => f.path === KSBASE)!.expectedValues.find((c) => c.cell === "O3")!.cached);
@@ -71,7 +73,26 @@ test("the demo script runs on the shipped fixtures", async ({ page }) => {
   await expect(drawer(page)).toContainText(a5.reason.message);
   await page.keyboard.press("Escape");
 
-  // Scene 5: macros become steps to approve. Approving records a decision and changes no cell.
+  // Scene 5: the real mismatch, one click from the Summon view. m21tab.wk3 opens filtered to
+  // Mismatched with V44 red in the grid and its drawer open: the stored value, ERR, and why.
+  await page.goto("/");
+  await page.getByRole("button", { name: /Open a real mismatch/ }).click();
+  await expect(h1(page, "m21tab.wk3")).toBeVisible();
+  const [m21] = verifyWorkbookBytes(new Uint8Array(readFileSync(M21))).verifications;
+  const m21Totals = m21!.totals;
+  expect([m21Totals.matched, m21Totals.mismatched, m21Totals.unverifiable]).toEqual([7, 1, 0]);
+  await expectTotals(page, m21Totals);
+  const v44 = m21!.cells.find((c) => c.address === "V44")!;
+  expect([v44.status, v44.lotusFormula, v44.recalculated?.t]).toEqual(["mismatched", "L44/C44", "err"]);
+  await expect(page.getByRole("tab", { name: /^Mismatched/ })).toHaveAttribute("aria-selected", "true");
+  await expect(cell(page, "V44")).toHaveAttribute("aria-label", /Mismatched$/);
+  await expect(cell(page, "V44")).toBeInViewport();
+  await expect(drawer(page)).toHaveAccessibleName("Cell V44");
+  await expect(drawer(page).locator(".stat__value")).toHaveText([formatNumber((v44.cached as { v: number }).v), "ERR"]);
+  await expect(drawer(page).locator(".drawer__cause")).toContainText("the file no longer holds C44");
+  await page.keyboard.press("Escape");
+
+  // Scene 6: macros become steps to approve. Approving records a decision and changes no cell.
   await drop(page, MACROS);
   const before = verifyBytes(new Uint8Array(readFileSync(MACROS))).verification.totals;
   expect([before.matched, before.mismatched, before.unverifiable]).toEqual([0, 0, 1]);
@@ -87,7 +108,7 @@ test("the demo script runs on the shipped fixtures", async ({ page }) => {
   await expectTotals(page, before);
   await expect(cell(page, "A10")).toHaveAttribute("aria-label", /Unverifiable$/);
 
-  // Scene 6: leave with the workbook and the provenance report.
+  // Scene 7: leave with the workbook and the provenance report.
   for (const [button, file] of [
     ["Download XLSX", "macros.xlsx"],
     ["Download report (HTML)", "macros.report.html"],
