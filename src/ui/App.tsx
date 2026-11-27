@@ -64,13 +64,14 @@ export function App() {
   };
 
   // Focus the new view's h1 when the view or the step changes, not on the first paint of the page.
-  // Arrow keys on the step tabs keep the focus on the tab, as in any tab list.
+  // Arrow keys on the step tabs keep the focus on the tab, as in any tab list. A view that opens with
+  // the phone cell sheet (the mismatch sample) keeps the focus in that modal dialog.
   useEffect(() => {
     if (firstView.current) {
       firstView.current = false;
       return;
     }
-    if (document.activeElement?.closest(".step-tabs")) return;
+    if (document.activeElement?.closest('.step-tabs, [role="dialog"]')) return;
     (title.current ?? document.querySelector<HTMLElement>("h1"))?.focus();
   }, [state.view, state.step]);
 

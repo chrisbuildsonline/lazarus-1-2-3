@@ -116,6 +116,12 @@ export function SheetView(p: SheetViewProps) {
     setFocus(pos);
     if (p.cell !== null && model.at(pos.col, pos.row).kind === "formula") p.onOpenCell(address(pos));
   };
+  // Phone: the sheet covers the lower part of the screen, so the row it explains scrolls to sit just
+  // above it (its scroll margins in app.css), the red cell and its cause on screen together (F19).
+  const opened = phone ? (details?.address ?? null) : null;
+  useEffect(() => {
+    if (opened !== null) document.querySelector<HTMLElement>(`.status-row[data-address="${opened}"]`)?.scrollIntoView({ block: "nearest" });
+  }, [opened]);
   const drawer = details && <Drawer model={details} mode={phone ? "phone" : "desktop"} onClose={p.onCloseCell} onCopyExcel={p.onCopy} />;
   const classes = ["sheet", batch && "sheet--batch", details && !phone && "has-drawer"].filter(Boolean).join(" ");
 
