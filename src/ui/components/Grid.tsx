@@ -1,7 +1,7 @@
 // The windowed sheet grid (DESIGN.md section 3, requirements 33 to 39). One scroll container; only the
 // rows and columns inside the viewport plus the overscan, plus the focused cell, are in the DOM.
 // Positions are set through the style property (transform), which a strict CSP allows.
-import { useLayoutEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from "react";
 import { COPY } from "../copy.ts";
 import { cellLabel, columnLetters, type GridModel } from "../model/grid-model.ts";
 import { moveFocus, type GridPos } from "../model/grid-nav.ts";
@@ -35,6 +35,17 @@ export type GridProps = {
   formulaCols?: { first: number; last: number } | null;
 };
 
+/** A cell whose value the ellipsis cuts, peeked by the pointer or by focus. */
+type Peek = GridPos & { text: string; by: "hover" | "focus" };
+
+/** The peek for a cell element, or null when its value fits. */
+function peekOf(el: EventTarget | null, by: Peek["by"]): Peek | null {
+  const cell = el instanceof Element ? el.closest<HTMLElement>("[data-col]") : null;
+  const value = cell?.querySelector<HTMLElement>(".cell__value");
+  if (!cell || !value || value.scrollWidth <= value.clientWidth) return null;
+  return { col: Number(cell.dataset.col), row: Number(cell.dataset.row), text: value.textContent ?? "", by };
+}
+
 const range = (w: { start: number; end: number }) => Array.from({ length: Math.max(0, w.end - w.start) }, (_, i) => w.start + i);
 const withIndex = (list: number[], i: number, count: number) => (i < 0 || i >= count || list.includes(i) ? list : [...list, i].sort((a, b) => a - b));
 const sameCell = (a: GridPos | null, col: number, row: number) => a !== null && a.col === col && a.row === row;
@@ -46,6 +57,42 @@ export function Grid({ model, label, focus, selected, rowsShown, empty, viewport
   const keyed = useRef(false);
   // Values solidify once per file (DESIGN.md section 3); scrolling later mounts cells without the effect.
   const [fresh, setFresh] = useState(true);
+  // The full value of a cut cell, on hover and on focus (F19): a tooltip under the cell, outside the
+  // scroll box so nothing clips it, kept on the cell while the grid or the page scrolls.
+  const tip = useRef<HTMLDivElement>(null);
+  const tipId = useId();
+  const [peek, setPeek] = useState<Peek | null>(null);
+  const showPeek = (next: Peek | null) => setPeek((old) => (old && next && old.col === next.col && old.row === next.row && old.by === next.by ? old : next));
+
+  const place = useCallback(() => {
+    const el = tip.current;
+    if (!el || !peek) return;
+    const cell = ref.current?.querySelector<HTMLElement>(`[data-col="${peek.col}"][data-row="${peek.row}"]`);
+    if (!cell) {
+      setPeek(null);
+      return;
+    }
+    const r = cell.getBoundingClientRect();
+    const { clientWidth: vw, clientHeight: vh } = document.documentElement;
+    const edge = 8;
+    const gap = 4;
+    const w = el.offsetWidth;
+    const h = el.offsetHeight;
+    // Numbers line up with the cell's right edge, text with its left edge; above it near the bottom.
+    const x = cell.classList.contains("cell--right") ? r.right - w : r.left;
+    el.style.left = `${Math.max(edge, Math.min(x, vw - edge - w))}px`;
+    el.style.top = `${r.bottom + gap + h <= vh - edge ? r.bottom + gap : r.top - gap - h}px`;
+  }, [peek]);
+  useLayoutEffect(place);
+  useEffect(() => {
+    if (!peek) return;
+    window.addEventListener("scroll", place, { passive: true });
+    window.addEventListener("resize", place);
+    return () => {
+      window.removeEventListener("scroll", place);
+      window.removeEventListener("resize", place);
+    };
+  }, [peek, place]);
 
   const count = rowsShown ? rowsShown.length : model.rows;
   const rowAt = (i: number) => (rowsShown ? rowsShown[i]! : i);
@@ -107,6 +154,8 @@ export function Grid({ model, label, focus, selected, rowsShown, empty, viewport
   };
 
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    // Escape dismisses the peek without moving focus (WCAG 1.4.13), and closes the drawer as before.
+    if (e.key === "Escape") setPeek(null);
     if (e.key === "Escape" && onEscape) {
       e.preventDefault();
       onEscape();
@@ -152,6 +201,10 @@ export function Grid({ model, label, focus, selected, rowsShown, empty, viewport
         onScroll={(e) => setScroll({ top: e.currentTarget.scrollTop, left: e.currentTarget.scrollLeft })}
         onKeyDown={onKeyDown}
         onClick={onClick}
+        onMouseOver={(e) => showPeek(peekOf(e.target, "hover"))}
+        onMouseLeave={() => setPeek((old) => (old?.by === "hover" ? null : old))}
+        onFocus={(e) => showPeek(peekOf(e.target, "focus"))}
+        onBlur={() => setPeek((old) => (old?.by === "focus" ? null : old))}
         onAnimationEnd={() => setFresh(false)}
         {...sweepAttrs}
       >
@@ -192,6 +245,7 @@ export function Grid({ model, label, focus, selected, rowsShown, empty, viewport
                       aria-colindex={col + 2}
                       aria-label={cellLabel(address, cell)}
                       aria-selected={sameCell(selected, col, row) || undefined}
+                      aria-describedby={sameCell(peek, col, row) ? tipId : undefined}
                       tabIndex={sameCell(at, col, row) ? 0 : -1}
                       data-col={col}
                       data-row={row}
@@ -208,6 +262,11 @@ export function Grid({ model, label, focus, selected, rowsShown, empty, viewport
         </div>
       </div>
       {count === 0 && empty && <p className="grid__empty">{empty}</p>}
+      {peek && (
+        <div ref={tip} id={tipId} role="tooltip" className="cell-peek">
+          {peek.text}
+        </div>
+      )}
     </div>
   );
 }
